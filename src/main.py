@@ -38,6 +38,8 @@ from src.knowledge_graph.query import (
     SectionSummaryRetriever,
     SectionTreeRetriever,
 )
+from src.knowledge_graph.query_semantic import QueryIntentClassifier, SemanticKGRetriever
+from src.knowledge_graph.io import load_semantic_graph
 from src.ranking.reranker import rerank
 
 ANSWER_NOT_FOUND = "I'm sorry, but I don't have enough information to answer that question."
@@ -328,6 +330,61 @@ def run_chat_session(args: argparse.Namespace, cfg: RAGConfig):
                 kg_index, kg_entries = load_summary_data(cfg.kg_graph_dir)
                 if kg_index is not None:
                     retrievers.append(SectionSummaryRetriever(kg_index, kg_entries))
+
+        if cfg.ranker_weights.get("kg_semantic", 0) > 0:
+            sem_graph_dir = cfg.kg_semantic_graph_dir or cfg.kg_graph_dir
+            if sem_graph_dir:
+                semantic_graph = load_semantic_graph(sem_graph_dir)
+                if semantic_graph is not None:
+                    # Reuse canonical_lookup if it was already built above
+                    sem_canonical_lookup = locals().get("canonical_lookup", None)
+                    if sem_canonical_lookup is None and cfg.kg_graph_dir:
+                        resolved_sem = sem_graph_dir
+                        try:
+                            from src.knowledge_graph.io import resolve_run_dir as _resolve
+                            resolved_sem = _resolve(sem_graph_dir)
+                        except FileNotFoundError:
+                            pass
+                        sem_syn, sem_can_kw, sem_can_emb = load_canonicalization_data(resolved_sem)
+                        if sem_syn is not None:
+                            sem_canonical_lookup = CanonicalLookup(sem_syn, sem_can_kw, sem_can_emb)
+
+                    intent_classifier = None
+                    if cfg.kg_use_intent_classification:
+                        api_key = os.environ.get("OPENROUTER_API_KEY", "")
+                        intent_classifier = QueryIntentClassifier(
+                            api_key=api_key,
+                            llm_model=cfg.kg_intent_llm_model,
+                        )
+
+                    sem_kg_chunks = {int(k): v for k, v in {}.items()}
+                    # Load chunks for the semantic graph run
+                    try:
+                        from src.knowledge_graph.io import load_run_chunks as _load_run_chunks
+                        from src.knowledge_graph.io import _resolve_run_dir_for_semantic
+                        sem_run_dir = _resolve_run_dir_for_semantic(sem_graph_dir)
+                        sem_kg_chunks = _load_run_chunks(
+                            os.path.join(sem_run_dir, "chunks.json")
+                        )
+                    except Exception:
+                        sem_kg_chunks = {}
+
+                    retrievers.append(SemanticKGRetriever(
+                        graph=semantic_graph,
+                        kg_chunks=sem_kg_chunks,
+                        canonical_lookup=sem_canonical_lookup,
+                        neighbor_weight=cfg.kg_semantic_neighbor_weight,
+                        num_hops=cfg.kg_semantic_num_hops,
+                        use_intent_classification=cfg.kg_use_intent_classification,
+                        intent_classifier=intent_classifier,
+                    ))
+                else:
+                    logger.warning(
+                        "kg_semantic weight > 0 but no semantic_graph.json found in %r. "
+                        "Run run_semantic_kg_pipeline.py first.",
+                        sem_graph_dir,
+                    )
+
         ranker = EnsembleRanker(ensemble_method=cfg.ensemble_method, weights=cfg.ranker_weights, rrf_k=int(cfg.rrf_k))
         print("Loaded retrievers and initialized ranker.")
         artifacts = {"chunks": chunks, "sources": sources, "retrievers": retrievers, "ranker": ranker, "meta": meta}

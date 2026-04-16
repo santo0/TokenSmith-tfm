@@ -60,8 +60,6 @@ def main() -> None:
     logger.info("Loaded %d chunks", len(chunks))
 
     extractor: BaseExtractor = JsonExtractor(input_path=JSON_KW_PATH)
-    # To switch extractors, replace the line above with e.g.:
-    # extractor = CompositeExtractor([YakeExtractor(top_n=cfg.top_n), TfidfExtractor(top_n=cfg.top_n)])
 
     api_key = os.environ.get("OPENROUTER_API_KEY", "")
     if not api_key:
@@ -110,7 +108,7 @@ def main() -> None:
     )
     chunk_texts = load_run_chunks(os.path.join(run_dir, "chunks.json"))
     client = OpenRouterClient(api_key, retries=2)
-    summarize_fn = lambda messages: client.chat(st.summary_model, messages)
+    def summarize_fn(messages): return client.chat(st.summary_model, messages)
     build_summary_index(
         section_tree=tree,
         chunks=chunk_texts,

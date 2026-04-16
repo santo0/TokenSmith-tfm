@@ -123,12 +123,36 @@ class RunMetadata:
 
 
 @dataclass
+class SummaryTreeConfig:
+    summary_model: str = "openai/gpt-4o-mini"
+    embed_model: str = "sentence-transformers/all-MiniLM-L6-v2"
+    chunk_window: int = 3
+
+
+@dataclass
 class CanonicalizationConfig:
     llm_model: str = "openai/gpt-4o-mini"
     embed_model: str = "sentence-transformers/all-MiniLM-L6-v2"
     similarity_threshold: float = 0.78
     max_group_size: int = 30
     batch_size: int = 15
+
+
+@dataclass
+class SemanticLinkerConfig:
+    llm_model: str = "openai/gpt-4o-mini"
+    batch_size: int = 5
+    min_occurrence: int = 1
+    allowed_relations: list = field(default_factory=list)  # empty = all 10 types
+
+
+@dataclass
+class SemanticRetrieverConfig:
+    neighbor_weight: float = 0.5
+    num_hops: int = 2
+    use_intent_classification: bool = False
+    intent_llm_model: str = "openai/gpt-4o-mini"
+    relation_weights: dict = field(default_factory=dict)  # empty = use defaults
 
 
 @dataclass
@@ -139,6 +163,15 @@ class KGPipelineConfig:
     canonicalization: CanonicalizationConfig = field(
         default_factory=CanonicalizationConfig
     )
+    summary_tree: SummaryTreeConfig = field(
+        default_factory=SummaryTreeConfig
+    )
+    semantic_linker: SemanticLinkerConfig = field(
+        default_factory=SemanticLinkerConfig
+    )
+    semantic_retriever: SemanticRetrieverConfig = field(
+        default_factory=SemanticRetrieverConfig
+    )
 
     @classmethod
     def from_yaml(cls, path: str) -> "KGPipelineConfig":
@@ -147,4 +180,13 @@ class KGPipelineConfig:
             data = yaml.safe_load(f)
         kg = dict(data.get("kg_pipeline", {}))
         canon_data = kg.pop("canonicalization", {})
-        return cls(**kg, canonicalization=CanonicalizationConfig(**canon_data))
+        summary_tree_data = kg.pop("summary_tree", {})
+        sem_linker_data = kg.pop("semantic_linker", {})
+        sem_ret_data = kg.pop("semantic_retriever", {})
+        return cls(
+            **kg,
+            canonicalization=CanonicalizationConfig(**canon_data),
+            summary_tree=SummaryTreeConfig(**summary_tree_data),
+            semantic_linker=SemanticLinkerConfig(**sem_linker_data),
+            semantic_retriever=SemanticRetrieverConfig(**sem_ret_data),
+        )

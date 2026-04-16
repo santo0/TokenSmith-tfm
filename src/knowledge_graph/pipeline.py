@@ -31,12 +31,14 @@ class Pipeline:
         persister: BasePersister,
         divider: BaseDivider | None = None,
         canonicalizer: Canonicalizer | None = None,
+        chapter_filter: list[str] | None = None,
     ):
         self.divider = divider
         self.extractor = extractor
         self.linker = linker
         self.persister = persister
         self.canonicalizer = canonicalizer
+        self.chapter_filter = chapter_filter
 
     def run(
         self,
@@ -85,6 +87,25 @@ class Pipeline:
                 f"  {s['keywords_after_stage1']} → {s['canonical_keywords_final']} keywords, "
                 f"{s['merges_performed']} merges, {s['llm_calls']} LLM calls "
                 f"in {t1 - t0:.2f} seconds"
+            )
+
+        if self.chapter_filter:
+            chunk_id_to_section = {
+                c.id: c.metadata.get("section_path", "") for c in chunks
+            }
+            total = len(chunks)
+            chunks = [
+                c for c in chunks
+                if any(
+                    chunk_id_to_section[c.id].startswith(p)
+                    for p in self.chapter_filter
+                )
+            ]
+            kept_ids = {c.id for c in chunks}
+            extractions = [er for er in extractions if er.chunk_id in kept_ids]
+            logger.info(
+                "Chapter filter: kept %d / %d chunks (%d discarded)",
+                len(chunks), total, total - len(chunks),
             )
 
         logger.info("Linking co-occurrences...")

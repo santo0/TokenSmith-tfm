@@ -100,6 +100,45 @@ def load_summary_data(
         return None, None
 
 
+def load_semantic_graph(output_dir: str) -> "nx.MultiDiGraph | None":
+    """Load ``semantic_graph.json`` from a run directory.
+
+    Accepts the same path forms as :func:`load_graph_and_chunks` (a specific
+    run directory or a ``runs/`` parent with a ``latest`` symlink).
+
+    Returns:
+        The deserialized :class:`networkx.MultiDiGraph`, or ``None`` if the
+        file does not exist in the resolved run directory.
+    """
+    try:
+        run_dir = _resolve_run_dir_for_semantic(output_dir)
+    except FileNotFoundError:
+        return None
+    path = os.path.join(run_dir, "semantic_graph.json")
+    if not os.path.exists(path):
+        return None
+    with open(path, "r", encoding="utf-8") as f:
+        return nx.node_link_graph(json.load(f))
+
+
+def _resolve_run_dir_for_semantic(path: str) -> str:
+    """Resolve a run directory that may contain ``semantic_graph.json``.
+
+    Falls back to checking the ``latest`` symlink like :func:`resolve_run_dir`,
+    but accepts directories that have ``semantic_graph.json`` even without
+    ``graph.json``.
+    """
+    for candidate in (path, os.path.realpath(os.path.join(path, "latest"))):
+        if os.path.isfile(os.path.join(candidate, "semantic_graph.json")):
+            return candidate
+        if os.path.isfile(os.path.join(candidate, "graph.json")):
+            return candidate
+    raise FileNotFoundError(
+        f"Cannot resolve run dir from {path!r}: "
+        "no semantic_graph.json or graph.json found."
+    )
+
+
 def load_canonicalization_data(
     run_dir: str,
 ) -> tuple[dict[str, str], list[str], np.ndarray] | tuple[None, None, None]:

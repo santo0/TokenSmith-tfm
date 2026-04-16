@@ -56,10 +56,17 @@ class RAGConfig:
     enable_history: bool = True
     max_history_turns: int = 3
 
-    # knowledge graph retrieval
+    # knowledge graph retrieval (cooccurrence)
     kg_graph_dir: str = ""
     kg_heading_alpha: float = 0.5  # heading sim vs KG keyword blend: 1 = heading-only, 0 = KG-only
     kg_inheritance_decay: float = 0.5  # parent→child score decay in top-down propagation
+
+    # semantic knowledge graph retrieval
+    kg_semantic_graph_dir: str = ""  # defaults to kg_graph_dir if empty
+    kg_semantic_neighbor_weight: float = 0.5
+    kg_semantic_num_hops: int = 2
+    kg_use_intent_classification: bool = False
+    kg_intent_llm_model: str = "openai/gpt-4o-mini"
 
     
     # index parameters

@@ -18,6 +18,7 @@ class BasePersister(BasePipelineComponent):
         output_dir: str,
         run_metadata: RunMetadata | None = None,
         canonicalization_result: CanonicalizationResult | None = None,
+        semantic_triples: list[dict] | None = None,
     ) -> None:
         """Persist *graph* and *chunks* to *output_dir*.
 
@@ -27,5 +28,7 @@ class BasePersister(BasePipelineComponent):
             output_dir: Directory to write output files into.
             run_metadata: Configuration and stats from the pipeline run.
             canonicalization_result: Optional canonicalization artifacts to persist.
+            semantic_triples: Optional flat list of extracted triples for inspection
+                (``[{chunk_id, subject, relation, object}]``).
         """
         ...
