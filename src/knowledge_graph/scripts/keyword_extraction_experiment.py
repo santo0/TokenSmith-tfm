@@ -1,41 +1,3 @@
-"""Compare YAKE, KeyBERT, and one or more OpenRouter LLMs on a random sample.
-
-Metrics (per chunk, then aggregated):
-  - cos_sim     : cosine similarity between chunk embedding and joined-keyword embedding
-  - diversity   : 1 - avg pairwise cosine similarity between individual keyword embeddings
-  - tfidf_mean  : mean TF-IDF score of extracted keywords against the corpus
-  - avg_chars   : average character count per keyword
-  - avg_words   : average word count per keyword
-
-Structural evaluation:
-  - clustering  : K-Means silhouette score using mean keyword embeddings as doc vectors
-
-Optional (requires --annotations):
-  - jaccard     : token-level Jaccard vs. manually annotated keywords
-
-Usage examples
---------------
-# No LLM, 10 chunks
-python -m src.knowledge_graph.scripts.keyword_extraction_experiment \\
-    --n-chunks 10 --skip-llm --verbose
-
-# Single LLM (default)
-python -m src.knowledge_graph.scripts.keyword_extraction_experiment \\
-    --n-chunks 150 --top-n 5 --api-key $OPENROUTER_API_KEY
-
-# Multiple LLMs in one run
-python -m src.knowledge_graph.scripts.keyword_extraction_experiment \\
-    --n-chunks 150 --top-n 5 \\
-    --models google/gemini-flash-1.5 openai/gpt-4o-mini \\
-    --api-key $OPENROUTER_API_KEY
-
-# Generate annotation template, fill it, then score
-python -m src.knowledge_graph.scripts.keyword_extraction_experiment \\
-    --generate-annotations --annotations data/annotations_template.json
-python -m src.knowledge_graph.scripts.keyword_extraction_experiment \\
-    --n-chunks 150 --annotations data/annotations_filled.json
-"""
-
 from contextlib import contextmanager
 import argparse
 import json
@@ -46,6 +8,7 @@ from time import strftime
 
 import numpy as np
 from dotenv import load_dotenv
+from sklearn.feature_extraction.text import TfidfVectorizer
 
 from src.knowledge_graph.build import CHUNKS_PKL, META_PKL, load_chunks
 from src.knowledge_graph.extractors import (
@@ -147,15 +110,49 @@ def _batch_embed_for_method(
 # ---------------------------------------------------------------------------
 
 
-def _fit_tfidf(chunks: list[Chunk]):
-    from sklearn.feature_extraction.text import TfidfVectorizer
+# def _fit_tfidf(chunks: list[Chunk]):
 
-    texts = [c.text for c in chunks]
-    id_to_row = {c.id: i for i, c in enumerate(chunks)}
-    vectorizer = TfidfVectorizer()
-    matrix = vectorizer.fit_transform(texts)
-    return vectorizer, matrix, id_to_row
+#     texts = [c.text for c in chunks]
+#     id_to_row = {c.id: i for i, c in enumerate(chunks)}
+#     vectorizer = TfidfVectorizer()
+#     matrix = vectorizer.fit_transform(texts)
+#     return vectorizer, matrix, id_to_row
 
+def get_global_vectorizer(
+        all_corpus_texts: list[Chunk],
+) -> tuple[TfidfVectorizer, dict[int, int]]:
+    texts = [c.text for c in all_corpus_texts]
+    id_to_row = {c.id: i for i, c in enumerate(all_corpus_texts)}
+    vectorizer = TfidfVectorizer(stop_words='english', ngram_range=(1, 2))
+    vectorizer.fit(texts)
+    # mat = vectorizer.transform([c.text for c in chunks])
+    return vectorizer,  id_to_row
+
+
+def calculate_tfidf_informativeness(
+        keywords: list[str],
+        chunk_text: str,
+        vectorizer: TfidfVectorizer
+) -> float:
+    # Transform the specific chunk text to get TF based on Global IDF
+    matrix = vectorizer.transform([chunk_text])
+    vocab = vectorizer.vocabulary_
+
+    scores = []
+    for kw in keywords:
+        kw = kw.lower()
+        # Try to get the score for the WHOLE phrase first (if bigrams enabled)
+        col = vocab.get(kw)
+        if col is not None:
+            scores.append(matrix[0, col])
+        else:
+            # Fallback: Average of individual words
+            word_scores = [matrix[0, vocab[w]]
+                           for w in kw.split() if w in vocab]
+            if word_scores:
+                scores.append(np.mean(word_scores))
+
+    return float(np.mean(scores)) if scores else 0.0
 
 # ---------------------------------------------------------------------------
 # Adaptive top-n extraction
@@ -236,13 +233,14 @@ def _extract_adaptive(
 
 
 def _compute_chunk_metrics(
+    chunk_text: str,
     keywords: list[str],
     chunk_emb: np.ndarray,
     joined_kw_emb: np.ndarray,
     kw_embs: list[np.ndarray],
     tfidf_vectorizer,
-    tfidf_matrix,
-    chunk_row: int,
+    # tfidf_matrix,
+    # chunk_row: int,
 ) -> dict:
     # 1. Embedding cosine similarity
     cos_sim = _cos_sim(chunk_emb, joined_kw_emb) if keywords else 0.0
@@ -261,18 +259,21 @@ def _compute_chunk_metrics(
         diversity = 1.0
 
     # 3. TF-IDF informativeness
-    vocab = tfidf_vectorizer.vocabulary_
-    chunk_vec = tfidf_matrix[chunk_row]
-    scores: list[float] = []
-    for kw in keywords:
-        word_scores = []
-        for word in kw.lower().split():
-            col = vocab.get(word)
-            if col is not None:
-                word_scores.append(float(chunk_vec[0, col]))
-        if word_scores:
-            scores.append(sum(word_scores) / len(word_scores))
-    tfidf_mean = float(np.mean(scores)) if scores else 0.0
+    # vocab = tfidf_vectorizer.vocabulary_
+    # chunk_vec = tfidf_matrix[chunk_row]
+    # scores: list[float] = []
+    # for kw in keywords:
+    #     word_scores = []
+    #     for word in kw.lower().split():
+    #         col = vocab.get(word)
+    #         if col is not None:
+    #             word_scores.append(float(chunk_vec[0, col]))
+    #     if word_scores:
+    #         scores.append(sum(word_scores) / len(word_scores))
+    # tfidf_mean = float(np.mean(scores)) if scores else 0.0
+    tfidf_mean = calculate_tfidf_informativeness(
+        keywords, chunk_text, tfidf_vectorizer
+    )
 
     # 4. Length
     avg_chars = float(np.mean([len(kw)
@@ -594,7 +595,8 @@ def run_experiment(args: argparse.Namespace) -> dict:
 
     # Fit TF-IDF once on the sampled corpus
     logger.info("Fitting TF-IDF on %d chunks…", len(chunks))
-    tfidf_vec, tfidf_mat, id_to_row = _fit_tfidf(chunks)
+    # tfidf_vec, tfidf_mat, id_to_row = _fit_tfidf(chunks)
+    tfidf_vec, id_to_row = get_global_vectorizer(all_chunks)
 
     # Load embedding model once
     logger.info("Loading embedding model: %s", args.embed_model)
@@ -623,13 +625,14 @@ def run_experiment(args: argparse.Namespace) -> dict:
             result = results_by_id[name].get(chunk.id)
             keywords = result.keywords if result else []
             entry["methods"][name] = _compute_chunk_metrics(
+                chunk_text=chunk.text,
                 keywords=keywords,
                 chunk_emb=chunk_embs[i],
                 joined_kw_emb=joined_embs[i],
                 kw_embs=kw_emb_lists[i],
                 tfidf_vectorizer=tfidf_vec,
-                tfidf_matrix=tfidf_mat,
-                chunk_row=row,
+                # tfidf_matrix=tfidf_mat,
+                # chunk_row=row,
             )
         per_chunk_output.append(entry)
 
