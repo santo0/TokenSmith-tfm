@@ -61,21 +61,33 @@ class OpenRouterExtractor(BaseExtractor):
         return keywords
 
     def extract(self, chunks: list[Chunk]) -> list[ExtractionResult]:
-        results = []
+        requests_ = []
         for chunk in chunks:
             top_n = int(sqrt(len(chunk.text))) if self.adaptive_top_n else self.top_n
-            messages = [
+            requests_.append(
                 {
-                    "role": "system",
-                    "content": OPENROUTER_KEYWORD_EXTRACTION_PROMPT.format(top_n=top_n),
-                },
-                {"role": "user", "content": f"Documents: {chunk.text}"},
-            ]
+                    "messages": [
+                        {
+                            "role": "system",
+                            "content": OPENROUTER_KEYWORD_EXTRACTION_PROMPT.format(top_n=top_n),
+                        },
+                        {"role": "user", "content": f"Documents: {chunk.text}"},
+                    ]
+                }
+            )
+
+        outcomes = self._client.chat_many(requests_, model=self.model)
+
+        results = []
+        for chunk, outcome in zip(chunks, outcomes):
             keywords: list[str] = []
-            try:
-                content = self._client.chat(model=self.model, messages=messages)
-                keywords = self._parse_keywords(content)
-            except Exception as e:
-                logger.error("Chunk %s: all attempts failed — %s", chunk.id, e)
+            if isinstance(outcome, Exception):
+                logger.error("Chunk %s: all attempts failed — %s",
+                             chunk.id, outcome)
+            else:
+                try:
+                    keywords = self._parse_keywords(outcome)
+                except Exception as e:
+                    logger.error("Chunk %s: parse error — %s", chunk.id, e)
             results.append(ExtractionResult(chunk_id=chunk.id, keywords=keywords))
         return results
