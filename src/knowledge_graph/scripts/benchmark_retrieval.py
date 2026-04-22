@@ -20,7 +20,7 @@ from src.knowledge_graph.query import (
     SectionSummaryRetriever,
     SectionTreeRetriever,
 )
-from src.knowledge_graph.utils.prompts import GRADE_PROMPT
+from src.knowledge_graph.prompts import GRADE_PROMPT
 from src.retriever import BM25Retriever, FAISSRetriever, IndexKeywordRetriever, load_artifacts
 
 logger = logging.getLogger(__name__)
@@ -113,7 +113,8 @@ def run_benchmark(
             logger.info("BM25Retriever enabled.")
 
             if os.path.exists(extracted_index_path) and os.path.exists(page_to_chunk_map_path):
-                retrievers.append(IndexKeywordRetriever(extracted_index_path, page_to_chunk_map_path))
+                retrievers.append(IndexKeywordRetriever(
+                    extracted_index_path, page_to_chunk_map_path))
                 logger.info("IndexKeywordRetriever enabled.")
         except (FileNotFoundError, RuntimeError) as e:
             logger.warning("RAG artifacts not found, skipping FAISS/BM25: %s", e)
@@ -335,8 +336,26 @@ def main() -> None:
 
     with open(args.queries) as f:
         data = yaml.safe_load(f)
-    queries = data.get("benchmarks", data.get("queries", []))
-    print(f"Loaded {len(queries)} queries from {args.queries}")
+    # queries = data.get("benchmarks", data.get("queries", []))
+    # print(f"Loaded {len(queries)} queries from {args.queries}")
+    queries = [
+        {
+            "id": "q1",
+            "question": "What are different physical storage media?",
+        },
+        {
+            "id": "q2",
+            "question": "What are the main differences between HDD and SSD storage devices?",
+        },
+        {
+            "id": "q3",
+            "question": "How do different physical storage media differ in terms of volatility, access speed, and cost?",
+        },
+        {
+            "id": "q4",
+            "question": "What is a shared-nothing architecture?",
+        }
+    ]
 
     llm_client = None
     if not args.no_llm:
@@ -369,7 +388,8 @@ def main() -> None:
 
     if args.output:
         with open(args.output, "w") as f:
-            json.dump(results, f, indent=2, default=lambda o: int(o) if hasattr(o, "__index__") else str(o))
+            json.dump(results, f, indent=2, default=lambda o: int(o)
+                      if hasattr(o, "__index__") else str(o))
         print(f"\nFull results written to {args.output}")
 
 

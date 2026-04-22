@@ -42,7 +42,7 @@ def extract_query_subgraph(query_nodes: list[str], graph: nx.Graph) -> nx.Graph:
 def compute_difficulty_features(
     query: str,
     graph: nx.Graph,
-    canonical_lookup: CanonicalLookup | None = None,
+    canonical_lookup: CanonicalLookup,
 ) -> QueryFeatures:
     """Compute graph-structural features for *query*.
 
@@ -132,7 +132,7 @@ def compute_difficulty_score(features: QueryFeatures) -> DifficultyScore:
 def analyze_query(
     query: str,
     graph: nx.Graph,
-    canonical_lookup: CanonicalLookup | None = None,
+    canonical_lookup: CanonicalLookup,
 ) -> QueryAnalysisResult:
     """Run the full difficulty analysis pipeline for *query*."""
     features = compute_difficulty_features(query, graph, canonical_lookup)

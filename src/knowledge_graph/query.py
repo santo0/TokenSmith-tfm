@@ -9,8 +9,8 @@ from src.retriever import Retriever
 from src.knowledge_graph.io import RUNS_DIR, load_graph_and_chunks
 from src.knowledge_graph.section_tree import SectionTree
 from src.knowledge_graph.summary_tree import SummaryEntry
-from src.knowledge_graph.utils import KW_PATTERN, Normalizer, extract_ngrams
-
+from src.knowledge_graph.ngrams import KW_PATTERN, extract_ngrams
+from src.knowledge_graph.normalizer import Normalizer
 
 logger = logging.getLogger(__name__)
 
@@ -80,7 +80,7 @@ def _tokens_subsumed(short: str, long: str) -> bool:
     """Return True if the tokens of *short* appear contiguously inside *long*."""
     ws, wl = short.split(), long.split()
     n = len(ws)
-    return any(wl[i : i + n] == ws for i in range(len(wl) - n + 1))
+    return any(wl[i: i + n] == ws for i in range(len(wl) - n + 1))
 
 
 def extract_query_nodes(

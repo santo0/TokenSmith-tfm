@@ -106,7 +106,7 @@ class FAISSRetriever(Retriever):
         # Safety check on vector dimensions
         if q_vec.shape[1] !=  self.index.d:
             raise ValueError(
-                f"Embedding dim mismatch: index={ self.index.d} vs query={q_vec.shape[1]}"
+                f"Embedding dim mismatch: index={self.index.d} vs query={q_vec.shape[1]}"
             )
 
         # Perform the search
