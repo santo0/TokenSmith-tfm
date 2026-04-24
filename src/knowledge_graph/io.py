@@ -121,3 +121,30 @@ def load_canonicalization_data(
     canonical_embeddings = np.load(embeddings_path)
 
     return synonym_table, canonical_keywords, canonical_embeddings
+
+
+KEYWORD_INDEX_FILE = "keyword_index.faiss"
+
+
+def build_keyword_index(
+    canonical_embeddings: np.ndarray,
+    run_dir: str,
+) -> faiss.Index:
+    """Build a FAISS IndexFlatIP over canonical keyword embeddings and persist it.
+
+    Embeddings are L2-normalised so inner-product search equals cosine similarity.
+    """
+    embeddings = canonical_embeddings.astype("float32").copy()
+    faiss.normalize_L2(embeddings)
+    index = faiss.IndexFlatIP(embeddings.shape[1])
+    index.add(embeddings)
+    faiss.write_index(index, os.path.join(run_dir, KEYWORD_INDEX_FILE))
+    return index
+
+
+def load_keyword_index(run_dir: str) -> faiss.Index | None:
+    """Load the persisted keyword FAISS index from *run_dir*, or None if absent."""
+    path = os.path.join(run_dir, KEYWORD_INDEX_FILE)
+    if not os.path.isfile(path):
+        return None
+    return faiss.read_index(path)

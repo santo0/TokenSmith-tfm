@@ -84,6 +84,7 @@ def write_config(
             "class": "CooccurrenceLinker",
             "min_cooccurrence": cfg.min_cooccurrence,
         },
+        "embed_model": cfg.embed_model,
         "chunks_pkl": CHUNKS_PKL,
         "meta_pkl": META_PKL,
         "timestamp": os.path.basename(run_dir),

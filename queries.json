@@ -1,0 +1,130 @@
+{
+  "queries": [
+    {
+      "id": "ec_001",
+      "query": "What's the difference between two-phase locking and strict two-phase locking?",
+      "mode": "entity_confusability",
+      "expected_entities": ["two-phase locking", "strict two-phase locking"],
+      "notes": "Qualifier 'strict' gets smeared in dense retrieval; KG treats as distinct nodes."
+    },
+    {
+      "id": "ec_002",
+      "query": "When should I use a B+ tree instead of a B-tree?",
+      "mode": "entity_confusability",
+      "expected_entities": ["B+ tree", "B-tree"],
+      "notes": "Close in embedding space, distinct in KG."
+    },
+    {
+      "id": "ec_003",
+      "query": "Explain the difference between serializability and serializable schedules.",
+      "mode": "entity_confusability",
+      "expected_entities": ["serializability", "serializable schedule"],
+      "notes": "Noun-vs.-adjective form, nearly identical embeddings."
+    },
+    {
+      "id": "ec_004",
+      "query": "How is 3NF different from BCNF?",
+      "mode": "entity_confusability",
+      "expected_entities": ["3NF", "BCNF"],
+      "notes": "Both normalization entities; dense retrieval blends them."
+    },
+    {
+      "id": "ec_005",
+      "query": "What distinguishes hash indexing from hash join?",
+      "mode": "entity_confusability",
+      "expected_entities": ["hash index", "hash join"],
+      "notes": "Shared 'hash' token dominates dense similarity; KG keeps them apart via neighborhoods."
+    },
+    {
+      "id": "ec_006",
+      "query": "ACID vs. BASE — when does each apply?",
+      "mode": "entity_confusability",
+      "expected_entities": ["ACID", "BASE"],
+      "notes": "BASE is rarer in corpus; dense retrieval biased toward ACID chunks."
+    },
+    {
+      "id": "cs_001",
+      "query": "How does strict two-phase locking prevent cascading rollbacks?",
+      "mode": "cross_section_evidence",
+      "expected_entities": ["strict two-phase locking", "cascading rollback"],
+      "notes": "Mechanism and consequence typically in different sections."
+    },
+    {
+      "id": "cs_002",
+      "query": "Why does multiversion concurrency control avoid read locks?",
+      "mode": "cross_section_evidence",
+      "expected_entities": ["read lock", "multiversion concurrency control"],
+      "notes": "MVCC definition and lock-overhead justification often in separate sections."
+    },
+    {
+      "id": "cs_003",
+      "query": "How do write-ahead logging and checkpointing work together during recovery?",
+      "mode": "cross_section_evidence",
+      "expected_entities": ["write-ahead logging", "checkpoint", "recovery"],
+      "notes": "WAL and checkpointing defined separately; interaction is the answer."
+    },
+    {
+      "id": "cs_004",
+      "query": "What's the relationship between functional dependencies and lossless-join decomposition?",
+      "mode": "cross_section_evidence",
+      "expected_entities": ["functional dependency", "lossless-join decomposition"],
+      "notes": "FDs are foundational (earlier chapter); decomposition applies them (later)."
+    },
+    {
+      "id": "cs_005",
+      "query": "How does the query optimizer use statistics from the catalog?",
+      "mode": "cross_section_evidence",
+      "expected_entities": ["query optimizer", "statistic", "catalog"],
+      "notes": "Optimizer and catalog usually separate sections; bridge via shared statistics entities."
+    },
+    {
+      "id": "cs_006",
+      "query": "Why do isolation levels affect phantom reads?",
+      "mode": "cross_section_evidence",
+      "expected_entities": ["isolation level", "phantom read"],
+      "notes": "Isolation levels and phantom phenomena defined in separate subsections."
+    },
+    {
+      "id": "pl_001",
+      "query": "What is a key in the context of relations and tuples?",
+      "mode": "polysemy",
+      "expected_entities": ["key", "relation", "tuple"],
+      "notes": "Context entities disambiguate to relational key, not encryption/sort key."
+    },
+    {
+      "id": "pl_002",
+      "query": "Explain a lock in a transaction context.",
+      "mode": "polysemy",
+      "expected_entities": ["lock", "transaction"],
+      "notes": "Transaction context disambiguates from OS/file locking."
+    },
+    {
+      "id": "pl_003",
+      "query": "How does a hash work for indexing?",
+      "mode": "polysemy",
+      "expected_entities": ["hash", "indexing"],
+      "notes": "Disambiguates hash indexing from hash join or cryptographic hashing."
+    },
+    {
+      "id": "pl_004",
+      "query": "What's a schedule when talking about transactions?",
+      "mode": "polysemy",
+      "expected_entities": ["schedule", "transaction"],
+      "notes": "Transaction schedule, not OS scheduling."
+    },
+    {
+      "id": "pl_005",
+      "query": "Describe a view in SQL.",
+      "mode": "polysemy",
+      "expected_entities": ["view", "SQL"],
+      "notes": "SQL view, disambiguated from UI/MVC view."
+    },
+    {
+      "id": "pl_006",
+      "query": "What does normal form mean in database design?",
+      "mode": "polysemy",
+      "expected_entities": ["normal form"],
+      "notes": "Normal form (normalization), not statistical/geometric 'normal'."
+    }
+  ]
+}

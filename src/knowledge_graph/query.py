@@ -121,6 +121,125 @@ def extract_query_nodes(
     return filtered
 
 
+def extract_query_nodes_hybrid(
+    query: str,
+    graph: nx.Graph,
+    keyword_index: faiss.Index,
+    canonical_keywords: list[str],
+    canonical_lookup: CanonicalLookup | None = None,
+    embedding_model: str = "sentence-transformers/all-MiniLM-L6-v2",
+    embedding_top_k: int = 20,
+    embedding_threshold: float = 0.4,
+) -> list[str]:
+    """Extract query nodes via exact match, filling gaps with embedding results.
+
+    First runs :func:`extract_query_nodes` (n-gram + canonical lookup). If the
+    number of matched nodes is below ``ceil(sqrt(num_words_in_query))``, the
+    remaining slots are filled with the highest-similarity embedding matches
+    from *keyword_index* that are not already in the exact-match set and whose
+    cosine similarity meets *embedding_threshold*.
+
+    Args:
+        query: Natural-language query string.
+        graph: The knowledge graph to filter against.
+        keyword_index: Pre-built FAISS IndexFlatIP (L2-normalised embeddings).
+        canonical_keywords: Ordered list of canonical forms aligned with the index.
+        canonical_lookup: Optional lookup for the exact-match phase.
+        embedding_model: SentenceTransformer model; must match the one used to
+            build *keyword_index*.
+        embedding_top_k: FAISS neighbours to retrieve as candidates for the
+            embedding fill phase.
+        embedding_threshold: Minimum cosine similarity for an embedding candidate
+            to be accepted as a fill-in node.
+
+    Returns:
+        List of matched node labels (exact matches first, then embedding fill-ins).
+    """
+    import math
+
+    exact = extract_query_nodes(query, graph, canonical_lookup)
+
+    num_words = len(query.split())
+    target = round(math.sqrt(num_words))
+
+    needed = target - len(exact)
+    if needed <= 0:
+        return exact
+
+    exact_set = set(exact)
+    from sentence_transformers import SentenceTransformer
+
+    model = SentenceTransformer(embedding_model)
+    q_emb = model.encode([query]).astype("float32")
+    faiss.normalize_L2(q_emb)
+
+    k = min(embedding_top_k, keyword_index.ntotal)
+    similarities, indices = keyword_index.search(q_emb, k)
+
+    fill: list[str] = []
+    for sim, idx in zip(similarities[0], indices[0]):
+        if len(fill) >= needed:
+            break
+        if idx < 0 or sim < embedding_threshold:
+            continue
+        keyword = canonical_keywords[idx]
+        if graph.has_node(keyword) and keyword not in exact_set:
+            logger.debug("Hybrid fill: '%s' → '%s' (sim=%.4f)", query, keyword, sim)
+            fill.append(keyword)
+            exact_set.add(keyword)
+
+    return exact + fill
+
+
+def extract_query_nodes_embedding(
+    query: str,
+    graph: nx.Graph,
+    keyword_index: faiss.Index,
+    canonical_keywords: list[str],
+    embedding_model: str = "sentence-transformers/all-MiniLM-L6-v2",
+    top_k: int = 10,
+    similarity_threshold: float = 0.78,
+) -> list[str]:
+    """Match query against graph nodes via embedding similarity.
+
+    Embeds *query* with a SentenceTransformer and searches *keyword_index*
+    (a FAISS IndexFlatIP built from L2-normalised canonical keyword embeddings).
+    Returns candidates whose cosine similarity exceeds *similarity_threshold*
+    and that exist as nodes in *graph*.
+
+    Args:
+        query: Natural-language query string.
+        graph: The knowledge graph to filter against.
+        keyword_index: Pre-built FAISS IndexFlatIP (L2-normalised embeddings).
+        canonical_keywords: Ordered list of canonical forms aligned with the index.
+        embedding_model: SentenceTransformer model name; must match the model
+            used to build *keyword_index*.
+        top_k: Maximum number of FAISS neighbours to retrieve.
+        similarity_threshold: Minimum cosine similarity for a match to be accepted.
+
+    Returns:
+        List of matched canonical keyword strings present as graph nodes.
+    """
+    from sentence_transformers import SentenceTransformer
+
+    model = SentenceTransformer(embedding_model)
+    q_emb = model.encode([query]).astype("float32")
+    faiss.normalize_L2(q_emb)
+
+    k = min(top_k, keyword_index.ntotal)
+    similarities, indices = keyword_index.search(q_emb, k)
+
+    matched = []
+    for sim, idx in zip(similarities[0], indices[0]):
+        if idx < 0 or sim < similarity_threshold:
+            continue
+        keyword = canonical_keywords[idx]
+        if graph.has_node(keyword):
+            print(f"Embedding match: '{query}' → '{keyword}' (sim={sim:.4f})")
+            matched.append(keyword)
+    return matched
+
+
 class KGNodeRetriever(Retriever):
     """Knowledge-graph retriever that scores chunks via BFS node matching.
 

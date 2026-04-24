@@ -3,7 +3,6 @@ import json
 import logging
 import os
 
-import yaml
 from dotenv import load_dotenv
 
 from src.knowledge_graph.build import RUNS_DIR
@@ -20,6 +19,7 @@ from src.knowledge_graph.query import (
     SectionSummaryRetriever,
     SectionTreeRetriever,
 )
+from src.knowledge_graph.experimental_retriever import HybridRetriever, SectionKGRetriever
 from src.knowledge_graph.prompts import GRADE_PROMPT
 from src.retriever import BM25Retriever, FAISSRetriever, IndexKeywordRetriever, load_artifacts
 
@@ -65,7 +65,7 @@ def _llm_metrics(grades: list[dict], top_k: int) -> dict:
     return {
         # Fraction of the top-k chunks judged relevant (score >= 1) by the LLM.
         "precision_at_k": relevant / top_k,
-        # Average raw LLM relevance score across retrieved chunks (0=irrelevant, 1=partial, 2=relevant).
+        # Average raw LLM relevance score (0=irrelevant, 1=partial, 2=relevant).
         "mean_relevance_score": sum(scored) / len(scored),
     }
 
@@ -85,7 +85,7 @@ def run_benchmark(
     page_to_chunk_map_path: str = "index/sections/textbook_index_page_to_chunk_map.json",
 ) -> list[dict]:
     """Run retrieval benchmark for all queries across all available retrievers."""
-    kg_graph, kg_chunks, tree = load_graph_chunks_and_tree(run_dir)
+    kg_graph, chunks, tree = load_graph_chunks_and_tree(run_dir)
 
     resolved = resolve_run_dir(run_dir)
     syn_table, can_kw, can_emb = load_canonicalization_data(resolved)
@@ -94,14 +94,12 @@ def run_benchmark(
     )
     index, entries = load_summary_data(resolved)
 
-    # Unified chunk lookup: RAG list takes precedence (dict-wrapped), KG dict as fallback.
-    chunks: dict[int, str] = kg_chunks
     retrievers = []
+    faiss_idx = None
 
     if artifacts_dir:
         try:
-            faiss_idx, bm25_idx, rag_chunks, _, _ = load_artifacts(artifacts_dir, index_prefix)
-            chunks = {i: t for i, t in enumerate(rag_chunks)}
+            faiss_idx, bm25_idx, _, _, _ = load_artifacts(artifacts_dir, index_prefix)
 
             if embed_model:
                 retrievers.append(FAISSRetriever(faiss_idx, embed_model))
@@ -109,37 +107,81 @@ def run_benchmark(
             else:
                 logger.info("Skipping FAISSRetriever: --embed-model not provided.")
 
-            retrievers.append(BM25Retriever(bm25_idx))
-            logger.info("BM25Retriever enabled.")
+            # retrievers.append(BM25Retriever(bm25_idx))
+            # logger.info("BM25Retriever enabled.")
 
-            if os.path.exists(extracted_index_path) and os.path.exists(page_to_chunk_map_path):
-                retrievers.append(IndexKeywordRetriever(
-                    extracted_index_path, page_to_chunk_map_path))
-                logger.info("IndexKeywordRetriever enabled.")
+            # if os.path.exists(extracted_index_path) and os.path.exists(page_to_chunk_map_path):
+            #     retrievers.append(IndexKeywordRetriever(
+            #         extracted_index_path, page_to_chunk_map_path))
+            #     logger.info("IndexKeywordRetriever enabled.")
         except (FileNotFoundError, RuntimeError) as e:
             logger.warning("RAG artifacts not found, skipping FAISS/BM25: %s", e)
 
-    retrievers.append(
-        KGNodeRetriever(
-            kg_graph,
-            kg_chunks,
-            neighbor_weight=neighbor_weight,
-            num_hops=num_hops,
-            canonical_lookup=canonical_lookup,
-        )
-    )
+    # retrievers.append(
+    #     KGNodeRetriever(
+    #         kg_graph,
+    #         chunks,
+    #         neighbor_weight=neighbor_weight,
+    #         num_hops=num_hops,
+    #         canonical_lookup=canonical_lookup,
+    #     )
+    # )
 
-    if tree is not None:
-        retrievers.append(SectionTreeRetriever(tree, kg_graph, canonical_lookup=canonical_lookup))
-        logger.info("SectionTreeRetriever enabled.")
-    else:
-        logger.info("No section tree found — SectionTreeRetriever skipped.")
+    # if tree is not None:
+    #     retrievers.append(SectionTreeRetriever(tree, kg_graph, canonical_lookup=canonical_lookup))
+    #     logger.info("SectionTreeRetriever enabled.")
+    # else:
+    #     logger.info("No section tree found — SectionTreeRetriever skipped.")
 
     if index is not None:
         retrievers.append(SectionSummaryRetriever(index, entries))
         logger.info("SectionSummaryRetriever enabled (%d entries).", len(entries))
     else:
         logger.info("No summary index found — SectionSummaryRetriever skipped.")
+
+    if faiss_idx is not None and embed_model and index is not None:
+        try:
+            retrievers.append(
+                HybridRetriever(
+                    faiss_index=faiss_idx,
+                    dense_embed_model=embed_model,
+                    chunks=list(chunks.values()),
+                    summary_index=index,
+                    summary_entries=entries,
+                    summary_embed_model="sentence-transformers/all-MiniLM-L6-v2",
+                    graph=kg_graph,
+                    kg_chunks=chunks,
+                    canonical_lookup=canonical_lookup,
+                    kg_neighbor_weight=neighbor_weight,
+                    kg_num_hops=num_hops,
+                )
+            )
+            logger.info("HybridRetriever enabled.")
+        except (FileNotFoundError, RuntimeError) as e:
+            logger.warning("HybridRetriever skipped: %s", e)
+    else:
+        logger.info(
+            "HybridRetriever skipped: requires --artifacts-dir, --embed-model, and summary data."
+        )
+
+    if index is not None and tree is not None:
+        retrievers.append(
+            SectionKGRetriever(
+                summary_index=index,
+                summary_entries=entries,
+                summary_embed_model="sentence-transformers/all-MiniLM-L6-v2",
+                section_tree=tree,
+                graph=kg_graph,
+                kg_chunks=chunks,
+                chunks=list(chunks.values()),
+                canonical_lookup=canonical_lookup,
+                kg_neighbor_weight=neighbor_weight,
+                kg_num_hops=num_hops,
+            )
+        )
+        logger.info("SectionKGRetriever enabled.")
+    else:
+        logger.info("SectionKGRetriever skipped: requires summary index and section tree.")
 
     results = []
     for q in queries:
@@ -334,10 +376,6 @@ def main() -> None:
         format="%(levelname)s %(name)s: %(message)s",
     )
 
-    with open(args.queries) as f:
-        data = yaml.safe_load(f)
-    # queries = data.get("benchmarks", data.get("queries", []))
-    # print(f"Loaded {len(queries)} queries from {args.queries}")
     queries = [
         {
             "id": "q1",
@@ -349,7 +387,10 @@ def main() -> None:
         },
         {
             "id": "q3",
-            "question": "How do different physical storage media differ in terms of volatility, access speed, and cost?",
+            "question": (
+                "How do different physical storage media differ"
+                " in terms of volatility, access speed, and cost?"
+            ),
         },
         {
             "id": "q4",

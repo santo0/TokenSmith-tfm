@@ -5,10 +5,34 @@ import os
 import networkx as nx
 
 from src.knowledge_graph.analysis import extract_query_subgraph
-from src.knowledge_graph.io import RUNS_DIR, load_graph, load_canonicalization_data
-from src.knowledge_graph.query import CanonicalLookup, extract_query_nodes
+from src.knowledge_graph.io import (
+    RUNS_DIR,
+    load_graph,
+    load_canonicalization_data,
+    load_keyword_index,
+    build_keyword_index,
+)
+from src.knowledge_graph.query import (
+    CanonicalLookup,
+    extract_query_nodes,
+    extract_query_nodes_embedding,
+    extract_query_nodes_hybrid,
+)
 
 logger = logging.getLogger(__name__)
+
+
+def _resolve_embed_model(run_dir: str, cli_override: str | None) -> str:
+    if cli_override:
+        return cli_override
+    config_path = os.path.join(run_dir, "config.json")
+    if os.path.isfile(config_path):
+        import json
+        with open(config_path, encoding="utf-8") as f:
+            rc = json.load(f)
+        if "embed_model" in rc:
+            return rc["embed_model"]
+    return "sentence-transformers/all-MiniLM-L6-v2"
 
 
 def expand_khop(subgraph_nodes: set[str], graph: nx.Graph, k: int) -> dict[str, int]:
@@ -169,6 +193,40 @@ def main() -> None:
         help="Figure size in inches (default: 16 12).",
     )
     parser.add_argument("--debug", action="store_true")
+    parser.add_argument(
+        "--use-embeddings",
+        action="store_true",
+        default=False,
+        help="Use embedding-based query node extraction instead of n-gram matching.",
+    )
+    parser.add_argument(
+        "--hybrid",
+        action="store_true",
+        default=False,
+        help="Use hybrid extraction: exact match first, then fill remaining slots "
+             "with embedding results up to ceil(sqrt(num_query_words)).",
+    )
+    parser.add_argument(
+        "--embedding-model",
+        default=None,
+        metavar="MODEL",
+        help="SentenceTransformer model override for --use-embeddings. "
+             "Defaults to the model recorded in config.json.",
+    )
+    parser.add_argument(
+        "--similarity-threshold",
+        type=float,
+        default=0.4,
+        metavar="T",
+        help="Cosine similarity threshold for --use-embeddings (default: 0.78).",
+    )
+    parser.add_argument(
+        "--top-k-keywords",
+        type=int,
+        default=10,
+        metavar="K",
+        help="FAISS neighbours to retrieve for --use-embeddings (default: 10).",
+    )
     args = parser.parse_args()
 
     if args.debug:
@@ -180,9 +238,41 @@ def main() -> None:
     logger.debug("Loaded graph: %d nodes, %d edges", graph.number_of_nodes(), graph.number_of_edges())
 
     synonym_table, canonical_keywords, canonical_embeddings = load_canonicalization_data(args.run_dir)
-    canonical_lookup = CanonicalLookup(synonym_table, canonical_keywords, canonical_embeddings)
 
-    query_nodes = extract_query_nodes(args.query, graph, canonical_lookup)
+    canonical_lookup = None
+    if synonym_table is not None:
+        canonical_lookup = CanonicalLookup(synonym_table, canonical_keywords, canonical_embeddings)
+
+    if args.use_embeddings or args.hybrid:
+        keyword_index = load_keyword_index(args.run_dir)
+        if keyword_index is None:
+            logger.info("keyword_index.faiss not found — building lazily...")
+            if canonical_embeddings is None:
+                print("Error: canonicalization data not found; cannot build keyword index.")
+                return
+            keyword_index = build_keyword_index(canonical_embeddings, args.run_dir)
+            print("Keyword index built and saved.")
+        embed_model = _resolve_embed_model(args.run_dir, args.embedding_model)
+        logger.info("Using embedding model: %s", embed_model)
+
+        if args.hybrid:
+            query_nodes = extract_query_nodes_hybrid(
+                args.query, graph, keyword_index, canonical_keywords,
+                canonical_lookup=canonical_lookup,
+                embedding_model=embed_model,
+                embedding_top_k=args.top_k_keywords,
+                embedding_threshold=args.similarity_threshold,
+            )
+        else:
+            query_nodes = extract_query_nodes_embedding(
+                args.query, graph, keyword_index, canonical_keywords,
+                embedding_model=embed_model,
+                top_k=args.top_k_keywords,
+                similarity_threshold=args.similarity_threshold,
+            )
+    else:
+        query_nodes = extract_query_nodes(args.query, graph, canonical_lookup)
+
     if not query_nodes:
         print("No query nodes matched in the graph. Check your query or run directory.")
         return

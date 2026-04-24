@@ -140,6 +140,7 @@ class KGPipelineConfig:
     corpus_description: str = ""
     min_cooccurrence: int = 0
     top_n: int = 10
+    embed_model: str = "sentence-transformers/all-MiniLM-L6-v2"
     canonicalization: CanonicalizationConfig = field(
         default_factory=CanonicalizationConfig
     )

@@ -27,7 +27,7 @@ markers = [
 testpaths = ["tests"]
 
 [tool.black]
-line-length = 88
+line-length = 100
 target-version = ['py39']
 
 [tool.isort]

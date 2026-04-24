@@ -20,7 +20,7 @@ from src.knowledge_graph.models import KGPipelineConfig
 from src.knowledge_graph.pipeline import build_kg
 from src.knowledge_graph.summary_tree import build_summary_index
 from src.knowledge_graph.openrouter_client import OpenRouterClient
-from src.knowledge_graph.io import load_run_chunks
+from src.knowledge_graph.io import load_run_chunks, load_canonicalization_data, build_keyword_index
 from src.knowledge_graph.section_tree import build_section_tree, save_section_tree
 from src.knowledge_graph.canonicalizer import Canonicalizer
 from src.knowledge_graph.linkers import CooccurrenceLinker
@@ -147,7 +147,7 @@ def main() -> None:
 
     c = cfg.canonicalization
     canonicalizer = Canonicalizer(
-        embedding_model=c.embed_model,
+        embedding_model=cfg.embed_model,
         corpus_description=cfg.corpus_description,
         api_key=args.api_key or os.environ.get("OPENROUTER_API_KEY", ""),
         llm_model=c.llm_model,
@@ -172,6 +172,14 @@ def main() -> None:
         linker=linker,
         canonicalizer=canonicalizer,
     )
+
+    logger.info("Building keyword FAISS index...")
+    _, _canon_kws, _canon_embs = load_canonicalization_data(run_dir)
+    if _canon_embs is not None:
+        build_keyword_index(_canon_embs, run_dir)
+        logger.info("Keyword index saved.")
+    else:
+        logger.warning("Canonicalization data missing; keyword index not built.")
 
     logger.info("Building section tree...")
     tree = build_section_tree(chunks, graph)
@@ -198,7 +206,7 @@ def main() -> None:
         summary_model=st.summary_model,
         section_tree=tree,
         chunks=chunk_texts,
-        embed_model=st.embed_model,
+        embed_model=cfg.embed_model,
         chunk_window=st.chunk_window,
         run_dir=run_dir,
     )
