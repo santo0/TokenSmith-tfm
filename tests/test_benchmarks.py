@@ -6,32 +6,33 @@ from tests.metrics import SimilarityScorer
 
 
 @pytest.mark.filterwarnings("ignore::DeprecationWarning")
-def test_tokensmith_benchmarks(benchmarks, config, results_dir):
+def test_tokensmith_benchmarks(benchmarks, config, results_dir, kg_artifacts):
     """
     Run all benchmarks through the TokenSmith system.
-    
+
     Args:
         benchmarks: List of benchmark dictionaries from benchmarks.yaml
         config: Merged configuration from config.yaml and CLI args
         results_dir: Directory to save results
+        kg_artifacts: Pre-loaded KG data (None if --kg-run-dir not set)
     """
     # Initialize scorer with configured metrics
     scorer = SimilarityScorer(enabled_metrics=config["metrics"])
-    
+
     # Print test configuration
     print_test_config(config, scorer)
-    
+
     # Run each benchmark
     passed = 0
     failed = 0
-    
+
     for benchmark in benchmarks:
-        result = run_benchmark(benchmark, config, results_dir, scorer)
+        result = run_benchmark(benchmark, config, results_dir, scorer, kg_artifacts)
         if result["passed"]:
             passed += 1
         else:
             failed += 1
-    
+
     # Print summary
     print(f"\n{'='*60}")
     print(f"  SUMMARY: {passed} passed, {failed} failed")
@@ -63,10 +64,10 @@ def print_test_config(config, scorer):
     print(f"{'='*60}\n")
 
 
-def run_benchmark(benchmark, config, results_dir, scorer):
+def run_benchmark(benchmark, config, results_dir, scorer, kg_artifacts=None):
     """
     Run a single benchmark test.
-    
+
     Returns:
         dict: Result dictionary with test outcome and metrics
     """
@@ -90,7 +91,8 @@ def run_benchmark(benchmark, config, results_dir, scorer):
         retrieved_answer, chunks_info, hyde_query = get_tokensmith_answer(
             question=question,
             config=config,
-            golden_chunks=golden_chunks if config["use_golden_chunks"] else None
+            golden_chunks=golden_chunks if config["use_golden_chunks"] else None,
+            kg_artifacts=kg_artifacts,
         )
     except Exception as e:
         import logging, traceback
@@ -161,15 +163,63 @@ def run_benchmark(benchmark, config, results_dir, scorer):
     return result_data
 
 
-def get_tokensmith_answer(question, config, golden_chunks=None):
+def _get_kg_retrieved_chunks(question, config, kg_artifacts):
+    """Use KG retrievers to retrieve relevant chunk texts for a query."""
+    from src.knowledge_graph.query import SectionSummaryRetriever
+    from src.knowledge_graph.experimental_retriever import SectionKGRetriever
+
+    graph = kg_artifacts["graph"]
+    chunks = kg_artifacts["chunks"]
+    tree = kg_artifacts["tree"]
+    canonical_lookup = kg_artifacts["canonical_lookup"]
+    index = kg_artifacts["summary_index"]
+    entries = kg_artifacts["summary_entries"]
+    top_k = config.get("top_k", 10)
+    num_hops = config.get("kg_num_hops", 1)
+    neighbor_weight = config.get("kg_neighbor_weight", 0.5)
+
+    retrievers = []
+    if index is not None:
+        retrievers.append(SectionSummaryRetriever(index, entries))
+    if index is not None and tree is not None:
+        retrievers.append(
+            SectionKGRetriever(
+                summary_index=index,
+                summary_entries=entries,
+                summary_embed_model="sentence-transformers/all-MiniLM-L6-v2",
+                section_tree=tree,
+                graph=graph,
+                kg_chunks=chunks,
+                chunks=list(chunks.values()),
+                canonical_lookup=canonical_lookup,
+                kg_neighbor_weight=neighbor_weight,
+                kg_num_hops=num_hops,
+            )
+        )
+
+    if not retrievers:
+        return []
+
+    all_scores: dict = {}
+    for retriever in retrievers:
+        scores = retriever.get_scores(question, top_k, list(chunks.values()))
+        for cid, score in scores.items():
+            all_scores[cid] = max(all_scores.get(cid, 0.0), score)
+
+    sorted_ids = sorted(all_scores, key=all_scores.get, reverse=True)[:top_k]
+    return [chunks[cid] for cid in sorted_ids if cid in chunks]
+
+
+def get_tokensmith_answer(question, config, golden_chunks=None, kg_artifacts=None):
     """
     Get answer from TokenSmith system.
-    
+
     Args:
         question: Question text
         config: Configuration dict
         golden_chunks: Optional list of golden chunks to use instead of retrieval
-    
+        kg_artifacts: Optional pre-loaded KG data for KG-based retrieval
+
     Returns:
         tuple: (Generated answer, chunks_info list, hyde_query)
     """
@@ -210,9 +260,38 @@ def get_tokensmith_answer(question, config, golden_chunks=None):
         page_to_chunk_map_path=config.get("page_to_chunk_map_path", "index/sections/textbook_index_page_to_chunk_map.json"),
     )
     
+    # KG retrieval overrides regular retrieval when kg_artifacts is available
+    # and the benchmark doesn't already supply explicit golden chunks.
+    if kg_artifacts and not golden_chunks:
+        kg_chunks = _get_kg_retrieved_chunks(question, config, kg_artifacts)
+        if kg_chunks:
+            golden_chunks = kg_chunks
+            cfg = RAGConfig(
+                chunk_mode=cfg.chunk_mode,
+                top_k=cfg.top_k,
+                embed_model=cfg.embed_model,
+                ensemble_method=cfg.ensemble_method,
+                rrf_k=cfg.rrf_k,
+                ranker_weights=cfg.ranker_weights,
+                rerank_mode=cfg.rerank_mode,
+                rerank_top_k=cfg.rerank_top_k,
+                system_prompt_mode=cfg.system_prompt_mode,
+                max_gen_tokens=cfg.max_gen_tokens,
+                disable_chunks=False,
+                use_golden_chunks=True,
+                output_mode=cfg.output_mode,
+                metrics=cfg.metrics,
+                use_hyde=False,
+                hyde_max_tokens=cfg.hyde_max_tokens,
+                use_indexed_chunks=False,
+                extracted_index_path=cfg.extracted_index_path,
+                page_to_chunk_map_path=cfg.page_to_chunk_map_path,
+            )
+
     # Print status
-    if golden_chunks and config["use_golden_chunks"]:
-        print(f"  📌 Using {len(golden_chunks)} golden chunks")
+    if golden_chunks and cfg.use_golden_chunks:
+        source = "KG" if kg_artifacts else "golden"
+        print(f"  📌 Using {len(golden_chunks)} {source} chunks")
     elif config["disable_chunks"]:
         print(f"  📭 No chunks (baseline mode)")
     else:

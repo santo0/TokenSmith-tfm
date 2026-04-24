@@ -29,6 +29,7 @@ kg_pipeline:
   corpus_description: "Database System Concepts, 7th edition by Silberschatz et al."
   min_cooccurrence: 0
   top_n: 10
+  embed_model: "sentence-transformers/all-MiniLM-L6-v2"
   canonicalization:
     llm_model: "openai/gpt-4o-mini"
     similarity_threshold: 0.78

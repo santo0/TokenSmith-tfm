@@ -75,3 +75,181 @@ benchmarks:
     keywords: ["lossy decomposition", "spurious tuples", "lossless join", "superkey", "natural join", "information loss", "functional dependency"]
     similarity_threshold: 0.70
     ideal_retrieved_chunks: [431, 430, 432, 433, 440]
+
+  - id: "physical_storage_media"
+    question: "What are different physical storage media?"
+    expected_answer: "Physical storage media include cache memory (fastest, most volatile), main/DRAM memory (fast but volatile), flash/SSD memory (non-volatile, fast reads), magnetic disks/HDDs (non-volatile, high capacity, slower mechanical access), optical disks (removable, sequential-friendly), and magnetic tape (cheapest, sequential-only, archival). They form a storage hierarchy from fastest and most expensive per byte at the top to slowest and cheapest at the bottom, and are classified as volatile (lose data on power loss) or non-volatile."
+    keywords: ["cache", "DRAM", "flash", "magnetic disk", "optical disk", "magnetic tape", "volatile", "non-volatile", "storage hierarchy"]
+    similarity_threshold: 0.65
+    ideal_retrieved_chunks: [736, 737, 738, 739, 740]
+
+  - id: "hdd_vs_ssd"
+    question: "What are the main differences between HDD and SSD storage devices?"
+    expected_answer: "HDDs use rotating magnetic platters with mechanical read/write heads, incurring seek time and rotational latency that slow random access; SSDs use NAND flash memory with no moving parts, offering faster random access, lower latency, and better shock resistance. SSDs are historically more expensive per gigabyte but that gap has narrowed; flash cells also have a limited number of write cycles before wearing out, whereas HDD capacity per dollar remains higher for bulk storage."
+    keywords: ["HDD", "SSD", "flash", "magnetic disk", "seek time", "rotational latency", "non-volatile", "wear"]
+    similarity_threshold: 0.65
+    ideal_retrieved_chunks: [737]
+
+  - id: "storage_media_comparison"
+    question: "How do different physical storage media differ in terms of volatility, access speed, and cost?"
+    expected_answer: "Storage media form a hierarchy inversely ordered by speed and cost: volatile cache and DRAM provide nanosecond access at the highest cost per byte; non-volatile flash gives microsecond-range access at moderate cost; magnetic disks offer millisecond access at low cost with large capacity; optical disks and magnetic tape are cheapest and slowest, suited for archival use. Faster media is always more expensive per byte, and primary storage (cache, DRAM) is volatile while secondary and tertiary storage (flash, disk, tape) is non-volatile."
+    keywords: ["volatile", "non-volatile", "access speed", "cost", "hierarchy", "cache", "DRAM", "flash", "magnetic disk", "tape"]
+    similarity_threshold: 0.65
+    ideal_retrieved_chunks: [736, 737, 738, 739, 740, 748, 751]
+
+  - id: "shared_nothing_architecture"
+    question: "What is a shared-nothing architecture?"
+    expected_answer: "A shared-nothing architecture is a distributed database design in which each processing node has its own private memory and local disk storage with no shared resources between nodes. Nodes communicate exclusively via a high-speed interconnect using message passing. This eliminates resource contention, enables linear scalability by adding independent nodes, and is the dominant model for parallel and distributed database systems."
+    keywords: ["shared-nothing", "distributed", "node", "private memory", "local disk", "message passing", "scalability", "parallel"]
+    similarity_threshold: 0.65
+    ideal_retrieved_chunks: [1326]
+
+  # ── Entity-confusability queries ────────────────────────────────────────────
+
+  - id: "ec_001"
+    mode: "entity_confusability"
+    question: "What's the difference between two-phase locking and strict two-phase locking?"
+    expected_answer: "Two-phase locking (2PL) acquires all locks before releasing any but may release exclusive locks before the transaction commits, which can cause cascading rollbacks if that transaction later aborts. Strict 2PL holds all exclusive locks until the transaction commits or aborts, preventing dirty reads and cascading aborts entirely, making recovery straightforward."
+    keywords: ["two-phase locking", "strict two-phase locking", "cascading rollback", "exclusive lock", "dirty read", "commit"]
+    similarity_threshold: 0.62
+    notes: "Qualifier 'strict' gets smeared in dense retrieval; KG treats as distinct nodes."
+
+  - id: "ec_002"
+    mode: "entity_confusability"
+    question: "When should I use a B+ tree instead of a B-tree?"
+    expected_answer: "B+ trees store all data records only in leaf nodes, which are linked in a sorted chain enabling efficient range scans via sequential traversal. Internal nodes contain only routing keys. B-trees store data in both internal and leaf nodes, giving faster single-key lookups in some cases but making range queries expensive. For disk-based database indexes where range scans are common, B+ trees are preferred."
+    keywords: ["B+ tree", "B-tree", "leaf node", "range query", "internal node", "disk", "sorted"]
+    similarity_threshold: 0.62
+    notes: "Close in embedding space, distinct in KG."
+
+  - id: "ec_003"
+    mode: "entity_confusability"
+    question: "Explain the difference between serializability and serializable schedules."
+    expected_answer: "Serializability is a correctness criterion: a concurrent schedule is serializable if its effect on the database is equivalent to some serial (one-at-a-time) execution of the same transactions. A serializable schedule is a specific interleaving of operations that satisfies this criterion. Conflict serializability is the most commonly checked variant, verified by the absence of cycles in the transaction precedence graph."
+    keywords: ["serializability", "serializable schedule", "serial execution", "conflict serializability", "precedence graph", "concurrent"]
+    similarity_threshold: 0.62
+    notes: "Noun-vs.-adjective form, nearly identical embeddings."
+
+  - id: "ec_004"
+    mode: "entity_confusability"
+    question: "How is 3NF different from BCNF?"
+    expected_answer: "BCNF requires that for every non-trivial functional dependency X→Y, X is a superkey. 3NF is weaker: it additionally permits Y to be a prime attribute (part of some candidate key). Every BCNF relation is in 3NF but not vice versa. The practical trade-off is that 3NF always admits a lossless, dependency-preserving decomposition, whereas BCNF may require sacrificing dependency preservation."
+    keywords: ["3NF", "BCNF", "superkey", "prime attribute", "functional dependency", "dependency preservation", "candidate key"]
+    similarity_threshold: 0.62
+    notes: "Both normalization entities; dense retrieval blends them."
+
+  - id: "ec_005"
+    mode: "entity_confusability"
+    question: "What distinguishes hash indexing from hash join?"
+    expected_answer: "A hash index is a persistent data structure that uses a hash function to map key values to bucket addresses on disk, supporting O(1) average point lookups. A hash join is a query-execution algorithm that partitions both input relations by hashing the join attribute, then probes one partition against the other to find matching tuples; it is a transient, in-memory (or buffer-managed) operation, not a stored structure."
+    keywords: ["hash index", "hash join", "bucket", "partition", "probe", "join attribute", "persistent"]
+    similarity_threshold: 0.62
+    notes: "Shared 'hash' token dominates dense similarity; KG keeps them apart via neighborhoods."
+
+  - id: "ec_006"
+    mode: "entity_confusability"
+    question: "ACID vs. BASE — when does each apply?"
+    expected_answer: "ACID (Atomicity, Consistency, Isolation, Durability) governs traditional relational transactions that require strong consistency guarantees. BASE (Basically Available, Soft state, Eventually consistent) applies to distributed NoSQL systems that trade strict consistency for high availability and partition tolerance under the CAP theorem, accepting that replicas may diverge temporarily and converge eventually."
+    keywords: ["ACID", "BASE", "consistency", "availability", "eventual consistency", "distributed", "NoSQL", "CAP theorem"]
+    similarity_threshold: 0.60
+    notes: "BASE is rarer in corpus; dense retrieval biased toward ACID chunks."
+
+  # ── Cross-section evidence queries ──────────────────────────────────────────
+
+  - id: "cs_001"
+    mode: "cross_section_evidence"
+    question: "How does strict two-phase locking prevent cascading rollbacks?"
+    expected_answer: "Strict two-phase locking holds all exclusive locks until a transaction commits or aborts. Because no other transaction can read a data item whose exclusive lock has not been released, no transaction ever reads uncommitted (dirty) data. If a transaction aborts, no concurrent transaction has seen its changes, so there is nothing to cascade-abort."
+    keywords: ["strict two-phase locking", "cascading rollback", "exclusive lock", "dirty read", "uncommitted", "abort"]
+    similarity_threshold: 0.62
+    notes: "Mechanism and consequence typically in different sections."
+
+  - id: "cs_002"
+    mode: "cross_section_evidence"
+    question: "Why does multiversion concurrency control avoid read locks?"
+    expected_answer: "Multiversion concurrency control (MVCC) keeps multiple timestamped versions of each data item. A reading transaction accesses the most recent version committed before its start timestamp without blocking writers, because it reads from a snapshot that writers cannot modify. Since reads and writes target different versions, they never conflict, so read locks are unnecessary and read throughput is greatly improved."
+    keywords: ["multiversion concurrency control", "read lock", "timestamp", "snapshot", "version", "contention", "conflict"]
+    similarity_threshold: 0.62
+    notes: "MVCC definition and lock-overhead justification often in separate sections."
+
+  - id: "cs_003"
+    mode: "cross_section_evidence"
+    question: "How do write-ahead logging and checkpointing work together during recovery?"
+    expected_answer: "Write-ahead logging (WAL) guarantees every update is recorded to stable storage before the modified page is written to disk. Checkpointing periodically flushes dirty pages and records a checkpoint in the log, bounding the recovery window. During recovery (as in ARIES), the system replays all log records from the last checkpoint forward to redo committed updates, then scans backward to undo any uncommitted transactions."
+    keywords: ["write-ahead logging", "checkpoint", "recovery", "ARIES", "redo", "undo", "stable storage", "dirty page"]
+    similarity_threshold: 0.65
+    notes: "WAL and checkpointing defined separately; interaction is the answer."
+
+  - id: "cs_004"
+    mode: "cross_section_evidence"
+    question: "What's the relationship between functional dependencies and lossless-join decomposition?"
+    expected_answer: "A decomposition of R into R1 and R2 is lossless-join if and only if the shared attributes R1∩R2 functionally determine all attributes of R1 or of R2—i.e., R1∩R2 is a superkey for at least one of them. This condition is verified by checking the given functional dependencies. When satisfied, the natural join of R1 and R2 reconstructs R exactly with no spurious tuples."
+    keywords: ["functional dependency", "lossless-join", "decomposition", "superkey", "spurious tuples", "natural join", "intersection"]
+    similarity_threshold: 0.62
+    notes: "FDs are foundational (earlier chapter); decomposition applies them (later)."
+
+  - id: "cs_005"
+    mode: "cross_section_evidence"
+    question: "How does the query optimizer use statistics from the catalog?"
+    expected_answer: "The query optimizer reads statistics stored in the system catalog—number of tuples per relation, number of distinct values per attribute, and value-distribution histograms—to estimate the cost (in I/O operations and CPU) of alternative query plans. It enumerates join orders, access methods (index scan vs. sequential scan), and join algorithms, selects the plan with minimum estimated cost, and generates executable code for it."
+    keywords: ["query optimizer", "statistics", "catalog", "cost estimation", "join order", "access method", "histogram"]
+    similarity_threshold: 0.62
+    notes: "Optimizer and catalog usually separate sections; bridge via shared statistics entities."
+
+  - id: "cs_006"
+    mode: "cross_section_evidence"
+    question: "Why do isolation levels affect phantom reads?"
+    expected_answer: "Phantom reads occur when a transaction re-executes a predicate-based query and finds new rows inserted by a committed concurrent transaction. Lower isolation levels (Read Committed, Repeatable Read) lock only existing rows, leaving the predicate range open to new insertions. Serializable isolation prevents phantoms by using predicate locks or next-key locks that block any insert satisfying the scanned predicate."
+    keywords: ["isolation level", "phantom read", "predicate lock", "repeatable read", "serializable", "range query", "insert"]
+    similarity_threshold: 0.62
+    notes: "Isolation levels and phantom phenomena defined in separate subsections."
+
+  # ── Polysemy queries ─────────────────────────────────────────────────────────
+
+  - id: "pl_001"
+    mode: "polysemy"
+    question: "What is a key in the context of relations and tuples?"
+    expected_answer: "In the relational model, a key is a set of attributes that uniquely identifies each tuple in a relation. A superkey is any attribute set with this uniqueness property; a candidate key is a minimal superkey (no proper subset is also a superkey); and the primary key is the candidate key chosen by the designer as the principal identifier, whose attributes are prohibited from being null."
+    keywords: ["key", "relation", "tuple", "superkey", "candidate key", "primary key", "unique", "null"]
+    similarity_threshold: 0.62
+    notes: "Context entities disambiguate to relational key, not encryption/sort key."
+
+  - id: "pl_002"
+    mode: "polysemy"
+    question: "Explain a lock in a transaction context."
+    expected_answer: "In transaction management, a lock is a concurrency-control mechanism that regulates access to a shared data item. A shared (read) lock allows multiple transactions to read the item simultaneously; an exclusive (write) lock permits only one transaction to modify it and blocks all other accesses. Lock protocols such as two-phase locking specify when locks must be acquired and released to ensure conflict-serializable schedules."
+    keywords: ["lock", "transaction", "shared lock", "exclusive lock", "concurrency control", "two-phase locking", "conflict-serializable"]
+    similarity_threshold: 0.62
+    notes: "Transaction context disambiguates from OS/file locking."
+
+  - id: "pl_003"
+    mode: "polysemy"
+    question: "How does a hash work for indexing?"
+    expected_answer: "A hash index applies a hash function to a search-key value to compute a bucket address in a hash table stored on disk. To look up a key, the hash function is evaluated and the target bucket is scanned for matching records, giving O(1) average access time. Static hashing uses a fixed bucket count; extendible and linear hashing grow the table dynamically to handle overflow without degrading performance."
+    keywords: ["hash", "indexing", "hash function", "bucket", "overflow", "extendible hashing", "linear hashing"]
+    similarity_threshold: 0.62
+    notes: "Disambiguates hash indexing from hash join or cryptographic hashing."
+
+  - id: "pl_004"
+    mode: "polysemy"
+    question: "What's a schedule when talking about transactions?"
+    expected_answer: "A schedule in transaction management is an ordering that interleaves the read, write, commit, and abort operations of multiple concurrent transactions while preserving the internal order of each transaction's operations. A serial schedule runs transactions sequentially with no interleaving; a serializable schedule is any interleaved schedule whose effect on the database is equivalent to some serial schedule."
+    keywords: ["schedule", "transaction", "serial schedule", "serializable", "interleave", "concurrent", "commit"]
+    similarity_threshold: 0.62
+    notes: "Transaction schedule, not OS scheduling."
+
+  - id: "pl_005"
+    mode: "polysemy"
+    question: "Describe a view in SQL."
+    expected_answer: "A view in SQL is a named virtual relation defined by a stored query expression. It does not physically store data; querying the view re-executes the defining query at runtime. Views simplify complex queries, restrict visible data for security, and can be made updatable when defined on a single base table without aggregation or distinct. Materialized views do store results and must be refreshed when the base data changes."
+    keywords: ["view", "SQL", "virtual relation", "query expression", "updatable view", "materialized view", "catalog"]
+    similarity_threshold: 0.62
+    notes: "SQL view, disambiguated from UI/MVC view."
+
+  - id: "pl_006"
+    mode: "polysemy"
+    question: "What does normal form mean in database design?"
+    expected_answer: "A normal form is a standard that characterizes and eliminates redundancy and update anomalies in relational schemas. 1NF requires all attributes to be atomic; 2NF eliminates partial dependencies on the primary key; 3NF eliminates transitive dependencies on non-prime attributes; BCNF strengthens 3NF by requiring every determinant to be a superkey. Higher normal forms (4NF, 5NF) address multi-valued and join dependencies."
+    keywords: ["normal form", "1NF", "2NF", "3NF", "BCNF", "redundancy", "functional dependency", "anomaly", "update anomaly"]
+    similarity_threshold: 0.62
+    notes: "Normal form (normalization), not statistical/geometric 'normal'."

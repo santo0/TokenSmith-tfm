@@ -2,7 +2,9 @@ import argparse
 import json
 import logging
 import os
+from pathlib import Path
 
+import yaml
 from dotenv import load_dotenv
 
 from src.knowledge_graph.build import RUNS_DIR
@@ -376,27 +378,12 @@ def main() -> None:
         format="%(levelname)s %(name)s: %(message)s",
     )
 
-    queries = [
-        {
-            "id": "q1",
-            "question": "What are different physical storage media?",
-        },
-        {
-            "id": "q2",
-            "question": "What are the main differences between HDD and SSD storage devices?",
-        },
-        {
-            "id": "q3",
-            "question": (
-                "How do different physical storage media differ"
-                " in terms of volatility, access speed, and cost?"
-            ),
-        },
-        {
-            "id": "q4",
-            "question": "What is a shared-nothing architecture?",
-        }
-    ]
+    benchmark_file = Path(args.queries)
+    if not benchmark_file.is_absolute():
+        benchmark_file = Path(__file__).parent.parent.parent.parent / args.queries
+    with open(benchmark_file) as _f:
+        data = yaml.safe_load(_f)
+    queries = data.get("benchmarks", data.get("queries", []))
 
     llm_client = None
     if not args.no_llm:
