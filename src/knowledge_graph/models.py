@@ -29,27 +29,42 @@ class CanonicalizationResult:
 
 @dataclass
 class QueryFeatures:
-    query_node_count: int = 0
+    # D1 — Corpus Coverage
+    query_concept_count: int = 0
+    matched_concept_count: int = 0
+    corpus_coverage: float = 0.0          # δ_cov ∈ [0, 1]
+    # D2 — Retrieval Confidence
+    retrieval_confidence: float = 0.0     # δ_conf ∈ [0, 1]; 0 when no scores provided
+    # D3 — Context Capacity
+    relevant_token_count: int = 0
+    context_capacity: float = 0.0         # δ_cap ≥ 0 (may exceed 1)
+    # D4 — Topological Complexity
     component_count: int = 0
-    max_path_length: int = 0
-    avg_path_length: float = 0.0
-    avg_degree: float = 0.0
-    max_degree: int = 0
+    edge_density: float = 0.0
+    subgraph_diameter: float = 0.0
+    topological_complexity: float = 0.0   # δ_top ∈ [0, 1]
     subgraph_node_count: int = 0
     subgraph_edge_count: int = 0
-    doc_count: int = 0
+    # D5 — Community Dispersion
+    community_count: int = 0
+    community_dispersion: float = 0.0     # δ_com ∈ [0, 1]
 
     def to_dict(self) -> dict:
         return {
-            "query_node_count": self.query_node_count,
+            "query_concept_count": self.query_concept_count,
+            "matched_concept_count": self.matched_concept_count,
+            "corpus_coverage": self.corpus_coverage,
+            "retrieval_confidence": self.retrieval_confidence,
+            "relevant_token_count": self.relevant_token_count,
+            "context_capacity": self.context_capacity,
             "component_count": self.component_count,
-            "max_path_length": self.max_path_length,
-            "avg_path_length": self.avg_path_length,
-            "avg_degree": self.avg_degree,
-            "max_degree": self.max_degree,
+            "edge_density": self.edge_density,
+            "subgraph_diameter": self.subgraph_diameter,
+            "topological_complexity": self.topological_complexity,
             "subgraph_node_count": self.subgraph_node_count,
             "subgraph_edge_count": self.subgraph_edge_count,
-            "doc_count": self.doc_count,
+            "community_count": self.community_count,
+            "community_dispersion": self.community_dispersion,
         }
 
 
@@ -61,33 +76,33 @@ class DifficultyCategory(Enum):
 
 @dataclass
 class DifficultyComponents:
-    multihop: int
-    fragmentation: int
-    subgraph_size: int
-    branching: int
-    dispersion: int
+    corpus_coverage: float = 0.0
+    retrieval_confidence: float = 0.0
+    context_capacity: float = 0.0
+    topological_complexity: float = 0.0
+    community_dispersion: float = 0.0
 
     def to_dict(self) -> dict:
         return {
-            "multihop": self.multihop,
-            "fragmentation": self.fragmentation,
-            "subgraph_size": self.subgraph_size,
-            "branching": self.branching,
-            "dispersion": self.dispersion,
+            "corpus_coverage": self.corpus_coverage,
+            "retrieval_confidence": self.retrieval_confidence,
+            "context_capacity": self.context_capacity,
+            "topological_complexity": self.topological_complexity,
+            "community_dispersion": self.community_dispersion,
         }
 
 
 @dataclass
 class DifficultyScore:
-    score: int
-    category: DifficultyCategory
-    components: DifficultyComponents
+    score: float = 0.0
+    category: DifficultyCategory = DifficultyCategory.EASY
+    components: DifficultyComponents = field(default_factory=DifficultyComponents)
 
     def to_dict(self) -> dict:
         return {
             "score": self.score,
             "category": self.category.value,
-            "components": self.components.__dict__,
+            "components": self.components.to_dict(),
         }
 
 
