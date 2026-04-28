@@ -6,10 +6,9 @@ import os
 from dotenv import load_dotenv
 
 from src.knowledge_graph.build import (
-    CHUNKS_PKL,
-    JSON_KW_PATH,
-    META_PKL,
     PROJECT_ROOT,
+    get_index_paths,
+    get_latest_extractions_path,
     load_chunks,
 )
 from src.knowledge_graph.canonicalizer import Canonicalizer
@@ -40,6 +39,18 @@ def main() -> None:
         default=DEFAULT_CACHE_PATH,
         help=f"Path to write the cache JSON (default: {DEFAULT_CACHE_PATH})",
     )
+    parser.add_argument(
+        "--extractions",
+        default=None,
+        metavar="PATH",
+        help="Path to a keyword extractions JSON (default: extractions/latest.json)",
+    )
+    parser.add_argument(
+        "--partial",
+        action="store_true",
+        default=False,
+        help="Use the partial index (index/partial_sections/) instead of the full index",
+    )
     args = parser.parse_args()
 
     cfg = KGPipelineConfig.from_yaml(args.config)
@@ -49,11 +60,13 @@ def main() -> None:
     if not api_key:
         raise EnvironmentError("OPENROUTER_API_KEY environment variable must be set.")
 
-    logger.info("Loading chunks from:\n  %s\n  %s", CHUNKS_PKL, META_PKL)
-    chunks = load_chunks(CHUNKS_PKL, META_PKL)
+    chunks_pkl, meta_pkl = get_index_paths(args.partial)
+    logger.info("Loading chunks from:\n  %s\n  %s", chunks_pkl, meta_pkl)
+    chunks = load_chunks(chunks_pkl, meta_pkl)
     logger.info("Loaded %d chunks", len(chunks))
 
-    extractor = JsonExtractor(input_path=JSON_KW_PATH)
+    extractions_path = args.extractions or get_latest_extractions_path()
+    extractor = JsonExtractor(input_path=extractions_path)
     extractions = extractor.extract(chunks)
     logger.info("Extracted %d results", len(extractions))
 

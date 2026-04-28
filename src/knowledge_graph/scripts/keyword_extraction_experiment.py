@@ -10,7 +10,7 @@ import numpy as np
 from dotenv import load_dotenv
 from sklearn.feature_extraction.text import TfidfVectorizer
 
-from src.knowledge_graph.build import CHUNKS_PKL, META_PKL, load_chunks
+from src.knowledge_graph.build import CHUNKS_PKL, META_PKL, get_index_paths, load_chunks
 from src.knowledge_graph.extractors import (
     BaseExtractor,
     KeyBERTExtractor,
@@ -731,10 +731,16 @@ def build_arg_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument("--skip-llm", action="store_true")
     parser.add_argument(
-        "--chunks-path", default=CHUNKS_PKL, help="Path to chunks pickle file."
+        "--chunks-path", default=None, help="Path to chunks pickle file."
     )
     parser.add_argument(
-        "--meta-path", default=META_PKL, help="Path to metadata pickle file."
+        "--meta-path", default=None, help="Path to metadata pickle file."
+    )
+    parser.add_argument(
+        "--partial",
+        action="store_true",
+        default=False,
+        help="Use the partial index (index/partial_sections/) instead of the full index",
     )
     parser.add_argument("-v", "--verbose", action="store_true")
     return parser
@@ -743,6 +749,11 @@ def build_arg_parser() -> argparse.ArgumentParser:
 def main() -> None:
     parser = build_arg_parser()
     args = parser.parse_args()
+    default_chunks, default_meta = get_index_paths(args.partial)
+    if args.chunks_path is None:
+        args.chunks_path = default_chunks
+    if args.meta_path is None:
+        args.meta_path = default_meta
 
     logging.basicConfig(
         level=logging.DEBUG if args.verbose else logging.INFO,

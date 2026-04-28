@@ -20,7 +20,7 @@ from time import strftime
 import requests
 from dotenv import load_dotenv
 
-from src.knowledge_graph.build import CHUNKS_PKL, META_PKL, load_chunks
+from src.knowledge_graph.build import CHUNKS_PKL, META_PKL, get_index_paths, load_chunks
 from src.knowledge_graph.models import Chunk
 from src.knowledge_graph.openrouter_client import OpenRouterClient
 from src.knowledge_graph.prompts import OPENROUTER_KEYWORD_EXTRACTION_PROMPT
@@ -365,14 +365,25 @@ def build_arg_parser() -> argparse.ArgumentParser:
     parser.add_argument("--timeout", type=int, default=60)
     parser.add_argument("--api-key", default=None)
     parser.add_argument("--output", default=None)
-    parser.add_argument("--chunks-path", default=CHUNKS_PKL)
-    parser.add_argument("--meta-path", default=META_PKL)
+    parser.add_argument("--chunks-path", default=None)
+    parser.add_argument("--meta-path", default=None)
+    parser.add_argument(
+        "--partial",
+        action="store_true",
+        default=False,
+        help="Use the partial index (index/partial_sections/) instead of the full index",
+    )
     parser.add_argument("-v", "--verbose", action="store_true")
     return parser
 
 
 def main() -> None:
     args = build_arg_parser().parse_args()
+    default_chunks, default_meta = get_index_paths(args.partial)
+    if args.chunks_path is None:
+        args.chunks_path = default_chunks
+    if args.meta_path is None:
+        args.meta_path = default_meta
     logging.basicConfig(
         level=logging.DEBUG if args.verbose else logging.INFO,
         format="%(asctime)s %(levelname)s %(name)s: %(message)s",

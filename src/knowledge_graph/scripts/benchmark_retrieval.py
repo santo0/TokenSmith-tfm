@@ -370,8 +370,20 @@ def main() -> None:
         default="index/sections/textbook_index_page_to_chunk_map.json",
         help="Path to page_to_chunk_map.json for IndexKeywordRetriever",
     )
+    parser.add_argument(
+        "--partial",
+        action="store_true",
+        default=False,
+        help="Use the partial index (index/partial_sections/) instead of the full index",
+    )
     parser.add_argument("-v", "--verbose", action="store_true")
     args = parser.parse_args()
+
+    if args.partial:
+        if args.artifacts_dir is None:
+            args.artifacts_dir = "index/partial_sections"
+        if args.page_chunk_map == "index/sections/textbook_index_page_to_chunk_map.json":
+            args.page_chunk_map = "index/partial_sections/textbook_index_page_to_chunk_map.json"
 
     logging.basicConfig(
         level=logging.DEBUG if args.verbose else logging.WARNING,

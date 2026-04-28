@@ -25,6 +25,24 @@ CHUNKS_PKL = os.path.join(
 META_PKL = os.path.join(
     PROJECT_ROOT, "index", "sections", "textbook_index_meta.pkl"
 )
+PARTIAL_CHUNKS_PKL = os.path.join(
+    PROJECT_ROOT, "index", "partial_sections", "textbook_index_chunks.pkl"
+)
+PARTIAL_META_PKL = os.path.join(
+    PROJECT_ROOT, "index", "partial_sections", "textbook_index_meta.pkl"
+)
+
+
+def get_index_paths(partial: bool = False) -> tuple[str, str]:
+    """Return (chunks_pkl, meta_pkl) for the full or partial index.
+
+    When partial=False, falls back to partial_sections if sections/ doesn't exist.
+    """
+    if partial:
+        return PARTIAL_CHUNKS_PKL, PARTIAL_META_PKL
+    if os.path.exists(CHUNKS_PKL):
+        return CHUNKS_PKL, META_PKL
+    return PARTIAL_CHUNKS_PKL, PARTIAL_META_PKL
 OUTPUT_DIR = os.path.join(PROJECT_ROOT, "data", "knowledge_graph")
 RUNS_DIR = os.path.join(OUTPUT_DIR, "runs")
 EXTRACTIONS_DIR = os.path.join(OUTPUT_DIR, "extractions")
@@ -55,7 +73,12 @@ def create_run_dir() -> str:
     return run_dir
 
 
-def setup_input_dir(run_dir: str, extractions_path: str | None) -> None:
+def setup_input_dir(
+    run_dir: str,
+    extractions_path: str | None,
+    chunks_pkl: str = CHUNKS_PKL,
+    meta_pkl: str = META_PKL,
+) -> None:
     """Create input/ with symlinks to pkl sources.
 
     If *extractions_path* is provided (JsonExtractor was selected), a full copy
@@ -65,8 +88,8 @@ def setup_input_dir(run_dir: str, extractions_path: str | None) -> None:
     input_dir = os.path.join(run_dir, "input")
     os.makedirs(input_dir, exist_ok=True)
 
-    os.symlink(os.path.abspath(CHUNKS_PKL), os.path.join(input_dir, "chunks.pkl"))
-    os.symlink(os.path.abspath(META_PKL), os.path.join(input_dir, "meta.pkl"))
+    os.symlink(os.path.abspath(chunks_pkl), os.path.join(input_dir, "chunks.pkl"))
+    os.symlink(os.path.abspath(meta_pkl), os.path.join(input_dir, "meta.pkl"))
 
     if extractions_path is not None:
         shutil.copy2(extractions_path, os.path.join(input_dir, "extractions.json"))
@@ -77,6 +100,8 @@ def write_config(
     cfg: KGPipelineConfig,
     extractor_config: dict,
     extractions_path: str | None,
+    chunks_pkl: str = CHUNKS_PKL,
+    meta_pkl: str = META_PKL,
 ) -> None:
     config = {
         "extractor": extractor_config,
@@ -85,8 +110,8 @@ def write_config(
             "min_cooccurrence": cfg.min_cooccurrence,
         },
         "embed_model": cfg.embed_model,
-        "chunks_pkl": CHUNKS_PKL,
-        "meta_pkl": META_PKL,
+        "chunks_pkl": chunks_pkl,
+        "meta_pkl": meta_pkl,
         "timestamp": os.path.basename(run_dir),
     }
     if extractions_path is not None:

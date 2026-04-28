@@ -208,17 +208,32 @@ def search_l2_chunks(
 def main() -> None:
     parser = argparse.ArgumentParser(description="Section-level embedding filter benchmark")
     parser.add_argument("--run-dir", help="KG run directory (default: latest)")
-    parser.add_argument("--artifact-dir", help="Artifact directory with chunk index (default: index/sections)")
+    parser.add_argument(
+        "--artifact-dir",
+        help="Artifact directory with chunk index "
+             "(default: index/sections, or index/partial_sections with --partial)",
+    )
     parser.add_argument("--top-k", type=int, default=5)
     parser.add_argument(
         "--strategy",
         choices=["titles", "summaries", "vector", "all"],
         default="all",
     )
+    parser.add_argument(
+        "--partial",
+        action="store_true",
+        default=False,
+        help="Use the partial index (index/partial_sections/) instead of the full index",
+    )
     args = parser.parse_args()
 
     run_dir = Path(args.run_dir) if args.run_dir else _latest_run_dir()
-    artifact_dir = Path(args.artifact_dir) if args.artifact_dir else ARTIFACT_DIR
+    if args.artifact_dir:
+        artifact_dir = Path(args.artifact_dir)
+    elif args.partial:
+        artifact_dir = PROJECT_ROOT / "index" / "partial_sections"
+    else:
+        artifact_dir = ARTIFACT_DIR
     do_titles = args.strategy in ("titles", "all")
     do_summaries = args.strategy in ("summaries", "all")
     do_vector = args.strategy in ("vector", "all")

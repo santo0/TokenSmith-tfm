@@ -13,14 +13,13 @@ from src.knowledge_graph.build import (
     write_config,
     update_latest_symlink,
     load_chunks,
-    META_PKL,
-    CHUNKS_PKL,
+    get_index_paths,
 )
 from src.knowledge_graph.models import KGPipelineConfig
 from src.knowledge_graph.pipeline import build_kg
 from src.knowledge_graph.summary_tree import build_summary_index
 from src.knowledge_graph.openrouter_client import OpenRouterClient
-from src.knowledge_graph.io import load_run_chunks, load_canonicalization_data, build_keyword_index
+from src.knowledge_graph.io import load_run_chunks, load_canonicalization_data, build_keyword_index, load_section_tree
 from src.knowledge_graph.section_tree import build_section_tree, save_section_tree
 from src.knowledge_graph.canonicalizer import Canonicalizer
 from src.knowledge_graph.linkers import CooccurrenceLinker
@@ -108,6 +107,14 @@ def main() -> None:
         help="[openrouter/keybert/slm] Keywords per chunk. Defaults to cfg.top_n.",
     )
 
+    # ── Index selection ───────────────────────────────────────────────────
+    parser.add_argument(
+        "--partial",
+        action="store_true",
+        default=False,
+        help="Use the partial index (index/partial_sections/) instead of the full index",
+    )
+
     # ── Chunk filtering ───────────────────────────────────────────────────
     parser.add_argument(
         "--chapter",
@@ -128,70 +135,75 @@ def main() -> None:
     cfg = KGPipelineConfig.from_yaml(args.config)
     logger.info("Loaded config from %s", args.config)
 
-    extractor, extractor_config = build_extractor(args, cfg)
-    logger.info("Using extractor: %s", extractor_config["class"])
+    # extractor, extractor_config = build_extractor(args, cfg)
+    # logger.info("Using extractor: %s", extractor_config["class"])
 
-    run_dir = create_run_dir()
+    chunks_pkl, meta_pkl = get_index_paths(args.partial)
+    logger.info("Using chunks: %s", chunks_pkl)
+
+    # run_dir = create_run_dir()
+    run_dir = os.path.join(RUNS_DIR, "2026-04-27_22-36-20")  # for testing; comment out to use timestamped dirs
     logger.info("Run directory: %s", run_dir)
 
-    extractions_path = (
-        extractor_config.get("input_path")
-        if extractor_config["class"] == "JsonExtractor"
-        else None
-    )
-    setup_input_dir(run_dir, extractions_path)
-    write_config(run_dir, cfg, extractor_config, extractions_path)
+    # extractions_path = (
+    #     extractor_config.get("input_path")
+    #     if extractor_config["class"] == "JsonExtractor"
+    #     else None
+    # )
+    # setup_input_dir(run_dir, extractions_path, chunks_pkl=chunks_pkl, meta_pkl=meta_pkl)
+    # write_config(run_dir, cfg, extractor_config, extractions_path, chunks_pkl=chunks_pkl, meta_pkl=meta_pkl)
 
     chapter_filter = f"Chapter {args.chapter} " if args.chapter else None
     exclude_chapters = [f"Chapter {c} " for c in args.exclude_chapters]
 
-    c = cfg.canonicalization
-    canonicalizer = Canonicalizer(
-        embedding_model=cfg.embed_model,
-        corpus_description=cfg.corpus_description,
-        api_key=args.api_key or os.environ.get("OPENROUTER_API_KEY", ""),
-        llm_model=c.llm_model,
-        similarity_threshold=c.similarity_threshold,
-        max_group_size=c.max_group_size,
-        batch_size=c.batch_size,
-    )
+    # c = cfg.canonicalization
+    # canonicalizer = Canonicalizer(
+    #     embedding_model=cfg.embed_model,
+    #     corpus_description=cfg.corpus_description,
+    #     api_key=args.api_key or os.environ.get("OPENROUTER_API_KEY", ""),
+    #     llm_model=c.llm_model,
+    #     similarity_threshold=c.similarity_threshold,
+    #     max_group_size=c.max_group_size,
+    #     batch_size=c.batch_size,
+    # )
 
-    linker = CooccurrenceLinker(min_cooccurrence=cfg.min_cooccurrence)
+    # linker = CooccurrenceLinker(min_cooccurrence=cfg.min_cooccurrence)
 
-    chunks = load_chunks(
-        CHUNKS_PKL,
-        META_PKL,
-        chapter_filter=chapter_filter,
-        exclude_chapters=exclude_chapters,
-    )
-    logger.info("Loaded %d chunks", len(chunks))
-    graph = build_kg(
-        output_dir=run_dir,
-        chunks=chunks,
-        extractor=extractor,
-        linker=linker,
-        canonicalizer=canonicalizer,
-    )
+    # chunks = load_chunks(
+    #     chunks_pkl,
+    #     meta_pkl,
+    #     chapter_filter=chapter_filter,
+    #     exclude_chapters=exclude_chapters,
+    # )
+    # logger.info("Loaded %d chunks", len(chunks))
+    # graph = build_kg(
+    #     output_dir=run_dir,
+    #     chunks=chunks,
+    #     extractor=extractor,
+    #     linker=linker,
+    #     canonicalizer=canonicalizer,
+    # )
 
-    logger.info("Building keyword FAISS index...")
-    _, _canon_kws, _canon_embs = load_canonicalization_data(run_dir)
-    if _canon_embs is not None:
-        build_keyword_index(_canon_embs, run_dir)
-        logger.info("Keyword index saved.")
-    else:
-        logger.warning("Canonicalization data missing; keyword index not built.")
+    # logger.info("Building keyword FAISS index...")
+    # _, _canon_kws, _canon_embs = load_canonicalization_data(run_dir)
+    # if _canon_embs is not None:
+    #     build_keyword_index(_canon_embs, run_dir)
+    #     logger.info("Keyword index saved.")
+    # else:
+    #     logger.warning("Canonicalization data missing; keyword index not built.")
 
-    logger.info("Building section tree...")
-    tree = build_section_tree(chunks, graph)
-    tree_path = save_section_tree(tree, run_dir)
-    level_counts: dict[int, int] = {}
-    for node in tree.node_index.values():
-        level_counts[node.level] = level_counts.get(node.level, 0) + 1
-    level_labels = {1: "chapters", 2: "sections", 3: "subsections"}
-    for level, count in sorted(level_counts.items()):
-        label = level_labels.get(level, f"level-{level} nodes")
-        logger.info("  %4d %s", count, label)
-    logger.info("  Saved: %s", tree_path)
+    # logger.info("Building section tree...")
+    # tree = build_section_tree(chunks, graph)
+    # tree_path = save_section_tree(tree, run_dir)
+    tree = load_section_tree(run_dir)   
+    # level_counts: dict[int, int] = {}
+    # for node in tree.node_index.values():
+    #     level_counts[node.level] = level_counts.get(node.level, 0) + 1
+    # level_labels = {1: "chapters", 2: "sections", 3: "subsections"}
+    # for level, count in sorted(level_counts.items()):
+    #     label = level_labels.get(level, f"level-{level} nodes")
+    #     logger.info("  %4d %s", count, label)
+    # logger.info("  Saved: %s", tree_path)
 
     st = cfg.summary_tree
     logger.info(
@@ -200,7 +212,7 @@ def main() -> None:
         st.chunk_window,
     )
     chunk_texts = load_run_chunks(os.path.join(run_dir, "chunks.json"))
-    client = OpenRouterClient(args.api_key, retries=2)
+    client = OpenRouterClient(args.api_key or os.environ.get("OPENROUTER_API_KEY", ""), retries=2)
     build_summary_index(
         client=client,
         summary_model=st.summary_model,
