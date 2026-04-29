@@ -36,18 +36,18 @@ kg_pipeline:
   extractor:
     type: openrouter          # json | openrouter | keybert | slm
     extractions: ""   # [json] path to extractions JSON; null = use extractions/latest.json
-    model: "qwen/qwen3-next-80b-a3b-instruct"  # [openrouter] model name
+    model: "google/gemini-3-flash-preview"  # [openrouter] model name
     adaptive_top_n: true                       # [openrouter] scale top_n per chunk
     keybert_model: "all-MiniLM-L6-v2"          # [keybert] sentence-transformer model
     slm_model_path: "models/qwen2.5-1.5b-instruct-q5_k_m.gguf"  # [slm] GGUF model path
     slm_threads: 8                              # [slm] CPU threads
   canonicalization:
-    llm_model: "qwen/qwen3-next-80b-a3b-instruct"
+    llm_model: "google/gemini-3-flash-preview"
     similarity_threshold: 0.78
     max_group_size: 30
     batch_size: 15
     embed_model: "sentence-transformers/all-MiniLM-L6-v2"
   summary_tree:
-    summary_model: "openai/gpt-4o-mini"
+    summary_model: "google/gemini-3-flash-preview"
     embed_model: "sentence-transformers/all-MiniLM-L6-v2"
     chunk_window: 3

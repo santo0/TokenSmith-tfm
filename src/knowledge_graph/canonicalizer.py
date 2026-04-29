@@ -43,7 +43,7 @@ class Canonicalizer:
         embedding_model: str,
         similarity_threshold: float = 0.78,
         max_group_size: int = 30,
-        llm_model: str = "openai/gpt-4o-mini",
+        llm_model: str = "google/gemini-3-flash-preview",
         batch_size: int = 15,
         fallback_threshold: float = 0.85,
         retries: int = 1,

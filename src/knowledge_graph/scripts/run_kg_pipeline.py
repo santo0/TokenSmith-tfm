@@ -121,7 +121,7 @@ def main() -> None:
         st.chunk_window,
     )
     chunk_texts = load_run_chunks(os.path.join(run_dir, "chunks.json"))
-    client = OpenRouterClient(os.environ.get("OPENROUTER_API_KEY", ""), retries=2)
+    client = OpenRouterClient(os.environ.get("OPENROUTER_API_KEY", ""), retries=3)
     build_summary_index(
         client=client,
         summary_model=st.summary_model,

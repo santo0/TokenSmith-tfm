@@ -147,7 +147,7 @@ class ExtractorConfig:
 
 @dataclass
 class CanonicalizationConfig:
-    llm_model: str = "openai/gpt-4o-mini"
+    llm_model: str = "google/gemini-3-flash-preview"
     embed_model: str = "sentence-transformers/all-MiniLM-L6-v2"
     similarity_threshold: float = 0.78
     max_group_size: int = 30
@@ -156,7 +156,7 @@ class CanonicalizationConfig:
 
 @dataclass
 class SummaryTreeConfig:
-    summary_model: str = "openai/gpt-4o-mini"
+    summary_model: str = "google/gemini-3-flash-preview"
     embed_model: str = "sentence-transformers/all-MiniLM-L6-v2"
     chunk_window: int = 3
 

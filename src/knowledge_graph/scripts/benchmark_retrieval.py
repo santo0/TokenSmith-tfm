@@ -77,7 +77,7 @@ def run_benchmark(
     queries: list[dict],
     top_k: int = 5,
     llm_client: OpenRouterClient | None = None,
-    llm_model: str = "openai/gpt-4o-mini",
+    llm_model: str = "google/gemini-3-flash-preview",
     num_hops: int = 1,
     neighbor_weight: float = 0.5,
     artifacts_dir: str | None = None,
@@ -325,7 +325,7 @@ def main() -> None:
     parser.add_argument("--top-k", type=int, default=5)
     parser.add_argument(
         "--model",
-        default="openai/gpt-4o-mini",
+        default="google/gemini-3-flash-preview",
         help="OpenRouter model for LLM grading",
     )
     parser.add_argument(

@@ -94,7 +94,7 @@ class OpenRouterClient:
         """Send a chat request and return the assistant message content.
 
         Args:
-            model: OpenRouter model identifier (e.g. ``"openai/gpt-4o-mini"``).
+            model: OpenRouter model identifier (e.g. ``"google/gemini-3-flash-preview"``).
             messages: List of ``{"role": ..., "content": ...}`` dicts.
             response_format: Optional ``{"type": "json_object"}`` or similar.
             timeout: Per-request timeout in seconds.

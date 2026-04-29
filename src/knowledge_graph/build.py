@@ -2,7 +2,6 @@ import os
 import json
 import shutil
 import pickle
-import argparse
 from time import strftime
 
 from src.knowledge_graph.models import Chunk
@@ -43,6 +42,8 @@ def get_index_paths(partial: bool = False) -> tuple[str, str]:
     if os.path.exists(CHUNKS_PKL):
         return CHUNKS_PKL, META_PKL
     return PARTIAL_CHUNKS_PKL, PARTIAL_META_PKL
+
+
 OUTPUT_DIR = os.path.join(PROJECT_ROOT, "data", "knowledge_graph")
 RUNS_DIR = os.path.join(OUTPUT_DIR, "runs")
 EXTRACTIONS_DIR = os.path.join(OUTPUT_DIR, "extractions")
@@ -127,71 +128,49 @@ def update_latest_symlink(run_dir: str) -> None:
     os.symlink(os.path.abspath(run_dir), latest)
 
 
-def build_extractor(args: argparse.Namespace, cfg: KGPipelineConfig) -> tuple[BaseExtractor, dict]:
-    """Instantiate and return the chosen extractor plus its resolved config dict.
+def build_extractor(cfg: KGPipelineConfig) -> tuple[BaseExtractor, dict]:
+    """Instantiate and return the chosen extractor plus its resolved config dict."""
+    exc = cfg.extractor
 
-    Returns:
-        (extractor, extractor_config, extractions_path)
-        *extractions_path* is the JSON file used (JsonExtractor only), else None.
-    """
-    if args.extractor == "json":
-        path = args.extractions or get_latest_extractions_path()
-        extractor = JsonExtractor(input_path=path)
-        return extractor, {"class": "JsonExtractor", "input_path": path}
+    if exc.type == "json":
+        path = exc.extractions or get_latest_extractions_path()
+        return JsonExtractor(input_path=path), {"class": "JsonExtractor", "input_path": path}
 
-    if args.extractor == "openrouter":
-        api_key = args.api_key or os.getenv("OPENROUTER_API_KEY")
+    if exc.type == "openrouter":
+        api_key = os.getenv("OPENROUTER_API_KEY")
         if not api_key:
-            raise ValueError(
-                "OpenRouter API key required. Pass --api_key or set OPENROUTER_API_KEY."
-            )
+            raise ValueError("OpenRouter API key required. Set OPENROUTER_API_KEY env var.")
         extractor = OpenRouterExtractor(
             api_key=api_key,
-            model=args.model,
-            top_n=args.top_n or cfg.top_n,
-            adaptive_top_n=args.adaptive_top_n,
+            model=exc.model,
+            top_n=cfg.top_n,
+            adaptive_top_n=exc.adaptive_top_n,
         )
-        return (
-            extractor,
-            {
-                "class": "OpenRouterExtractor",
-                "model": args.model,
-                "top_n": args.top_n or cfg.top_n,
-                "adaptive_top_n": args.adaptive_top_n,
-            },
-        )
+        return extractor, {
+            "class": "OpenRouterExtractor",
+            "model": exc.model,
+            "top_n": cfg.top_n,
+            "adaptive_top_n": exc.adaptive_top_n,
+        }
 
-    if args.extractor == "keybert":
-        extractor = KeyBERTExtractor(
-            model=args.keybert_model,
-            top_n=args.top_n or cfg.top_n,
-        )
-        return (
-            extractor,
-            {
-                "class": "KeyBERTExtractor",
-                "model": args.keybert_model,
-                "top_n": args.top_n or cfg.top_n,
-            },
-        )
+    if exc.type == "keybert":
+        extractor = KeyBERTExtractor(model=exc.keybert_model, top_n=cfg.top_n)
+        return extractor, {"class": "KeyBERTExtractor", "model": exc.keybert_model, "top_n": cfg.top_n}
 
-    if args.extractor == "slm":
+    if exc.type == "slm":
         extractor = SLMExtractor(
-            model_path=args.slm_model_path,
-            n_threads=args.slm_threads,
-            top_n=args.top_n or cfg.top_n,
+            model_path=exc.slm_model_path,
+            n_threads=exc.slm_threads,
+            top_n=cfg.top_n,
         )
-        return (
-            extractor,
-            {
-                "class": "SLMExtractor",
-                "model_path": args.slm_model_path,
-                "n_threads": args.slm_threads,
-                "top_n": args.top_n or cfg.top_n,
-            },
-        )
+        return extractor, {
+            "class": "SLMExtractor",
+            "model_path": exc.slm_model_path,
+            "n_threads": exc.slm_threads,
+            "top_n": cfg.top_n,
+        }
 
-    raise ValueError(f"Unknown extractor: {args.extractor!r}")
+    raise ValueError(f"Unknown extractor type: {exc.type!r}")
 
 
 def load_chunks(

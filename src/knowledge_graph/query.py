@@ -248,6 +248,12 @@ class KGNodeRetriever(Retriever):
     ``neighbor_weight**k * (edge_weight / max_edge_weight)``.
     All scores are normalized to [0, 1].
 
+    When *idf_weighted* is True, neighbor contributions at hop ≥ 1 are further
+    multiplied by the node's IDF score (``log(N / df)`` where N is the total
+    number of chunks and df is the number of chunks the node appears in).
+    IDF scores are normalised to [0, 1] so that the hop-decay semantics are
+    preserved. Hop-0 (direct matches) are always given full weight.
+
     Plugs into ``EnsembleRanker`` via the standard ``Retriever`` interface.
     Combine with ``SectionTreeRetriever`` (and others) in the ensemble to
     blend complementary signals.
@@ -262,12 +268,33 @@ class KGNodeRetriever(Retriever):
         neighbor_weight: float = 0.5,
         num_hops: int = 1,
         canonical_lookup: CanonicalLookup | None = None,
+        idf_weighted: bool = False,
     ):
         self.graph = graph
         self.kg_chunks = kg_chunks
         self.neighbor_weight = neighbor_weight
         self.num_hops = num_hops
         self.canonical_lookup = canonical_lookup
+        self.idf_weighted = idf_weighted
+        self._idf: dict[str, float] | None = None  # lazy-computed
+
+    def _get_idf(self) -> dict[str, float]:
+        """Compute and cache normalised IDF scores for every node in the graph."""
+        if self._idf is not None:
+            return self._idf
+        import math
+        n_chunks = len(self.kg_chunks)
+        if n_chunks == 0:
+            self._idf = {}
+            return self._idf
+        raw: dict[str, float] = {}
+        for node, data in self.graph.nodes(data=True):
+            df = len(data.get("chunk_ids", []))
+            raw[node] = math.log(n_chunks / max(df, 1))
+        max_idf = max(raw.values(), default=1.0)
+        max_idf = max(max_idf, 1e-9)
+        self._idf = {n: v / max_idf for n, v in raw.items()}
+        return self._idf
 
     def get_scores(self, query: str, pool_size: int, chunks: list) -> dict[int, float]:
         """Return BFS-based relevance scores keyed by global chunk index.
@@ -295,9 +322,11 @@ class KGNodeRetriever(Retriever):
         max_edge_weight = max(max_edge_weight, 1)
         logger.debug("Max edge weight in graph: %s", max_edge_weight)
 
+        idf = self._get_idf() if self.idf_weighted else {}
+
         scores: dict[int, float] = {}
 
-        # Hop 0: directly matched query nodes
+        # Hop 0: directly matched query nodes (always full weight, no IDF)
         for node in query_nodes:
             for chunk_id in self.graph.nodes[node].get("chunk_ids", []):
                 scores[chunk_id] = scores.get(chunk_id, 0.0) + 1.0
@@ -316,6 +345,8 @@ class KGNodeRetriever(Retriever):
                     next_frontier.add(neighbor)
                     edge_weight = self.graph[node][neighbor].get("weight", 1)
                     contribution = decay * (edge_weight / max_edge_weight)
+                    if self.idf_weighted:
+                        contribution *= idf.get(neighbor, 1.0)
                     for chunk_id in self.graph.nodes[neighbor].get("chunk_ids", []):
                         scores[chunk_id] = scores.get(chunk_id, 0.0) + contribution
             visited |= next_frontier

@@ -5,13 +5,15 @@ benchmarks:
     keywords: ["aggregation", "grouping", "generalized projection", "ignore nulls", "attribute renaming", "duplicates"]
     similarity_threshold: 0.8
     ideal_retrieved_chunks: [1039, 1040, 1496, 1497, 714]
-    
+    broad: false
+
   - id: "acid_properties"
     question: "What are the ACID properties of transactions?"
     expected_answer: "Atomicity ensures a transaction's actions are all-or-nothing, enforced by abort/rollback and recovery that can undo partial effects; consistency requires each transaction to preserve database integrity when run alone and relies on the scheduler to admit serializable, recoverable, and preferably cascadeless schedules; isolation makes concurrent executions equivalent to some serial order, commonly achieved with two-phase locking variants that prevent reads of uncommitted data; durability guarantees committed effects persist across crashes via logging to stable storage and redo on restart;"
     keywords: ["atomicity", "consistency", "isolation", "durability", "recoverable", "checkpoints", "two-phase locking", "two-phase commit"]
     similarity_threshold: 0.82
     ideal_retrieved_chunks: [1143, 1142, 1145, 1146, 1148]
+    broad: true
 
   - id: "bptree"
     question: "How does a B+ tree index organize keys and support search, insert, and delete, and why is it preferred over binary trees for disk-based access"
@@ -19,6 +21,7 @@ benchmarks:
     keywords: ["fan-out", "leaf linkage", "merge", "balanced height", "reduced height"]
     similarity_threshold: 0.78
     ideal_retrieved_chunks: [908, 909, 940, 937, 938]
+    broad: false
 
   - id: "fd_normalization"
     question: "What are functional dependencies?"
@@ -26,6 +29,7 @@ benchmarks:
     keywords: ["common key", "lossless join", "dependency preservation", "normalization", "superkey"]
     similarity_threshold: 0.7
     ideal_retrieved_chunks: [438, 439, 463, 451, 484]
+    broad: false
 
   - id: "sql_isolation"
     question: "What isolation guarantees does SQL provide by default?"
@@ -33,6 +37,7 @@ benchmarks:
     keywords: ["serializable", "read committed", "repeatable read", "dirty read", "nonrepeatable read", "phantom", "two-phase locking", "predicate locking"]
     similarity_threshold: 0.7
     ideal_retrieved_chunks: [1173, 1174, 1142, 1143, 1172]
+    broad: false
 
   - id: "primary_foreign_keys"
     question: "Explain primary keys and foreign keys"
@@ -40,6 +45,7 @@ benchmarks:
     keywords: ["primary key", "foreign key", "unique identifier", "referential integrity", "candidate key", "superkey"]
     similarity_threshold: 0.72
     ideal_retrieved_chunks: [90, 91, 119, 93, 94]
+    broad: false
 
   - id: "database_schema"
     question: "What is a database schema"
@@ -47,6 +53,7 @@ benchmarks:
     keywords: ["database schema", "logical design", "structure", "database instance", "relations", "attributes", "constraints"]
     similarity_threshold: 0.70
     ideal_retrieved_chunks: [49, 50, 51, 250, 60]
+    broad: false
 
   - id: "book_authors"
     question: "Tell me about the authors of the book"
@@ -54,6 +61,7 @@ benchmarks:
     keywords: ["Abraham Silberschatz", "Henry Korth", "Sudarshan", "Yale", "Lehigh", "IIT Bombay", "Bell Labs"]
     similarity_threshold: 0.65
     ideal_retrieved_chunks: [1, 2, 0, 3, 22]
+    broad: false
 
   - id: "aries_atomicity"
     question: "How does the recovery manager use ARIES to ensure atomicity"
@@ -61,6 +69,7 @@ benchmarks:
     keywords: ["ARIES", "write-ahead log", "log records", "undo", "rollback", "stable storage", "atomicity", "recovery"]
     similarity_threshold: 0.75
     ideal_retrieved_chunks: [1355, 1356, 1358, 1353, 1359]
+    broad: false
 
   - id: "oltp_vs_analytics"
     question: "Contrast the goals of Online Transaction Processing and data analytics"
@@ -68,6 +77,7 @@ benchmarks:
     keywords: ["OLTP", "online transaction processing", "data analytics", "business intelligence", "decision support", "throughput", "data warehouse", "transactional", "analytical"]
     similarity_threshold: 0.73
     ideal_retrieved_chunks: [33, 34, 738, 739, 741]
+    broad: true
 
   - id: "lossy_decomposition"
     question: "Show me what happens during a lossy decomposition"
@@ -75,6 +85,7 @@ benchmarks:
     keywords: ["lossy decomposition", "spurious tuples", "lossless join", "superkey", "natural join", "information loss", "functional dependency"]
     similarity_threshold: 0.70
     ideal_retrieved_chunks: [431, 430, 432, 433, 440]
+    broad: false
 
   - id: "physical_storage_media"
     question: "What are different physical storage media?"
@@ -82,6 +93,7 @@ benchmarks:
     keywords: ["cache", "DRAM", "flash", "magnetic disk", "optical disk", "magnetic tape", "volatile", "non-volatile", "storage hierarchy"]
     similarity_threshold: 0.65
     ideal_retrieved_chunks: [736, 737, 738, 739, 740]
+    broad: true
 
   - id: "hdd_vs_ssd"
     question: "What are the main differences between HDD and SSD storage devices?"
@@ -89,6 +101,7 @@ benchmarks:
     keywords: ["HDD", "SSD", "flash", "magnetic disk", "seek time", "rotational latency", "non-volatile", "wear"]
     similarity_threshold: 0.65
     ideal_retrieved_chunks: [737]
+    broad: false
 
   - id: "storage_media_comparison"
     question: "How do different physical storage media differ in terms of volatility, access speed, and cost?"
@@ -96,6 +109,7 @@ benchmarks:
     keywords: ["volatile", "non-volatile", "access speed", "cost", "hierarchy", "cache", "DRAM", "flash", "magnetic disk", "tape"]
     similarity_threshold: 0.65
     ideal_retrieved_chunks: [736, 737, 738, 739, 740, 748, 751]
+    broad: true
 
   - id: "shared_nothing_architecture"
     question: "What is a shared-nothing architecture?"
@@ -103,6 +117,7 @@ benchmarks:
     keywords: ["shared-nothing", "distributed", "node", "private memory", "local disk", "message passing", "scalability", "parallel"]
     similarity_threshold: 0.65
     ideal_retrieved_chunks: [1326]
+    broad: false
 
   # ── Entity-confusability queries ────────────────────────────────────────────
 
@@ -113,6 +128,7 @@ benchmarks:
     keywords: ["two-phase locking", "strict two-phase locking", "cascading rollback", "exclusive lock", "dirty read", "commit"]
     similarity_threshold: 0.62
     notes: "Qualifier 'strict' gets smeared in dense retrieval; KG treats as distinct nodes."
+    broad: false
 
   - id: "ec_002"
     mode: "entity_confusability"
@@ -121,6 +137,7 @@ benchmarks:
     keywords: ["B+ tree", "B-tree", "leaf node", "range query", "internal node", "disk", "sorted"]
     similarity_threshold: 0.62
     notes: "Close in embedding space, distinct in KG."
+    broad: false
 
   - id: "ec_003"
     mode: "entity_confusability"
@@ -129,6 +146,7 @@ benchmarks:
     keywords: ["serializability", "serializable schedule", "serial execution", "conflict serializability", "precedence graph", "concurrent"]
     similarity_threshold: 0.62
     notes: "Noun-vs.-adjective form, nearly identical embeddings."
+    broad: false
 
   - id: "ec_004"
     mode: "entity_confusability"
@@ -137,6 +155,7 @@ benchmarks:
     keywords: ["3NF", "BCNF", "superkey", "prime attribute", "functional dependency", "dependency preservation", "candidate key"]
     similarity_threshold: 0.62
     notes: "Both normalization entities; dense retrieval blends them."
+    broad: false
 
   - id: "ec_005"
     mode: "entity_confusability"
@@ -145,6 +164,7 @@ benchmarks:
     keywords: ["hash index", "hash join", "bucket", "partition", "probe", "join attribute", "persistent"]
     similarity_threshold: 0.62
     notes: "Shared 'hash' token dominates dense similarity; KG keeps them apart via neighborhoods."
+    broad: false
 
   - id: "ec_006"
     mode: "entity_confusability"
@@ -153,6 +173,7 @@ benchmarks:
     keywords: ["ACID", "BASE", "consistency", "availability", "eventual consistency", "distributed", "NoSQL", "CAP theorem"]
     similarity_threshold: 0.60
     notes: "BASE is rarer in corpus; dense retrieval biased toward ACID chunks."
+    broad: true
 
   # ── Cross-section evidence queries ──────────────────────────────────────────
 
@@ -163,6 +184,7 @@ benchmarks:
     keywords: ["strict two-phase locking", "cascading rollback", "exclusive lock", "dirty read", "uncommitted", "abort"]
     similarity_threshold: 0.62
     notes: "Mechanism and consequence typically in different sections."
+    broad: false
 
   - id: "cs_002"
     mode: "cross_section_evidence"
@@ -171,6 +193,7 @@ benchmarks:
     keywords: ["multiversion concurrency control", "read lock", "timestamp", "snapshot", "version", "contention", "conflict"]
     similarity_threshold: 0.62
     notes: "MVCC definition and lock-overhead justification often in separate sections."
+    broad: false
 
   - id: "cs_003"
     mode: "cross_section_evidence"
@@ -179,6 +202,7 @@ benchmarks:
     keywords: ["write-ahead logging", "checkpoint", "recovery", "ARIES", "redo", "undo", "stable storage", "dirty page"]
     similarity_threshold: 0.65
     notes: "WAL and checkpointing defined separately; interaction is the answer."
+    broad: true
 
   - id: "cs_004"
     mode: "cross_section_evidence"
@@ -187,6 +211,7 @@ benchmarks:
     keywords: ["functional dependency", "lossless-join", "decomposition", "superkey", "spurious tuples", "natural join", "intersection"]
     similarity_threshold: 0.62
     notes: "FDs are foundational (earlier chapter); decomposition applies them (later)."
+    broad: true
 
   - id: "cs_005"
     mode: "cross_section_evidence"
@@ -195,6 +220,7 @@ benchmarks:
     keywords: ["query optimizer", "statistics", "catalog", "cost estimation", "join order", "access method", "histogram"]
     similarity_threshold: 0.62
     notes: "Optimizer and catalog usually separate sections; bridge via shared statistics entities."
+    broad: true
 
   - id: "cs_006"
     mode: "cross_section_evidence"
@@ -203,6 +229,7 @@ benchmarks:
     keywords: ["isolation level", "phantom read", "predicate lock", "repeatable read", "serializable", "range query", "insert"]
     similarity_threshold: 0.62
     notes: "Isolation levels and phantom phenomena defined in separate subsections."
+    broad: false
 
   # ── Polysemy queries ─────────────────────────────────────────────────────────
 
@@ -213,6 +240,7 @@ benchmarks:
     keywords: ["key", "relation", "tuple", "superkey", "candidate key", "primary key", "unique", "null"]
     similarity_threshold: 0.62
     notes: "Context entities disambiguate to relational key, not encryption/sort key."
+    broad: false
 
   - id: "pl_002"
     mode: "polysemy"
@@ -221,6 +249,7 @@ benchmarks:
     keywords: ["lock", "transaction", "shared lock", "exclusive lock", "concurrency control", "two-phase locking", "conflict-serializable"]
     similarity_threshold: 0.62
     notes: "Transaction context disambiguates from OS/file locking."
+    broad: false
 
   - id: "pl_003"
     mode: "polysemy"
@@ -229,6 +258,7 @@ benchmarks:
     keywords: ["hash", "indexing", "hash function", "bucket", "overflow", "extendible hashing", "linear hashing"]
     similarity_threshold: 0.62
     notes: "Disambiguates hash indexing from hash join or cryptographic hashing."
+    broad: false
 
   - id: "pl_004"
     mode: "polysemy"
@@ -237,6 +267,7 @@ benchmarks:
     keywords: ["schedule", "transaction", "serial schedule", "serializable", "interleave", "concurrent", "commit"]
     similarity_threshold: 0.62
     notes: "Transaction schedule, not OS scheduling."
+    broad: false
 
   - id: "pl_005"
     mode: "polysemy"
@@ -245,6 +276,7 @@ benchmarks:
     keywords: ["view", "SQL", "virtual relation", "query expression", "updatable view", "materialized view", "catalog"]
     similarity_threshold: 0.62
     notes: "SQL view, disambiguated from UI/MVC view."
+    broad: false
 
   - id: "pl_006"
     mode: "polysemy"
@@ -253,3 +285,4 @@ benchmarks:
     keywords: ["normal form", "1NF", "2NF", "3NF", "BCNF", "redundancy", "functional dependency", "anomaly", "update anomaly"]
     similarity_threshold: 0.62
     notes: "Normal form (normalization), not statistical/geometric 'normal'."
+    broad: true
