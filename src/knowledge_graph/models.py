@@ -135,6 +135,17 @@ class RunMetadata:
 
 
 @dataclass
+class ExtractorConfig:
+    type: str = "json"
+    extractions: str | None = None
+    model: str = "qwen/qwen3-next-80b-a3b-instruct"
+    adaptive_top_n: bool = False
+    keybert_model: str = "all-MiniLM-L6-v2"
+    slm_model_path: str = "models/qwen2.5-1.5b-instruct-q5_k_m.gguf"
+    slm_threads: int = 8
+
+
+@dataclass
 class CanonicalizationConfig:
     llm_model: str = "openai/gpt-4o-mini"
     embed_model: str = "sentence-transformers/all-MiniLM-L6-v2"
@@ -156,6 +167,10 @@ class KGPipelineConfig:
     min_cooccurrence: int = 0
     top_n: int = 10
     embed_model: str = "sentence-transformers/all-MiniLM-L6-v2"
+    partial: bool = False
+    chapter: int | None = None
+    exclude_chapters: list[int] = field(default_factory=list)
+    extractor: ExtractorConfig = field(default_factory=ExtractorConfig)
     canonicalization: CanonicalizationConfig = field(
         default_factory=CanonicalizationConfig
     )
@@ -171,8 +186,10 @@ class KGPipelineConfig:
         kg = dict(data.get("kg_pipeline", {}))
         canon_data = kg.pop("canonicalization", {})
         summary_tree_data = kg.pop("summary_tree", {})
+        extractor_data = kg.pop("extractor", {})
         return cls(
             **kg,
+            extractor=ExtractorConfig(**extractor_data),
             canonicalization=CanonicalizationConfig(**canon_data),
             summary_tree=SummaryTreeConfig(**summary_tree_data),
         )

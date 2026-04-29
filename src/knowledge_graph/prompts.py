@@ -21,7 +21,7 @@ For each group:
 are fully interchangeable word-for-word in any sentence without changing meaning). \
 Topical relatedness, part-whole relationships, abbreviation-expansion pairs with \
 different scope, and general-vs-specific pairs do NOT qualify. When in doubt, keep them separate.
-2. Choose the best canonical label — prefer the form used in academic/textbook literature.
+2. Choose the best canonical label, prefer the form used in academic/textbook literature.
 3. List keywords that are NOT synonymous with any other keyword as standalone.
 Respond in JSON only:
 {{
@@ -29,7 +29,7 @@ Respond in JSON only:
         {{
             "group_id": 1,
             "synonym_groups": [
-                {{"canonical": "label", "members": ["kw1", "kw2"], "reason": "..."}}
+                {{"canonical": "label", "members": ["kw1", "kw2"]}}
             ],
             "standalone": ["kw_x"]
         }}
