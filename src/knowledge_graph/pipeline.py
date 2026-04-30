@@ -33,6 +33,14 @@ def build_kg(
         f"  {len(extractions)} extractions created in {t1 - t0:.2f} seconds"
     )
 
+    raw_extractions_path = os.path.join(output_dir, "input", "extractions.json")
+    os.makedirs(os.path.dirname(raw_extractions_path), exist_ok=True)
+    with open(raw_extractions_path, "w", encoding="utf-8") as f:
+        json.dump(
+            [{"chunk_id": er.chunk_id, "keywords": er.keywords, "stats": er.stats} for er in extractions],
+            f,
+        )
+
     logger.info("Canonicalizing keywords...")
     t0 = time()
     extractions, canon_result = canonicalizer.canonicalize(extractions)
@@ -43,6 +51,9 @@ def build_kg(
         f"{s['merges_performed']} merges, {s['llm_calls']} LLM calls "
         f"in {t1 - t0:.2f} seconds"
     )
+
+    with open(os.path.join(output_dir, "canonical_extractions.json"), "w", encoding="utf-8") as f:
+        json.dump([{"chunk_id": er.chunk_id, "keywords": er.keywords} for er in extractions], f)
 
     logger.info("Linking keywords...")
     t0 = time()

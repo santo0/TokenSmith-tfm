@@ -17,6 +17,7 @@ class Chunk:
 class ExtractionResult:
     chunk_id: int
     keywords: list[str] = field(default_factory=list)
+    stats: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
