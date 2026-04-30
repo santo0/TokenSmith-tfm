@@ -145,16 +145,17 @@ class Canonicalizer:
         )
         return updated, result
 
-    @staticmethod
-    def _collect_keywords(extractions: list[ExtractionResult]) -> list[str]:
-        # List preserves stable order for embedding index alignment, set provides dedup.
+    def _collect_keywords(self, extractions: list[ExtractionResult]) -> list[str]:
+        # Normalize at collection time so clustering and the synonym table operate
+        # on the same forms that _apply will look up later.
         seen: set[str] = set()
         keywords: list[str] = []
         for er in extractions:
             for kw in er.keywords:
-                if kw not in seen:
-                    keywords.append(kw)
-                    seen.add(kw)
+                norm = self._normalize_kw(kw)
+                if norm and norm not in seen:
+                    keywords.append(norm)
+                    seen.add(norm)
         return keywords
 
     def _embed(self, keywords: list[str]) -> np.ndarray:
@@ -195,17 +196,32 @@ class Canonicalizer:
 
     def _verify_with_llm(self, groups: list[list[str]]) -> dict[str, str]:
         """Return a partial synonym table for all keywords in non-singleton groups."""
-        partial: dict[str, str] = {}
-
         small = [g for g in groups if len(g) <= 5]
         large = [g for g in groups if len(g) > 5]
 
-        for i in range(0, len(small), self.batch_size):
-            partial.update(self._llm_call(small[i: i + self.batch_size]))
+        batches: list[list[list[str]]] = [
+            small[i: i + self.batch_size] for i in range(0, len(small), self.batch_size)
+        ] + [[g] for g in large]
 
-        for group in large:
-            partial.update(self._llm_call([group]))
+        if not batches:
+            return {}
 
+        requests_ = [
+            {"messages": self._build_llm_messages(b), "response_format": {"type": "json_object"}}
+            for b in batches
+        ]
+        outcomes = self._client.chat_many(requests_, model=self.llm_model)
+        self._llm_calls += len(requests_)
+
+        partial: dict[str, str] = {}
+        for outcome in outcomes:
+            if isinstance(outcome, Exception):
+                logger.warning("LLM call failed after all attempts (%s) — batch skipped", outcome)
+                continue
+            try:
+                partial.update(self._parse_llm_response(outcome))
+            except Exception as e:
+                logger.warning("LLM response parse failed: %s — batch skipped", e)
         return partial
 
     def _normalize_kw(self, kw: str) -> str:
@@ -213,58 +229,51 @@ class Canonicalizer:
         result = self._normalizer.normalize([kw])
         return result[0] if result else kw.strip().lower()
 
-    def _llm_call(self, groups: list[list[str]]) -> dict[str, str]:
-        """One OpenRouter API call covering a batch of candidate groups.
-
-        Returns a keyword → canonical mapping only for keywords that the LLM
-        confirms are true synonyms. Standalone or unmentioned keywords are omitted;
-        callers treat a missing entry as "no synonym found".
-        """
+    def _build_llm_messages(self, groups: list[list[str]]) -> list[dict]:
         groups_text = "\n".join(
             f"Group {i + 1}: {json.dumps(g)}" for i, g in enumerate(groups)
         )
+        return [
+            {"role": "system", "content": SYNONYM_SYSTEM_PROMPT.format(
+                corpus_description=self.corpus_description)},
+            {"role": "user", "content": SYNONYM_PROMPT.format(groups_text=groups_text)},
+        ]
 
-        system_prompt = SYNONYM_SYSTEM_PROMPT.format(
-            corpus_description=self.corpus_description)
-        user_prompt = SYNONYM_PROMPT.format(groups_text=groups_text)
-
+    def _parse_llm_response(self, content: str) -> dict[str, str]:
         partial: dict[str, str] = {}
+        for group_result in json.loads(content).get("groups", []):
+            for sg in group_result.get("synonym_groups", []):
+                canonical = self._normalize_kw(sg.get("canonical", ""))
+                for member in sg.get("members", []):
+                    if member:
+                        partial[self._normalize_kw(member)] = canonical
+        return partial
 
+    def _llm_call(self, groups: list[list[str]]) -> dict[str, str]:
         try:
             content = self._client.chat(
                 model=self.llm_model,
-                messages=[
-                    {"role": "system", "content": system_prompt},
-                    {"role": "user", "content": user_prompt},
-                ],
+                messages=self._build_llm_messages(groups),
                 response_format={"type": "json_object"},
             )
             self._llm_calls += 1
-
-            parsed = json.loads(content)
-            for group_result in parsed.get("groups", []):
-                for sg in group_result.get("synonym_groups", []):
-                    canonical = self._normalize_kw(sg.get("canonical", ""))
-                    for member in sg.get("members", []):
-                        if member:
-                            partial[self._normalize_kw(member)] = canonical
-
+            return self._parse_llm_response(content)
         except Exception as e:
-            logger.warning(
-                "LLM call failed after all attempts (%s) — batch skipped", e)
+            logger.warning("LLM call failed after all attempts (%s) — batch skipped", e)
+            return {}
 
-        return partial
-
-    @staticmethod
     def _apply(
-        extractions: list[ExtractionResult], synonym_table: dict[str, str]
+        self, extractions: list[ExtractionResult], synonym_table: dict[str, str]
     ) -> list[ExtractionResult]:
         updated = []
         for er in extractions:
             seen: set[str] = set()
             canonical_nodes: list[str] = []
             for kw in er.keywords:
-                canonical = synonym_table.get(kw, kw)
+                norm = self._normalize_kw(kw)
+                # synonym_table keys are normalized; fall back to normalized form,
+                # not the raw string, so singletons are also normalized in the graph.
+                canonical = synonym_table.get(norm, norm)
                 if canonical not in seen:
                     canonical_nodes.append(canonical)
                     seen.add(canonical)

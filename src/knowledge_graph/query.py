@@ -83,6 +83,9 @@ def _tokens_subsumed(short: str, long: str) -> bool:
     return any(wl[i: i + n] == ws for i in range(len(wl) - n + 1))
 
 
+TERM_BLACKLIST = {"a", "and"}
+
+
 def extract_query_nodes(
     query: str,
     graph: nx.Graph,
@@ -106,8 +109,8 @@ def extract_query_nodes(
         List of matched node label strings (may be empty).
     """
     terms = extract_ngrams(query, KW_PATTERN)
-    normalized_terms = _normalizer.normalize(terms)
-
+    fterms = [t for t in terms if t.lower() not in TERM_BLACKLIST]
+    normalized_terms = _normalizer.normalize(fterms)
     if canonical_lookup is not None:
         resolved = {canonical_lookup.resolve(t) for t in normalized_terms}
     else:

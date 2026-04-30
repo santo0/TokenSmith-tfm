@@ -6,7 +6,7 @@ Usage:
         --retriever kg \\
         --top-k 5
 
-Retriever choices: faiss, bm25, kg, section_tree, section_summary, hybrid, section_kg
+Retriever choices: faiss, bm25, kg, kg_filtered_bm25, section_tree, section_summary, hybrid, section_kg
 """
 
 from __future__ import annotations
@@ -17,7 +17,6 @@ import os
 from pathlib import Path
 
 from dotenv import load_dotenv
-
 RELEVANCE_PROMPT = """\
 You are evaluating a retrieval system for a question-answering application.
 
@@ -93,6 +92,23 @@ def _build_retriever(name: str, args: argparse.Namespace, root: Path):
         graph, kg_chunks = load_graph_and_chunks(str(run_path))
         section_tree = None
 
+    if name == "kg_filtered_bm25":
+        import pickle
+        from src.knowledge_graph.kg_filtered_bm25 import KGFilteredBM25Retriever
+        resolved = resolve_run_dir(str(run_path))
+        syn_table, can_kw, can_emb = load_canonicalization_data(resolved)
+        canonical_lookup = CanonicalLookup(syn_table, can_kw, can_emb) if syn_table else None
+        bm25_path = artifacts_path / f"{args.index_prefix}_bm25.pkl"
+        with open(bm25_path, "rb") as fh:
+            bm25_idx = pickle.load(fh)
+        retriever = KGFilteredBM25Retriever(
+            graph=graph,
+            kg_chunks=kg_chunks,
+            bm25_index=bm25_idx,
+            canonical_lookup=canonical_lookup,
+        )
+        return retriever, list(kg_chunks.values()), kg_chunks
+
     resolved = resolve_run_dir(str(run_path))
     syn_table, can_kw, can_emb = load_canonicalization_data(resolved)
     canonical_lookup = CanonicalLookup(syn_table, can_kw, can_emb) if syn_table else None
@@ -140,6 +156,7 @@ def _build_retriever(name: str, args: argparse.Namespace, root: Path):
 
 
 def main() -> None:
+    
     parser = argparse.ArgumentParser(
         description="Run a retriever on a query and grade results with an LLM.",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
@@ -148,7 +165,7 @@ def main() -> None:
     parser.add_argument(
         "--retriever",
         required=True,
-        choices=["faiss", "bm25", "kg", "section_tree", "section_summary", "hybrid", "section_kg"],
+        choices=["faiss", "bm25", "kg", "kg_filtered_bm25", "section_tree", "section_summary", "hybrid", "section_kg"],
     )
     parser.add_argument("--top-k", type=int, default=10)
     parser.add_argument("--run-dir", default="data/knowledge_graph/runs/latest")

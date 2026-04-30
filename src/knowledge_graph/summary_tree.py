@@ -3,7 +3,6 @@ from __future__ import annotations
 import json
 import os
 from dataclasses import asdict, dataclass
-from typing import Callable
 
 import faiss
 
@@ -39,78 +38,18 @@ def _all_chunk_ids(node: SectionNode) -> list[int]:
     return ids
 
 
-def _collect_entries(
-    node: SectionNode,
-    chunks: dict[int, str],
-    summarize_fn: Callable[[list[dict]], str],
-    chunk_window: int,
-    entries: list[SummaryEntry],
-    section_summary_cache: dict[str, str],
-) -> None:
-    """Post-order DFS: build summaries bottom-up and populate *entries*."""
-    if not node.children:
-        # ── Leaf node ────────────────────────────────────────────────────────
-        groups = _windowed(node.chunk_ids, chunk_window)
-        group_summaries: list[str] = []
+def _collect_nodes_by_height(root: SectionNode) -> dict[int, list[SectionNode]]:
+    """Group all descendant nodes by height (0 = leaf, increasing toward root)."""
+    by_height: dict[int, list[SectionNode]] = {}
 
-        for group in groups:
-            text = "\n\n".join(chunks[cid] for cid in group if cid in chunks).strip()
-            if not text:
-                continue
-            summary = summarize_fn([
-                {"role": "system", "content": SUMMARY_SYSTEM_PROMPT},
-                {"role": "user", "content": CHUNK_SUMMARY_PROMPT.format(text=text)},
-            ])
-            entries.append(SummaryEntry(
-                section_number=node.section_number,
-                level=0,
-                chunk_ids=list(group),
-                summary_text=summary,
-            ))
-            group_summaries.append(summary)
+    def walk(node: SectionNode) -> int:
+        h = 0 if not node.children else 1 + max(walk(c) for c in node.children)
+        by_height.setdefault(h, []).append(node)
+        return h
 
-        if group_summaries:
-            section_summary = summarize_fn([
-                {"role": "system", "content": SUMMARY_SYSTEM_PROMPT},
-                {"role": "user", "content": SECTION_SUMMARY_PROMPT.format(
-                    heading=node.heading,
-                    summaries="\n\n".join(group_summaries),
-                )},
-            ])
-            entries.append(SummaryEntry(
-                section_number=node.section_number,
-                level=node.level,
-                chunk_ids=list(node.chunk_ids),
-                summary_text=section_summary,
-            ))
-            section_summary_cache[node.section_number] = section_summary
-    else:
-        # ── Internal node: recurse first ──────────────────────────────────
-        for child in node.children:
-            _collect_entries(
-                child, chunks, summarize_fn, chunk_window, entries, section_summary_cache
-            )
-
-        child_summaries = [
-            section_summary_cache[child.section_number]
-            for child in node.children
-            if child.section_number in section_summary_cache
-        ]
-        if child_summaries:
-            section_summary = summarize_fn([
-                {"role": "system", "content": SUMMARY_SYSTEM_PROMPT},
-                {"role": "user", "content": SECTION_SUMMARY_PROMPT.format(
-                    heading=node.heading,
-                    summaries="\n\n".join(child_summaries),
-                )},
-            ])
-            entries.append(SummaryEntry(
-                section_number=node.section_number,
-                level=node.level,
-                chunk_ids=_all_chunk_ids(node),
-                summary_text=section_summary,
-            ))
-            section_summary_cache[node.section_number] = section_summary
+    for child in root.children:
+        walk(child)
+    return by_height
 
 
 def build_summary_index(
@@ -141,12 +80,102 @@ def build_summary_index(
     """
     entries: list[SummaryEntry] = []
     section_summary_cache: dict[str, str] = {}
-    def summarize_fn(messages): return client.chat(summary_model, messages)
 
-    for top_level_node in section_tree.root.children:
-        _collect_entries(
-            top_level_node, chunks, summarize_fn, chunk_window, entries, section_summary_cache
-        )
+    by_height = _collect_nodes_by_height(section_tree.root)
+    if not by_height:
+        raise ValueError("No summaries generated — section tree may be empty.")
+    max_height = max(by_height)
+
+    # ── Height 0: leaf nodes ──────────────────────────────────────────────
+    leaf_nodes = by_height.get(0, [])
+
+    # Phase A1: all chunk-group summaries across all leaves in one batch
+    chunk_tasks: list[tuple[SectionNode, list[int]]] = []
+    chunk_requests: list[dict] = []
+    for node in leaf_nodes:
+        for group in _windowed(node.chunk_ids, chunk_window):
+            text = "\n\n".join(chunks[cid] for cid in group if cid in chunks).strip()
+            if text:
+                chunk_tasks.append((node, group))
+                chunk_requests.append({"messages": [
+                    {"role": "system", "content": SUMMARY_SYSTEM_PROMPT},
+                    {"role": "user", "content": CHUNK_SUMMARY_PROMPT.format(text=text)},
+                ]})
+
+    chunk_summaries_by_section: dict[str, list[str]] = {}
+    if chunk_requests:
+        outcomes = client.chat_many(chunk_requests, model=summary_model)
+        for (node, group), outcome in zip(chunk_tasks, outcomes):
+            if isinstance(outcome, Exception):
+                continue
+            entries.append(SummaryEntry(
+                section_number=node.section_number,
+                level=0,
+                chunk_ids=list(group),
+                summary_text=outcome,
+            ))
+            chunk_summaries_by_section.setdefault(node.section_number, []).append(outcome)
+
+    # Phase A2: leaf section summaries in one batch
+    leaf_section_tasks: list[SectionNode] = []
+    leaf_section_requests: list[dict] = []
+    for node in leaf_nodes:
+        group_summaries = chunk_summaries_by_section.get(node.section_number, [])
+        if group_summaries:
+            leaf_section_tasks.append(node)
+            leaf_section_requests.append({"messages": [
+                {"role": "system", "content": SUMMARY_SYSTEM_PROMPT},
+                {"role": "user", "content": SECTION_SUMMARY_PROMPT.format(
+                    heading=node.heading,
+                    summaries="\n\n".join(group_summaries),
+                )},
+            ]})
+
+    if leaf_section_requests:
+        outcomes = client.chat_many(leaf_section_requests, model=summary_model)
+        for node, outcome in zip(leaf_section_tasks, outcomes):
+            if isinstance(outcome, Exception):
+                continue
+            entries.append(SummaryEntry(
+                section_number=node.section_number,
+                level=node.level,
+                chunk_ids=list(node.chunk_ids),
+                summary_text=outcome,
+            ))
+            section_summary_cache[node.section_number] = outcome
+
+    # ── Heights 1…max: internal nodes, bottom-up ─────────────────────────
+    for height in range(1, max_height + 1):
+        internal_tasks: list[SectionNode] = []
+        internal_requests: list[dict] = []
+        for node in by_height.get(height, []):
+            child_summaries = [
+                section_summary_cache[child.section_number]
+                for child in node.children
+                if child.section_number in section_summary_cache
+            ]
+            if child_summaries:
+                internal_tasks.append(node)
+                internal_requests.append({"messages": [
+                    {"role": "system", "content": SUMMARY_SYSTEM_PROMPT},
+                    {"role": "user", "content": SECTION_SUMMARY_PROMPT.format(
+                        heading=node.heading,
+                        summaries="\n\n".join(child_summaries),
+                    )},
+                ]})
+
+        if internal_requests:
+            outcomes = client.chat_many(internal_requests, model=summary_model)
+            for node, outcome in zip(internal_tasks, outcomes):
+                if isinstance(outcome, Exception):
+                    continue
+                entries.append(SummaryEntry(
+                    section_number=node.section_number,
+                    level=node.level,
+                    chunk_ids=_all_chunk_ids(node),
+                    summary_text=outcome,
+                ))
+                section_summary_cache[node.section_number] = outcome
 
     if not entries:
         raise ValueError("No summaries generated — section tree may be empty.")
