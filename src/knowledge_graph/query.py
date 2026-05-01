@@ -9,7 +9,7 @@ from src.retriever import Retriever
 from src.knowledge_graph.io import RUNS_DIR, load_graph_and_chunks
 from src.knowledge_graph.section_tree import SectionTree
 from src.knowledge_graph.summary_tree import SummaryEntry
-from src.knowledge_graph.ngrams import KW_PATTERN, extract_ngrams
+from src.knowledge_graph.ngrams import KW_PATTERN, extract_ngrams_with_spans
 from src.knowledge_graph.normalizer import Normalizer
 
 logger = logging.getLogger(__name__)
@@ -51,15 +51,16 @@ class CanonicalLookup:
         self._model_name = embedding_model
         self._model = None  # lazy-load
 
-    def resolve(self, keyword: str) -> str:
-        """Return the canonical form for *keyword*.
+    def resolve_with_score(self, keyword: str) -> tuple[str, float]:
+        """Return ``(canonical_form, confidence)`` for *keyword*.
 
-        1. Dictionary lookup in synonym_table.
-        2. Embedding nearest-neighbour fallback (if threshold met).
-        3. Return *keyword* unchanged if no mapping found.
+        Confidence values:
+        - ``1.0`` for a synonym-table hit.
+        - Cosine similarity (≥ fallback_threshold) for an embedding hit.
+        - ``0.0`` if no mapping is found (original keyword returned).
         """
         if keyword in self.synonym_table:
-            return self.synonym_table[keyword]
+            return self.synonym_table[keyword], 1.0
 
         if self._model is None:
             from sentence_transformers import SentenceTransformer
@@ -69,18 +70,19 @@ class CanonicalLookup:
         sims = cos_sim(emb, self.canonical_embeddings)[0]
         best_idx = int(np.argmax(sims))
         if sims[best_idx] >= self.fallback_threshold:
-            synonym = self.canonical_keywords[best_idx]
-            # print(f"Embedding fallback: '{keyword}' → '{synonym}' (sim={sims[best_idx]:.4f})")
-            return synonym
+            return self.canonical_keywords[best_idx], float(sims[best_idx])
 
-        return keyword
+        return keyword, 0.0
 
+    def resolve(self, keyword: str) -> str:
+        """Return the canonical form for *keyword*.
 
-def _tokens_subsumed(short: str, long: str) -> bool:
-    """Return True if the tokens of *short* appear contiguously inside *long*."""
-    ws, wl = short.split(), long.split()
-    n = len(ws)
-    return any(wl[i: i + n] == ws for i in range(len(wl) - n + 1))
+        1. Dictionary lookup in synonym_table.
+        2. Embedding nearest-neighbour fallback (if threshold met).
+        3. Return *keyword* unchanged if no mapping found.
+        """
+        return self.resolve_with_score(keyword)[0]
+
 
 
 TERM_BLACKLIST = {"a", "and"}
@@ -93,10 +95,20 @@ def extract_query_nodes(
 ) -> list[str]:
     """Match query terms against graph node labels.
 
-    Generates unigrams, bigrams, and trigrams from *query*, normalises them,
-    optionally maps each to its canonical form via *canonical_lookup*, and
-    returns any that are present as nodes in *graph*. Shorter nodes that are
-    token-level substrings of a longer matched node are dropped.
+    Generates position-tagged unigrams, bigrams, and trigrams from *query*,
+    normalises each, optionally resolves to a canonical form, and returns the
+    highest-confidence non-overlapping set that exists as nodes in *graph*.
+
+    Candidates are scored as follows:
+    - Direct graph hit (no resolution needed): 2.0
+    - Synonym-table resolution: 1.0
+    - Embedding-fallback resolution: actual cosine similarity (0.85–1.0)
+
+    Candidates are sorted by (confidence desc, n-gram length desc) and selected
+    greedily: once a token position is claimed by a winning candidate, any other
+    candidate that overlaps that position is skipped. This prevents overlapping
+    n-grams (e.g. "binary trees" and "trees for") from both being included when
+    they compete for the same query token.
 
     Args:
         query: Natural-language query string.
@@ -108,20 +120,37 @@ def extract_query_nodes(
     Returns:
         List of matched node label strings (may be empty).
     """
-    terms = extract_ngrams(query, KW_PATTERN)
-    fterms = [t for t in terms if t.lower() not in TERM_BLACKLIST]
-    normalized_terms = _normalizer.normalize(fterms)
-    if canonical_lookup is not None:
-        resolved = {canonical_lookup.resolve(t) for t in normalized_terms}
-    else:
-        resolved = set(normalized_terms)
+    candidates = extract_ngrams_with_spans(query, KW_PATTERN)
+    candidates = [(t, pos) for t, pos in candidates if t.lower() not in TERM_BLACKLIST]
 
-    matched = [t for t in resolved if graph.has_node(t)]
-    filtered = [
-        n for n in matched
-        if not any(n != m and _tokens_subsumed(n, m) for m in matched)
-    ]
-    return filtered
+    scored: list[tuple[str, frozenset[int], float]] = []
+    for ngram, positions in candidates:
+        normalized = _normalizer.normalize([ngram])
+        if not normalized:
+            continue
+        norm = normalized[0]
+
+        if graph.has_node(norm):
+            scored.append((norm, positions, 2.0))
+        elif canonical_lookup is not None:
+            canonical, score = canonical_lookup.resolve_with_score(norm)
+            if score > 0 and graph.has_node(canonical):
+                scored.append((canonical, positions, score))
+
+    scored.sort(key=lambda x: (x[2], len(x[1])), reverse=True)
+
+    used: set[int] = set()
+    seen: set[str] = set()
+    result: list[str] = []
+    for term, positions, _ in scored:
+        if positions & used:
+            continue
+        used |= positions
+        if term not in seen:
+            seen.add(term)
+            result.append(term)
+
+    return result
 
 
 def extract_query_nodes_hybrid(
