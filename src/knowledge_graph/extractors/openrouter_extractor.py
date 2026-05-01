@@ -11,6 +11,23 @@ from src.knowledge_graph.prompts import OPENROUTER_KEYWORD_EXTRACTION_PROMPT
 
 logger = logging.getLogger(__name__)
 
+_RE_WORD_SEPARATORS = re.compile(r"[-_]")
+_RE_NON_ALNUM = re.compile(r"[^a-z0-9\s]")
+_RE_MULTI_SPACE = re.compile(r"\s+")
+
+
+def _normalize_for_matching(text: str) -> str:
+    """Normalize text for loose keyword-in-text matching.
+
+    Treats hyphens/underscores as spaces and drops other punctuation so that
+    "B+-TREE", "B + - TREE", and "b+-tree" all collapse to "b tree".
+    """
+    text = text.lower()
+    text = _RE_WORD_SEPARATORS.sub(" ", text)
+    text = _RE_NON_ALNUM.sub("", text)
+    text = _RE_MULTI_SPACE.sub(" ", text)
+    return text.strip()
+
 
 class OpenRouterExtractor(BaseExtractor):
     """Keyword extractor using OpenRouter."""
@@ -74,7 +91,8 @@ class OpenRouterExtractor(BaseExtractor):
         return result
 
     def _is_keyword_in_text(self, keyword: str, text: str) -> bool:
-        return keyword.lower() in text.lower()
+        norm_kw = _normalize_for_matching(keyword)
+        return bool(norm_kw) and norm_kw in _normalize_for_matching(text)
 
     def _build_result(self, chunk: Chunk, keywords_raw: list[str], requested_n: int) -> ExtractionResult:
         valid = [kw for kw in keywords_raw if self._is_keyword_in_text(kw, chunk.text)]
@@ -88,6 +106,8 @@ class OpenRouterExtractor(BaseExtractor):
                 "requested_n": requested_n,
                 "total_extracted": len(keywords_raw),
                 "invented_count": invented,
+                "shortfall": max(0, requested_n - len(keywords_raw)),
+                "excess": max(0, len(keywords_raw) - requested_n),
             },
         )
 
@@ -163,12 +183,16 @@ class OpenRouterExtractor(BaseExtractor):
             r.stats.get("invented_count", 0) for r in results  # type: ignore[union-attr]
         )
         self.metadata["chunks_with_shortfall"] = sum(
-            1 for r in results  # type: ignore[union-attr]
-            if r.stats.get("total_extracted", r.stats.get("requested_n", 0)) < r.stats.get("requested_n", 0)  # type: ignore[union-attr]
+            1 for r in results if r.stats.get("shortfall", 0) > 0  # type: ignore[union-attr]
         )
         self.metadata["total_shortfall"] = sum(
-            max(0, r.stats.get("requested_n", 0) - r.stats.get("total_extracted", 0))  # type: ignore[union-attr]
-            for r in results
+            r.stats.get("shortfall", 0) for r in results  # type: ignore[union-attr]
+        )
+        self.metadata["chunks_with_excess"] = sum(
+            1 for r in results if r.stats.get("excess", 0) > 0  # type: ignore[union-attr]
+        )
+        self.metadata["total_excess"] = sum(
+            r.stats.get("excess", 0) for r in results  # type: ignore[union-attr]
         )
 
         return results  # type: ignore[return-value]

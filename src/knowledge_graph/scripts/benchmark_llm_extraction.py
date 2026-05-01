@@ -130,7 +130,9 @@ def run_extraction(
 
     results = []
     for chunk, (content_or_exc, meta, latency) in zip(chunks, raw):
+        requested_n = _top_n_for(chunk, adaptive, top_n)
         usage = (meta or {}).get("usage", {})
+        text_lower = chunk.text.lower()
         if isinstance(content_or_exc, Exception):
             logger.error("[%s] chunk %d failed: %s",
                          model, chunk.id, content_or_exc)
@@ -141,6 +143,9 @@ def run_extraction(
                     "latency_s": latency,
                     "usage": usage,
                     "error": str(content_or_exc),
+                    "requested_n": requested_n,
+                    "invented_count": 0,
+                    "shortfall": requested_n,
                 }
             )
         else:
@@ -150,6 +155,9 @@ def run_extraction(
                 logger.error("[%s] chunk %d parse error: %s",
                              model, chunk.id, e)
                 keywords = []
+            invented = sum(1 for kw in keywords if kw.lower() not in text_lower)
+            shortfall = max(0, requested_n - len(keywords))
+            excess = max(0, len(keywords) - requested_n)
             results.append(
                 {
                     "chunk_id": chunk.id,
@@ -157,6 +165,10 @@ def run_extraction(
                     "latency_s": latency,
                     "usage": usage,
                     "error": None,
+                    "requested_n": requested_n,
+                    "invented_count": invented,
+                    "shortfall": shortfall,
+                    "excess": excess,
                 }
             )
     return results
@@ -225,6 +237,32 @@ def aggregate_cost(results: list[dict], pricing: dict, model: str) -> dict:
     }
 
 
+def aggregate_quality(results: list[dict]) -> dict:
+    """Aggregate keyword invention, shortfall, and excess stats across chunks."""
+    n = len(results)
+    if n == 0:
+        return {}
+    total_requested = sum(r.get("requested_n", 0) for r in results)
+    total_returned = sum(len(r.get("keywords", [])) for r in results)
+    total_invented = sum(r.get("invented_count", 0) for r in results)
+    total_shortfall = sum(r.get("shortfall", 0) for r in results)
+    total_excess = sum(r.get("excess", 0) for r in results)
+    return {
+        "chunks_with_invented": sum(1 for r in results if r.get("invented_count", 0) > 0),
+        "total_invented": total_invented,
+        "invented_rate": round(total_invented / (total_returned + total_invented), 4)
+            if (total_returned + total_invented) > 0 else 0.0,
+        "chunks_with_shortfall": sum(1 for r in results if r.get("shortfall", 0) > 0),
+        "total_shortfall": total_shortfall,
+        "shortfall_rate": round(total_shortfall / total_requested, 4)
+            if total_requested > 0 else 0.0,
+        "chunks_with_excess": sum(1 for r in results if r.get("excess", 0) > 0),
+        "total_excess": total_excess,
+        "excess_rate": round(total_excess / total_requested, 4)
+            if total_requested > 0 else 0.0,
+    }
+
+
 # ---------------------------------------------------------------------------
 # Summary table
 # ---------------------------------------------------------------------------
@@ -251,6 +289,9 @@ def print_summary(models: list[str], model_stats: dict[str, dict]) -> None:
         f"  {'cost(USD)':>{col_v}}"
         f"  {'tokens':>{col_v}}"
         f"  {'jaccard':>{col_v}}"
+        f"  {'inv%':>{col_v}}"
+        f"  {'short%':>{col_v}}"
+        f"  {'excess%':>{col_v}}"
     )
     sep = "-" * len(header)
     print(f"\n{sep}\n{header}\n{sep}")
@@ -260,6 +301,10 @@ def print_summary(models: list[str], model_stats: dict[str, dict]) -> None:
         lat = stats.get("latency", {})
         cost = stats.get("cost", {})
         j = stats.get("jaccard", {})
+        q = stats.get("quality", {})
+        inv_pct = q["invented_rate"] * 100 if "invented_rate" in q else None
+        short_pct = q["shortfall_rate"] * 100 if "shortfall_rate" in q else None
+        excess_pct = q["excess_rate"] * 100 if "excess_rate" in q else None
         print(
             f"{model:<{col_m}}"
             f"  {_fmt(lat.get('median_s'), 'f'):>{col_v}}"
@@ -267,6 +312,9 @@ def print_summary(models: list[str], model_stats: dict[str, dict]) -> None:
             f"  {_fmt(cost.get('estimated_total_usd'), '$'):>{col_v}}"
             f"  {_fmt(cost.get('total_tokens'), 'i'):>{col_v}}"
             f"  {_fmt(j.get('mean'), 'f'):>{col_v}}"
+            f"  {_fmt(inv_pct, 'f'):>{col_v}}"
+            f"  {_fmt(short_pct, 'f'):>{col_v}}"
+            f"  {_fmt(excess_pct, 'f'):>{col_v}}"
         )
 
     print(sep)
@@ -281,6 +329,7 @@ def run_benchmark(args: argparse.Namespace) -> dict:
     all_chunks = load_chunks(args.chunks_path, args.meta_path)
     chunks = random.Random(args.seed).sample(
         all_chunks, min(args.n_chunks, len(all_chunks)))
+    chunks = [ x for x in all_chunks if x.id == 1182 ]
     logger.info("Sampled %d / %d chunks (seed=%d)",
                 len(chunks), len(all_chunks), args.seed)
 
@@ -313,6 +362,7 @@ def run_benchmark(args: argparse.Namespace) -> dict:
             "latency": aggregate_latency(results),
             "cost": aggregate_cost(results, pricing, model),
             "jaccard": compute_jaccard(results, reference),
+            "quality": aggregate_quality(results),
         }
 
     return {
