@@ -1,288 +1,839 @@
 benchmarks:
-  - id: "aggregation_grouping"
-    question: "How do aggregation with grouping work?"
-    expected_answer: "Aggregation partitions tuples by grouping attributes and applies functions like sum, avg, min, max to each group, producing one result per group."
-    keywords: ["aggregation", "grouping"]
-    similarity_threshold: 0.8
-    ideal_retrieved_chunks: [1039, 1040, 1496, 1497, 714]
-    broad: false
-
-  - id: "acid_properties"
-    question: "What are the ACID properties of transactions?"
-    expected_answer: "Atomicity ensures a transaction's actions are all-or-nothing, enforced by abort/rollback and recovery that can undo partial effects; consistency requires each transaction to preserve database integrity when run alone and relies on the scheduler to admit serializable, recoverable, and preferably cascadeless schedules; isolation makes concurrent executions equivalent to some serial order, commonly achieved with two-phase locking variants that prevent reads of uncommitted data; durability guarantees committed effects persist across crashes via logging to stable storage and redo on restart;"
-    keywords: ["ACID property", "transactions"]
-    similarity_threshold: 0.82
-    ideal_retrieved_chunks: [1143, 1142, 1145, 1146, 1148]
-    broad: true
-
-  - id: "bptree"
-    question: "How does a B+ tree index organize keys and support search, insert, and delete, and why is it preferred over binary trees for disk-based access"
-    expected_answer: "B+-trees match node size to a disk page, giving very high fan-out and a shallow, height-balanced tree, so searches/updates require few page I/Os."
-    keywords: ["B+ tree", "index", "keys", "search", "insert", "delete", "binary trees", "disk-based access"]
-    similarity_threshold: 0.78
-    ideal_retrieved_chunks: [908, 909, 940, 937, 938]
-    broad: false
-
-  - id: "fd_normalization"
-    question: "What are functional dependencies?"
-    expected_answer: "A functional dependency X -> Y asserts that tuples agreeing on X must agree on Y."
-    keywords: ["functional dependencies"]
-    similarity_threshold: 0.7
-    ideal_retrieved_chunks: [438, 439, 463, 451, 484]
-    broad: false
-
-  - id: "sql_isolation"
-    question: "What isolation guarantees does SQL provide by default?"
-    expected_answer: "Serializable. In the SQL standard, the default isolation level is Serializable, which guarantees that the outcome of concurrently executing transactions is equivalent to some serial (one-at-a-time) order of those transactions—thereby preventing dirty reads, nonrepeatable reads, and phantoms."
-    keywords: ["isolation", "guarantees", "by default", "SQL"]
-    similarity_threshold: 0.7
-    ideal_retrieved_chunks: [1173, 1174, 1142, 1143, 1172]
-    broad: false
-
-  - id: "primary_foreign_keys"
-    question: "Explain primary keys and foreign keys"
-    expected_answer: "A primary key is a set of one or more attributes that uniquely identifies each tuple in a relation, chosen from candidate keys which are minimal superkeys; primary key attributes are underlined in schema diagrams and cannot have null values. A foreign key is a set of attributes in one relation (the referencing relation) that references the primary key of another relation (the referenced relation), establishing a referential integrity constraint that requires values in the foreign key to match values in the referenced primary key, thereby linking related data across tables."
-    keywords: ["primary keys", "foreign keys"]
-    similarity_threshold: 0.72
-    ideal_retrieved_chunks: [90, 91, 119, 93, 94]
-    broad: false
-
-  - id: "database_schema"
-    question: "What is a database schema"
-    expected_answer: "A database schema is the overall logical design and structure of the database, analogous to variable declarations in a program, defining the relations, their attributes, data types, and constraints including primary keys and foreign keys. The schema remains relatively stable over time, while a database instance represents the actual collection of data stored at a particular moment, with values that change as information is inserted, deleted, or modified."
-    keywords: ["database schema"]
-    similarity_threshold: 0.70
-    ideal_retrieved_chunks: [49, 50, 51, 250, 60]
-    broad: false
-
-  - id: "book_authors"
-    question: "Tell me about the authors of the book"
-    expected_answer: "The authors of Database System Concepts Seventh Edition are Abraham Silberschatz, a Professor at Yale University and former Bell Labs vice president who is an ACM and IEEE fellow; Henry F. Korth, a Professor at Lehigh University who previously worked at Bell Labs and is also an ACM and IEEE fellow; and S. Sudarshan, the Subrao M. Nilekani Chair Professor at the Indian Institute of Technology Bombay who received his Ph.D. from the University of Wisconsin and is an ACM fellow, with research focusing on query processing and optimization."
-    keywords: ["authors", "book"]
-    similarity_threshold: 0.65
-    ideal_retrieved_chunks: [1, 2, 0, 3, 22]
-    broad: false
-
-  - id: "aries_atomicity"
-    question: "How does the recovery manager use ARIES to ensure atomicity"
-    expected_answer: "The ARIES recovery algorithm ensures atomicity by maintaining a write-ahead log where all updates are recorded before being applied to the database, with each log record containing transaction ID, data item, old value, and new value. During normal operation, log records are written to stable storage before the transaction commits; if a transaction aborts or the system crashes, the recovery manager uses the log to undo uncommitted transactions by applying the old values in reverse order, ensuring that partial effects of incomplete transactions are completely rolled back and the all-or-nothing property of atomicity is preserved."
-    keywords: ["ARIES", "recovery manager", "atomicity"]
-    similarity_threshold: 0.75
-    ideal_retrieved_chunks: [1355, 1356, 1358, 1353, 1359]
-    broad: false
-
-  - id: "oltp_vs_analytics"
-    question: "Contrast the goals of Online Transaction Processing and data analytics"
-    expected_answer: "Online Transaction Processing (OLTP) supports a large number of concurrent users performing small, fast transactions that retrieve and update relatively small amounts of data with requirements for high throughput, low latency, and immediate consistency, typically using normalized schemas optimized for transactional integrity. Data analytics, in contrast, processes large volumes of historical data to draw conclusions and infer patterns for business intelligence and decision support, involving complex queries that scan and aggregate data across many records, often using denormalized schemas like star schemas in data warehouses optimized for read-heavy analytical workloads rather than transactional updates."
-    keywords: ["online transaction processing", "data analytics"]
-    similarity_threshold: 0.73
-    ideal_retrieved_chunks: [33, 34, 738, 739, 741]
-    broad: true
-
-  - id: "lossy_decomposition"
-    question: "Show me what happens during a lossy decomposition"
-    expected_answer: "A lossy decomposition occurs when a relation R is decomposed into smaller relations R1 and R2 such that joining them back together produces spurious tuples not present in the original relation, resulting in loss of information about which attribute combinations actually existed. This happens when the intersection of R1 and R2 does not form a superkey for either relation, violating the lossless-join condition; the natural join of the decomposed relations generates extra tuples from invalid combinations, making it impossible to reconstruct the original data accurately, which is why database design insists that all decompositions must be lossless."
-    keywords: ["lossy decomposition"]
-    similarity_threshold: 0.70
-    ideal_retrieved_chunks: [431, 430, 432, 433, 440]
-    broad: false
-
-  - id: "physical_storage_media"
-    question: "What are different physical storage media?"
-    expected_answer: "Physical storage media include cache memory (fastest, most volatile), main/DRAM memory (fast but volatile), flash/SSD memory (non-volatile, fast reads), magnetic disks/HDDs (non-volatile, high capacity, slower mechanical access), optical disks (removable, sequential-friendly), and magnetic tape (cheapest, sequential-only, archival). They form a storage hierarchy from fastest and most expensive per byte at the top to slowest and cheapest at the bottom, and are classified as volatile (lose data on power loss) or non-volatile."
-    keywords: ["physical storage media"]
-    similarity_threshold: 0.65
-    ideal_retrieved_chunks: [736, 737, 738, 739, 740]
-    broad: true
-
-  - id: "hdd_vs_ssd"
-    question: "What are the main differences between HDD and SSD storage devices?"
-    expected_answer: "HDDs use rotating magnetic platters with mechanical read/write heads, incurring seek time and rotational latency that slow random access; SSDs use NAND flash memory with no moving parts, offering faster random access, lower latency, and better shock resistance. SSDs are historically more expensive per gigabyte but that gap has narrowed; flash cells also have a limited number of write cycles before wearing out, whereas HDD capacity per dollar remains higher for bulk storage."
-    keywords: ["HDD", "SSD", "storage devices"]
-    similarity_threshold: 0.65
-    ideal_retrieved_chunks: [737]
-    broad: false
-
-  - id: "storage_media_comparison"
-    question: "How do different physical storage media differ in terms of volatility, access speed, and cost?"
-    expected_answer: "Storage media form a hierarchy inversely ordered by speed and cost: volatile cache and DRAM provide nanosecond access at the highest cost per byte; non-volatile flash gives microsecond-range access at moderate cost; magnetic disks offer millisecond access at low cost with large capacity; optical disks and magnetic tape are cheapest and slowest, suited for archival use. Faster media is always more expensive per byte, and primary storage (cache, DRAM) is volatile while secondary and tertiary storage (flash, disk, tape) is non-volatile."
-    keywords: ["physical storage media", "volatility", "access speed", "cost"]
-    similarity_threshold: 0.65
-    ideal_retrieved_chunks: [736, 737, 738, 739, 740, 748, 751]
-    broad: true
-
-  - id: "shared_nothing_architecture"
-    question: "What is a shared-nothing architecture?"
-    expected_answer: "A shared-nothing architecture is a distributed database design in which each processing node has its own private memory and local disk storage with no shared resources between nodes. Nodes communicate exclusively via a high-speed interconnect using message passing. This eliminates resource contention, enables linear scalability by adding independent nodes, and is the dominant model for parallel and distributed database systems."
-    keywords: ["shared-nothing architecture"]
-    similarity_threshold: 0.65
-    ideal_retrieved_chunks: [1326]
-    broad: false
-
-  # ── Entity-confusability queries ────────────────────────────────────────────
-
-  - id: "ec_001"
-    mode: "entity_confusability"
-    question: "What's the difference between two-phase locking and strict two-phase locking?"
-    expected_answer: "Two-phase locking (2PL) acquires all locks before releasing any but may release exclusive locks before the transaction commits, which can cause cascading rollbacks if that transaction later aborts. Strict 2PL holds all exclusive locks until the transaction commits or aborts, preventing dirty reads and cascading aborts entirely, making recovery straightforward."
-    keywords: ["two-phase locking", "strict two-phase locking"]
-    similarity_threshold: 0.62
-    notes: "Qualifier 'strict' gets smeared in dense retrieval; KG treats as distinct nodes."
-    broad: false
-
-  - id: "ec_002"
-    mode: "entity_confusability"
-    question: "When should I use a B+ tree instead of a B-tree?"
-    expected_answer: "B+ trees store all data records only in leaf nodes, which are linked in a sorted chain enabling efficient range scans via sequential traversal. Internal nodes contain only routing keys. B-trees store data in both internal and leaf nodes, giving faster single-key lookups in some cases but making range queries expensive. For disk-based database indexes where range scans are common, B+ trees are preferred."
-    keywords: ["B+ tree", "B-tree"]
-    similarity_threshold: 0.62
-    notes: "Close in embedding space, distinct in KG."
-    broad: false
-
-  - id: "ec_003"
-    mode: "entity_confusability"
-    question: "Explain the difference between serializability and serializable schedules."
-    expected_answer: "Serializability is a correctness criterion: a concurrent schedule is serializable if its effect on the database is equivalent to some serial (one-at-a-time) execution of the same transactions. A serializable schedule is a specific interleaving of operations that satisfies this criterion. Conflict serializability is the most commonly checked variant, verified by the absence of cycles in the transaction precedence graph."
-    keywords: ["serializability", "serializable schedules"]
-    similarity_threshold: 0.62
-    notes: "Noun-vs.-adjective form, nearly identical embeddings."
-    broad: false
-
-  - id: "ec_004"
-    mode: "entity_confusability"
-    question: "How is 3NF different from BCNF?"
-    expected_answer: "BCNF requires that for every non-trivial functional dependency X→Y, X is a superkey. 3NF is weaker: it additionally permits Y to be a prime attribute (part of some candidate key). Every BCNF relation is in 3NF but not vice versa. The practical trade-off is that 3NF always admits a lossless, dependency-preserving decomposition, whereas BCNF may require sacrificing dependency preservation."
-    keywords: ["3NF", "BCNF"]
-    similarity_threshold: 0.62
-    notes: "Both normalization entities; dense retrieval blends them."
-    broad: false
-
-  - id: "ec_005"
-    mode: "entity_confusability"
-    question: "What distinguishes hash indexing from hash join?"
-    expected_answer: "A hash index is a persistent data structure that uses a hash function to map key values to bucket addresses on disk, supporting O(1) average point lookups. A hash join is a query-execution algorithm that partitions both input relations by hashing the join attribute, then probes one partition against the other to find matching tuples; it is a transient, in-memory (or buffer-managed) operation, not a stored structure."
-    keywords: ["hash indexing", "hash join"]
-    similarity_threshold: 0.62
-    notes: "Shared 'hash' token dominates dense similarity; KG keeps them apart via neighborhoods."
-    broad: false
-
-  - id: "ec_006"
-    mode: "entity_confusability"
-    question: "ACID vs. BASE — when does each apply?"
-    expected_answer: "ACID (Atomicity, Consistency, Isolation, Durability) governs traditional relational transactions that require strong consistency guarantees. BASE (Basically Available, Soft state, Eventually consistent) applies to distributed NoSQL systems that trade strict consistency for high availability and partition tolerance under the CAP theorem, accepting that replicas may diverge temporarily and converge eventually."
-    keywords: ["ACID", "BASE"]
-    similarity_threshold: 0.60
-    notes: "BASE is rarer in corpus; dense retrieval biased toward ACID chunks."
-    broad: true
-
-  # ── Cross-section evidence queries ──────────────────────────────────────────
-
-  - id: "cs_001"
-    mode: "cross_section_evidence"
-    question: "How does strict two-phase locking prevent cascading rollbacks?"
-    expected_answer: "Strict two-phase locking holds all exclusive locks until a transaction commits or aborts. Because no other transaction can read a data item whose exclusive lock has not been released, no transaction ever reads uncommitted (dirty) data. If a transaction aborts, no concurrent transaction has seen its changes, so there is nothing to cascade-abort."
-    keywords: ["strict two-phase locking", "cascading rollback"]
-    similarity_threshold: 0.62
-    notes: "Mechanism and consequence typically in different sections."
-    broad: false
-
-  - id: "cs_002"
-    mode: "cross_section_evidence"
-    question: "Why does multiversion concurrency control avoid read locks?"
-    expected_answer: "Multiversion concurrency control (MVCC) keeps multiple timestamped versions of each data item. A reading transaction accesses the most recent version committed before its start timestamp without blocking writers, because it reads from a snapshot that writers cannot modify. Since reads and writes target different versions, they never conflict, so read locks are unnecessary and read throughput is greatly improved."
-    keywords: ["multiversion concurrency control", "read lock"]
-    similarity_threshold: 0.62
-    notes: "MVCC definition and lock-overhead justification often in separate sections."
-    broad: false
-
-  - id: "cs_003"
-    mode: "cross_section_evidence"
-    question: "How do write-ahead logging and checkpointing work together during recovery?"
-    expected_answer: "Write-ahead logging (WAL) guarantees every update is recorded to stable storage before the modified page is written to disk. Checkpointing periodically flushes dirty pages and records a checkpoint in the log, bounding the recovery window. During recovery (as in ARIES), the system replays all log records from the last checkpoint forward to redo committed updates, then scans backward to undo any uncommitted transactions."
-    keywords: ["write-ahead logging", "checkpointing", "recovery"]
-    similarity_threshold: 0.65
-    notes: "WAL and checkpointing defined separately; interaction is the answer."
-    broad: true
-
-  - id: "cs_004"
-    mode: "cross_section_evidence"
-    question: "What's the relationship between functional dependencies and lossless-join decomposition?"
-    expected_answer: "A decomposition of R into R1 and R2 is lossless-join if and only if the shared attributes R1∩R2 functionally determine all attributes of R1 or of R2—i.e., R1∩R2 is a superkey for at least one of them. This condition is verified by checking the given functional dependencies. When satisfied, the natural join of R1 and R2 reconstructs R exactly with no spurious tuples."
-    keywords: ["functional dependencies", "lossless-join decomposition"]
-    similarity_threshold: 0.62
-    notes: "FDs are foundational (earlier chapter); decomposition applies them (later)."
-    broad: true
-
-  - id: "cs_005"
-    mode: "cross_section_evidence"
-    question: "How does the query optimizer use statistics from the catalog?"
-    expected_answer: "The query optimizer reads statistics stored in the system catalog—number of tuples per relation, number of distinct values per attribute, and value-distribution histograms—to estimate the cost (in I/O operations and CPU) of alternative query plans. It enumerates join orders, access methods (index scan vs. sequential scan), and join algorithms, selects the plan with minimum estimated cost, and generates executable code for it."
-    keywords: ["query optimizer", "statistics", "catalog"]
-    similarity_threshold: 0.62
-    notes: "Optimizer and catalog usually separate sections; bridge via shared statistics entities."
-    broad: true
-
-  - id: "cs_006"
-    mode: "cross_section_evidence"
-    question: "Why do isolation levels affect phantom reads?"
-    expected_answer: "Phantom reads occur when a transaction re-executes a predicate-based query and finds new rows inserted by a committed concurrent transaction. Lower isolation levels (Read Committed, Repeatable Read) lock only existing rows, leaving the predicate range open to new insertions. Serializable isolation prevents phantoms by using predicate locks or next-key locks that block any insert satisfying the scanned predicate."
-    keywords: ["isolation levels", "phantom reads"]
-    similarity_threshold: 0.62
-    notes: "Isolation levels and phantom phenomena defined in separate subsections."
-    broad: false
-
-  # ── Polysemy queries ─────────────────────────────────────────────────────────
-
-  - id: "pl_001"
-    mode: "polysemy"
-    question: "What is a key in the context of relations and tuples?"
-    expected_answer: "In the relational model, a key is a set of attributes that uniquely identifies each tuple in a relation. A superkey is any attribute set with this uniqueness property; a candidate key is a minimal superkey (no proper subset is also a superkey); and the primary key is the candidate key chosen by the designer as the principal identifier, whose attributes are prohibited from being null."
-    keywords: ["key", "relations", "tuples"]
-    similarity_threshold: 0.62
-    notes: "Context entities disambiguate to relational key, not encryption/sort key."
-    broad: false
-
-  - id: "pl_002"
-    mode: "polysemy"
-    question: "Explain a lock in a transaction context."
-    expected_answer: "In transaction management, a lock is a concurrency-control mechanism that regulates access to a shared data item. A shared (read) lock allows multiple transactions to read the item simultaneously; an exclusive (write) lock permits only one transaction to modify it and blocks all other accesses. Lock protocols such as two-phase locking specify when locks must be acquired and released to ensure conflict-serializable schedules."
-    keywords: ["lock", "transaction"]
-    similarity_threshold: 0.62
-    notes: "Transaction context disambiguates from OS/file locking."
-    broad: false
-
-  - id: "pl_003"
-    mode: "polysemy"
-    question: "How does a hash work for indexing?"
-    expected_answer: "A hash index applies a hash function to a search-key value to compute a bucket address in a hash table stored on disk. To look up a key, the hash function is evaluated and the target bucket is scanned for matching records, giving O(1) average access time. Static hashing uses a fixed bucket count; extendible and linear hashing grow the table dynamically to handle overflow without degrading performance."
-    keywords: ["hash", "indexing"]
-    similarity_threshold: 0.62
-    notes: "Disambiguates hash indexing from hash join or cryptographic hashing."
-    broad: false
-
-  - id: "pl_004"
-    mode: "polysemy"
-    question: "What's a schedule when talking about transactions?"
-    expected_answer: "A schedule in transaction management is an ordering that interleaves the read, write, commit, and abort operations of multiple concurrent transactions while preserving the internal order of each transaction's operations. A serial schedule runs transactions sequentially with no interleaving; a serializable schedule is any interleaved schedule whose effect on the database is equivalent to some serial schedule."
-    keywords: ["schedule", "transactions"]
-    similarity_threshold: 0.62
-    notes: "Transaction schedule, not OS scheduling."
-    broad: false
-
-  - id: "pl_005"
-    mode: "polysemy"
-    question: "Describe a view in SQL."
-    expected_answer: "A view in SQL is a named virtual relation defined by a stored query expression. It does not physically store data; querying the view re-executes the defining query at runtime. Views simplify complex queries, restrict visible data for security, and can be made updatable when defined on a single base table without aggregation or distinct. Materialized views do store results and must be refreshed when the base data changes."
-    keywords: ["view", "SQL"]
-    similarity_threshold: 0.62
-    notes: "SQL view, disambiguated from UI/MVC view."
-    broad: false
-
-  - id: "pl_006"
-    mode: "polysemy"
-    question: "What does normal form mean in database design?"
-    expected_answer: "A normal form is a standard that characterizes and eliminates redundancy and update anomalies in relational schemas. 1NF requires all attributes to be atomic; 2NF eliminates partial dependencies on the primary key; 3NF eliminates transitive dependencies on non-prime attributes; BCNF strengthens 3NF by requiring every determinant to be a superkey. Higher normal forms (4NF, 5NF) address multi-valued and join dependencies."
-    keywords: ["normal form", "database design"]
-    similarity_threshold: 0.62
-    notes: "Normal form (normalization), not statistical/geometric 'normal'."
-    broad: true
+- id: aggregation_grouping
+  question: How do aggregation with grouping work?
+  expected_answer: Aggregation partitions tuples by grouping attributes and applies
+    functions like sum, avg, min, max to each group, producing one result per group.
+  keywords:
+  - aggregation
+  - grouping
+  similarity_threshold: 0.8
+  ideal_retrieved_chunks:
+  - 1039
+  - 1040
+  - 1496
+  - 1497
+  - 714
+  broad: false
+  sections:
+  - Section 3.7.2 Aggregation with Grouping
+  - Section 3.7.1 Basic Aggregation
+  - Section 15.6.5 Aggregation
+- id: acid_properties
+  question: What are the ACID properties of transactions?
+  expected_answer: Atomicity ensures a transaction's actions are all-or-nothing, enforced
+    by abort/rollback and recovery that can undo partial effects; consistency requires
+    each transaction to preserve database integrity when run alone and relies on the
+    scheduler to admit serializable, recoverable, and preferably cascadeless schedules;
+    isolation makes concurrent executions equivalent to some serial order, commonly
+    achieved with two-phase locking variants that prevent reads of uncommitted data;
+    durability guarantees committed effects persist across crashes via logging to
+    stable storage and redo on restart;
+  keywords:
+  - ACID property
+  - transactions
+  similarity_threshold: 0.82
+  ideal_retrieved_chunks:
+  - 1143
+  - 1142
+  - 1145
+  - 1146
+  - 1148
+  broad: true
+  sections:
+  - Section 17.1  Transaction Concept
+  - Section 17.4  Transaction Atomicity and Durability
+  - Section 17.5  Transaction Isolation
+  - Section 17.6  Serializability
+  - Section 17.7  Transaction Isolation and Atomicity
+  - Section 17.7.1 Recoverable Schedules
+  - Section 17.7.2 Cascadeless Schedules
+  - Section 17.8  Transaction Isolation Levels
+  - Section 17.9  Implementation of Isolation Levels
+  - Section 17.9.1 Locking
+  - Section 18.1  Lock-Based Protocols
+  - Section 18.1.3 The Two-Phase Locking Protocol
+  - Section 19.1  Failure Classification
+  - Section 19.3  Recovery and Atomicity
+  - Section 19.4  Recovery Algorithm
+  - Section 1.6.3 Transaction Management
+  - Section 4.3  Transactions
+- id: bptree
+  question: How does a B+ tree index organize keys and support search, insert, and
+    delete, and why is it preferred over binary trees for disk-based access
+  expected_answer: B+-trees match node size to a disk page, giving very high fan-out
+    and a shallow, height-balanced tree, so searches/updates require few page I/Os.
+  keywords:
+  - B+ tree
+  - index
+  - keys
+  - search
+  - insert
+  - delete
+  - binary trees
+  - disk-based access
+  similarity_threshold: 0.78
+  ideal_retrieved_chunks:
+  - 908
+  - 909
+  - 940
+  - 937
+  - 938
+  broad: false
+  sections:
+  - Section 14.3  B + -Tree Index Files
+  - Section 14.3.1 Structure of a B + -Tree
+  - Section 14.3.2 Queries on B + -Trees
+  - Section 14.3.3 Updates on B + -trees
+  - Section 14.3.4 Complexity of B + -Tree Updates
+  - Section 14.3.5 Nonunique Search Keys
+  - Section 14.1  Basic Concepts
+  - Section 14.2.2 Multilevel Indices
+- id: fd_normalization
+  question: What are functional dependencies?
+  expected_answer: A functional dependency X -> Y asserts that tuples agreeing on
+    X must agree on Y.
+  keywords:
+  - functional dependencies
+  similarity_threshold: 0.7
+  ideal_retrieved_chunks:
+  - 438
+  - 439
+  - 463
+  - 451
+  - 484
+  broad: false
+  sections:
+  - Section 7.2  Decomposition Using Functional Dependencies
+  - Section 7.2.2 Keys and Functional Dependencies
+  - Section 7.2.3 Lossless Decomposition and Functional Dependencies
+  - Section 7.4.1 Closure of a Set of Functional Dependencies
+  - Section 7.1.3 Normalization Theory
+- id: sql_isolation
+  question: What isolation guarantees does SQL provide by default?
+  expected_answer: Serializable. In the SQL standard, the default isolation level
+    is Serializable, which guarantees that the outcome of concurrently executing transactions
+    is equivalent to some serial (one-at-a-time) order of those transactions—thereby
+    preventing dirty reads, nonrepeatable reads, and phantoms.
+  keywords:
+  - isolation
+  - guarantees
+  - by default
+  - SQL
+  similarity_threshold: 0.7
+  ideal_retrieved_chunks:
+  - 1173
+  - 1174
+  - 1142
+  - 1143
+  - 1172
+  broad: false
+  sections:
+  - Section 17.8  Transaction Isolation Levels
+  - Section 17.5  Transaction Isolation
+  - Section 17.10  Transactions as SQL Statements
+  - Section 17.6  Serializability
+  - Section 4.3  Transactions
+  - Section 17.9  Implementation of Isolation Levels
+- id: primary_foreign_keys
+  question: Explain primary keys and foreign keys
+  expected_answer: A primary key is a set of one or more attributes that uniquely
+    identifies each tuple in a relation, chosen from candidate keys which are minimal
+    superkeys; primary key attributes are underlined in schema diagrams and cannot
+    have null values. A foreign key is a set of attributes in one relation (the referencing
+    relation) that references the primary key of another relation (the referenced
+    relation), establishing a referential integrity constraint that requires values
+    in the foreign key to match values in the referenced primary key, thereby linking
+    related data across tables.
+  keywords:
+  - primary keys
+  - foreign keys
+  similarity_threshold: 0.72
+  ideal_retrieved_chunks:
+  - 90
+  - 91
+  - 119
+  - 93
+  - 94
+  broad: false
+  sections:
+  - Section 2.3  Keys
+  - Section 2.4  Schema Diagrams
+  - Section 4.4.5 Referential Integrity
+  - Section 4.4  Integrity Constraints
+  - Section 6.5  Primary Key
+  - Section 6.5.1 Entity Sets
+  - Section 3.2.2 Basic Schema Definition
+- id: database_schema
+  question: What is a database schema
+  expected_answer: A database schema is the overall logical design and structure of
+    the database, analogous to variable declarations in a program, defining the relations,
+    their attributes, data types, and constraints including primary keys and foreign
+    keys. The schema remains relatively stable over time, while a database instance
+    represents the actual collection of data stored at a particular moment, with values
+    that change as information is inserted, deleted, or modified.
+  keywords:
+  - database schema
+  similarity_threshold: 0.7
+  ideal_retrieved_chunks:
+  - 49
+  - 50
+  - 51
+  - 250
+  - 60
+  broad: false
+  sections:
+  - Section 1.3.4 Instances and Schemas
+  - Section 2.2  Database Schema
+  - Section 2.1  Structure of Relational Databases
+  - Section 2.3  Keys
+  - Section 2.4  Schema Diagrams
+  - Section 1.4.1 Data-Definition Language
+  - Section 1.4.2 The SQL Data-Definition Language
+  - Section 3.2.2 Basic Schema Definition
+- id: book_authors
+  question: Tell me about the authors of the book
+  expected_answer: The authors of Database System Concepts Seventh Edition are Abraham
+    Silberschatz, a Professor at Yale University and former Bell Labs vice president
+    who is an ACM and IEEE fellow; Henry F. Korth, a Professor at Lehigh University
+    who previously worked at Bell Labs and is also an ACM and IEEE fellow; and S.
+    Sudarshan, the Subrao M. Nilekani Chair Professor at the Indian Institute of Technology
+    Bombay who received his Ph.D. from the University of Wisconsin and is an ACM fellow,
+    with research focusing on query processing and optimization.
+  keywords:
+  - authors
+  - book
+  similarity_threshold: 0.65
+  ideal_retrieved_chunks:
+  - 1
+  - 2
+  - 0
+  - 3
+  - 22
+  broad: false
+  sections: []
+- id: aries_atomicity
+  question: How does the recovery manager use ARIES to ensure atomicity
+  expected_answer: The ARIES recovery algorithm ensures atomicity by maintaining a
+    write-ahead log where all updates are recorded before being applied to the database,
+    with each log record containing transaction ID, data item, old value, and new
+    value. During normal operation, log records are written to stable storage before
+    the transaction commits; if a transaction aborts or the system crashes, the recovery
+    manager uses the log to undo uncommitted transactions by applying the old values
+    in reverse order, ensuring that partial effects of incomplete transactions are
+    completely rolled back and the all-or-nothing property of atomicity is preserved.
+  keywords:
+  - ARIES
+  - recovery manager
+  - atomicity
+  similarity_threshold: 0.75
+  ideal_retrieved_chunks:
+  - 1355
+  - 1356
+  - 1358
+  - 1353
+  - 1359
+  broad: false
+  sections:
+  - Section 19.3  Recovery and Atomicity
+  - Section 19.3.1 Log Records
+  - Section 19.3.2 Database Modification
+  - Section 19.3.5 Using the Log to Redo and Undo Transactions
+  - Section 19.3.6 Checkpoints
+  - Section 19.4  Recovery Algorithm
+  - Section 19.4.1 Transaction Rollback
+  - Section 19.4.2 Recovery After a System Crash
+  - Section 19.9  ARIES
+  - Section 19.9.1 Data Structures
+  - Section 19.9.2 Recovery Algorithm
+  - Section 19.9.3 Other Features
+  - 'Section 19.25 In the ARIES recovery algorithm:'
+  - Section 17.4  Transaction Atomicity and Durability
+- id: oltp_vs_analytics
+  question: Contrast the goals of Online Transaction Processing and data analytics
+  expected_answer: Online Transaction Processing (OLTP) supports a large number of
+    concurrent users performing small, fast transactions that retrieve and update
+    relatively small amounts of data with requirements for high throughput, low latency,
+    and immediate consistency, typically using normalized schemas optimized for transactional
+    integrity. Data analytics, in contrast, processes large volumes of historical
+    data to draw conclusions and infer patterns for business intelligence and decision
+    support, involving complex queries that scan and aggregate data across many records,
+    often using denormalized schemas like star schemas in data warehouses optimized
+    for read-heavy analytical workloads rather than transactional updates.
+  keywords:
+  - online transaction processing
+  - data analytics
+  similarity_threshold: 0.73
+  ideal_retrieved_chunks:
+  - 33
+  - 34
+  - 738
+  - 739
+  - 741
+  broad: true
+  sections:
+  - Section 11.1  Overview of Analytics
+  - Section 11.2  Data Warehousing
+  - Section 25.2.2 Database-Application Classes
+  - Section 1.1 Database-System Applications
+  - Section 11.2.2 Multidimensional Data and Warehouse Schemas
+  - Section 11.2.3 Database Support for Data Warehouses
+- id: lossy_decomposition
+  question: Show me what happens during a lossy decomposition
+  expected_answer: A lossy decomposition occurs when a relation R is decomposed into
+    smaller relations R1 and R2 such that joining them back together produces spurious
+    tuples not present in the original relation, resulting in loss of information
+    about which attribute combinations actually existed. This happens when the intersection
+    of R1 and R2 does not form a superkey for either relation, violating the lossless-join
+    condition; the natural join of the decomposed relations generates extra tuples
+    from invalid combinations, making it impossible to reconstruct the original data
+    accurately, which is why database design insists that all decompositions must
+    be lossless.
+  keywords:
+  - lossy decomposition
+  similarity_threshold: 0.7
+  ideal_retrieved_chunks:
+  - 431
+  - 430
+  - 432
+  - 433
+  - 440
+  broad: false
+  sections:
+  - Section 7.1  Features of Good Relational Designs
+  - Section 7.1.1 Decomposition
+  - Section 7.1.2 Lossless Decomposition
+  - Section 7.2  Decomposition Using Functional Dependencies
+  - Section 7.2.3 Lossless Decomposition and Functional Dependencies
+- id: physical_storage_media
+  question: What are different physical storage media?
+  expected_answer: Physical storage media include cache memory (fastest, most volatile),
+    main/DRAM memory (fast but volatile), flash/SSD memory (non-volatile, fast reads),
+    magnetic disks/HDDs (non-volatile, high capacity, slower mechanical access), optical
+    disks (removable, sequential-friendly), and magnetic tape (cheapest, sequential-only,
+    archival). They form a storage hierarchy from fastest and most expensive per byte
+    at the top to slowest and cheapest at the bottom, and are classified as volatile
+    (lose data on power loss) or non-volatile.
+  keywords:
+  - physical storage media
+  similarity_threshold: 0.65
+  ideal_retrieved_chunks:
+  - 736
+  - 737
+  - 738
+  - 739
+  - 740
+  broad: true
+  sections:
+  - Section 12.1  Overview of Physical Storage Media
+  - Section 12.3  Magnetic Disks
+  - Section 12.3.1 Physical Characteristics of Disks
+  - Section 12.3.2 Performance Measures of Disks
+  - Section 12.4  Flash Memory
+  - Section 12.2  Storage Interfaces
+  - Section 12.6  Disk-Block Access
+  - Section 17.3  Storage Structure
+- id: hdd_vs_ssd
+  question: What are the main differences between HDD and SSD storage devices?
+  expected_answer: HDDs use rotating magnetic platters with mechanical read/write
+    heads, incurring seek time and rotational latency that slow random access; SSDs
+    use NAND flash memory with no moving parts, offering faster random access, lower
+    latency, and better shock resistance. SSDs are historically more expensive per
+    gigabyte but that gap has narrowed; flash cells also have a limited number of
+    write cycles before wearing out, whereas HDD capacity per dollar remains higher
+    for bulk storage.
+  keywords:
+  - HDD
+  - SSD
+  - storage devices
+  similarity_threshold: 0.65
+  ideal_retrieved_chunks:
+  - 737
+  broad: false
+  sections:
+  - Section 12.1  Overview of Physical Storage Media
+  - Section 12.3  Magnetic Disks
+  - Section 12.3.1 Physical Characteristics of Disks
+  - Section 12.3.2 Performance Measures of Disks
+  - Section 12.4  Flash Memory
+  - Section 12.2  Storage Interfaces
+- id: storage_media_comparison
+  question: How do different physical storage media differ in terms of volatility,
+    access speed, and cost?
+  expected_answer: 'Storage media form a hierarchy inversely ordered by speed and
+    cost: volatile cache and DRAM provide nanosecond access at the highest cost per
+    byte; non-volatile flash gives microsecond-range access at moderate cost; magnetic
+    disks offer millisecond access at low cost with large capacity; optical disks
+    and magnetic tape are cheapest and slowest, suited for archival use. Faster media
+    is always more expensive per byte, and primary storage (cache, DRAM) is volatile
+    while secondary and tertiary storage (flash, disk, tape) is non-volatile.'
+  keywords:
+  - physical storage media
+  - volatility
+  - access speed
+  - cost
+  similarity_threshold: 0.65
+  ideal_retrieved_chunks:
+  - 736
+  - 737
+  - 738
+  - 739
+  - 740
+  - 748
+  - 751
+  broad: true
+  sections:
+  - Section 12.1  Overview of Physical Storage Media
+  - Section 12.3  Magnetic Disks
+  - Section 12.3.1 Physical Characteristics of Disks
+  - Section 12.3.2 Performance Measures of Disks
+  - Section 12.4  Flash Memory
+  - Section 12.2  Storage Interfaces
+- id: shared_nothing_architecture
+  question: What is a shared-nothing architecture?
+  expected_answer: A shared-nothing architecture is a distributed database design
+    in which each processing node has its own private memory and local disk storage
+    with no shared resources between nodes. Nodes communicate exclusively via a high-speed
+    interconnect using message passing. This eliminates resource contention, enables
+    linear scalability by adding independent nodes, and is the dominant model for
+    parallel and distributed database systems.
+  keywords:
+  - shared-nothing architecture
+  similarity_threshold: 0.65
+  ideal_retrieved_chunks:
+  - 1326
+  broad: false
+  sections:
+  - Section 20.4.7 Shared Nothing
+  - Section 20.4  Parallel Systems
+  - Section 20.4.4 Parallel Database Architectures
+  - Section 20.4.5 Shared Memory
+  - Section 20.4.6 Shared Disk
+  - Section 10.2.4 Parallel and Distributed Databases
+- id: ec_001
+  mode: entity_confusability
+  question: What's the difference between two-phase locking and strict two-phase locking?
+  expected_answer: Two-phase locking (2PL) acquires all locks before releasing any
+    but may release exclusive locks before the transaction commits, which can cause
+    cascading rollbacks if that transaction later aborts. Strict 2PL holds all exclusive
+    locks until the transaction commits or aborts, preventing dirty reads and cascading
+    aborts entirely, making recovery straightforward.
+  keywords:
+  - two-phase locking
+  - strict two-phase locking
+  similarity_threshold: 0.62
+  notes: Qualifier 'strict' gets smeared in dense retrieval; KG treats as distinct
+    nodes.
+  broad: false
+  sections:
+  - Section 18.1  Lock-Based Protocols
+  - Section 18.1.3 The Two-Phase Locking Protocol
+  - Section 17.7.1 Recoverable Schedules
+  - Section 17.7.2 Cascadeless Schedules
+  - Section 17.9.1 Locking
+- id: ec_002
+  mode: entity_confusability
+  question: When should I use a B+ tree instead of a B-tree?
+  expected_answer: B+ trees store all data records only in leaf nodes, which are linked
+    in a sorted chain enabling efficient range scans via sequential traversal. Internal
+    nodes contain only routing keys. B-trees store data in both internal and leaf
+    nodes, giving faster single-key lookups in some cases but making range queries
+    expensive. For disk-based database indexes where range scans are common, B+ trees
+    are preferred.
+  keywords:
+  - B+ tree
+  - B-tree
+  similarity_threshold: 0.62
+  notes: Close in embedding space, distinct in KG.
+  broad: false
+  sections:
+  - Section 14.3  B + -Tree Index Files
+  - Section 14.3.1 Structure of a B + -Tree
+  - Section 14.3.2 Queries on B + -Trees
+  - Section 14.4  B + -Tree Extensions
+  - Section 14.4.5 B-Tree Index Files
+  - Section 14.4.1 B + -Tree File Organization
+  - Section 24.5.3 Comparison of Ordered Indexing and Hashing
+- id: ec_003
+  mode: entity_confusability
+  question: Explain the difference between serializability and serializable schedules.
+  expected_answer: 'Serializability is a correctness criterion: a concurrent schedule
+    is serializable if its effect on the database is equivalent to some serial (one-at-a-time)
+    execution of the same transactions. A serializable schedule is a specific interleaving
+    of operations that satisfies this criterion. Conflict serializability is the most
+    commonly checked variant, verified by the absence of cycles in the transaction
+    precedence graph.'
+  keywords:
+  - serializability
+  - serializable schedules
+  similarity_threshold: 0.62
+  notes: Noun-vs.-adjective form, nearly identical embeddings.
+  broad: false
+  sections:
+  - Section 17.6  Serializability
+  - Section 17.5  Transaction Isolation
+  - Section 17.7  Transaction Isolation and Atomicity
+  - Section 17.7.1 Recoverable Schedules
+  - Section 17.7.2 Cascadeless Schedules
+  - Section 17.8  Transaction Isolation Levels
+  - Section 17.9  Implementation of Isolation Levels
+  - Section 18.1.3 The Two-Phase Locking Protocol
+- id: ec_004
+  mode: entity_confusability
+  question: How is 3NF different from BCNF?
+  expected_answer: 'BCNF requires that for every non-trivial functional dependency
+    X→Y, X is a superkey. 3NF is weaker: it additionally permits Y to be a prime attribute
+    (part of some candidate key). Every BCNF relation is in 3NF but not vice versa.
+    The practical trade-off is that 3NF always admits a lossless, dependency-preserving
+    decomposition, whereas BCNF may require sacrificing dependency preservation.'
+  keywords:
+  - 3NF
+  - BCNF
+  similarity_threshold: 0.62
+  notes: Both normalization entities; dense retrieval blends them.
+  broad: false
+  sections:
+  - Section 7.3  Normal Forms
+  - Section 7.3.1 Boyce-Codd Normal Form
+  - Section 7.3.2 Third Normal Form
+  - Section 7.3.3 Comparison of BCNF and 3NF
+  - Section 7.4.4 Dependency Preservation
+  - Section 7.5  Algorithms for Decomposition Using Functional Dependencies
+  - Section 7.5.1 BCNF Decomposition
+  - Section 7.5.2 3NF Decomposition
+  - Section 7.5.3 Correctness of the 3NF Algorithm
+- id: ec_005
+  mode: entity_confusability
+  question: What distinguishes hash indexing from hash join?
+  expected_answer: A hash index is a persistent data structure that uses a hash function
+    to map key values to bucket addresses on disk, supporting O(1) average point lookups.
+    A hash join is a query-execution algorithm that partitions both input relations
+    by hashing the join attribute, then probes one partition against the other to
+    find matching tuples; it is a transient, in-memory (or buffer-managed) operation,
+    not a stored structure.
+  keywords:
+  - hash indexing
+  - hash join
+  similarity_threshold: 0.62
+  notes: Shared 'hash' token dominates dense similarity; KG keeps them apart via neighborhoods.
+  broad: false
+  sections:
+  - Section 14.5  Hash Indices
+  - Section 15.5.5 Hash Join
+  - Section 24.5  Hash Indices
+  - Section 24.5.1 Static Hashing
+  - Section 24.5.2 Dynamic Hashing
+  - Section 24.5.3 Comparison of Ordered Indexing and Hashing
+  - Section 15.5  Join Operation
+  - Section 22.3  Parallel Join
+  - Section 22.3.1 Partitioned Join
+- id: ec_006
+  mode: entity_confusability
+  question: ACID vs. BASE — when does each apply?
+  expected_answer: ACID (Atomicity, Consistency, Isolation, Durability) governs traditional
+    relational transactions that require strong consistency guarantees. BASE (Basically
+    Available, Soft state, Eventually consistent) applies to distributed NoSQL systems
+    that trade strict consistency for high availability and partition tolerance under
+    the CAP theorem, accepting that replicas may diverge temporarily and converge
+    eventually.
+  keywords:
+  - ACID
+  - BASE
+  similarity_threshold: 0.6
+  notes: BASE is rarer in corpus; dense retrieval biased toward ACID chunks.
+  broad: true
+  sections:
+  - Section 17.1  Transaction Concept
+  - Section 17.4  Transaction Atomicity and Durability
+  - Section 17.5  Transaction Isolation
+  - Section 10.2.5 Replication and Consistency
+  - Section 23.6  Replication with Weak Degrees of Consistency
+  - Section 23.6.1 Trading Off Consistency for Availability
+  - Section 21.4.2 Updates and Consistency of Replicas
+  - Section 23.4.1 Consistency of Replicas
+  - Section 21.7  Parallel Key-Value Stores
+- id: cs_001
+  mode: cross_section_evidence
+  question: How does strict two-phase locking prevent cascading rollbacks?
+  expected_answer: Strict two-phase locking holds all exclusive locks until a transaction
+    commits or aborts. Because no other transaction can read a data item whose exclusive
+    lock has not been released, no transaction ever reads uncommitted (dirty) data.
+    If a transaction aborts, no concurrent transaction has seen its changes, so there
+    is nothing to cascade-abort.
+  keywords:
+  - strict two-phase locking
+  - cascading rollback
+  similarity_threshold: 0.62
+  notes: Mechanism and consequence typically in different sections.
+  broad: false
+  sections:
+  - Section 18.1  Lock-Based Protocols
+  - Section 18.1.3 The Two-Phase Locking Protocol
+  - Section 17.7  Transaction Isolation and Atomicity
+  - Section 17.7.1 Recoverable Schedules
+  - Section 17.7.2 Cascadeless Schedules
+  - Section 17.9.1 Locking
+- id: cs_002
+  mode: cross_section_evidence
+  question: Why does multiversion concurrency control avoid read locks?
+  expected_answer: Multiversion concurrency control (MVCC) keeps multiple timestamped
+    versions of each data item. A reading transaction accesses the most recent version
+    committed before its start timestamp without blocking writers, because it reads
+    from a snapshot that writers cannot modify. Since reads and writes target different
+    versions, they never conflict, so read locks are unnecessary and read throughput
+    is greatly improved.
+  keywords:
+  - multiversion concurrency control
+  - read lock
+  similarity_threshold: 0.62
+  notes: MVCC definition and lock-overhead justification often in separate sections.
+  broad: false
+  sections:
+  - Section 17.9.3 Multiple Versions and Snapshot Isolation
+  - Section 18.7  Multiversion Schemes
+  - Section 18.7.1 Multiversion Timestamp Ordering
+  - Section 18.7.2 Multiversion Two-Phase Locking
+  - Section 18.8  Snapshot Isolation
+  - Section 18.8.1 Multiversioning in Snapshot Isolation
+- id: cs_003
+  mode: cross_section_evidence
+  question: How do write-ahead logging and checkpointing work together during recovery?
+  expected_answer: Write-ahead logging (WAL) guarantees every update is recorded to
+    stable storage before the modified page is written to disk. Checkpointing periodically
+    flushes dirty pages and records a checkpoint in the log, bounding the recovery
+    window. During recovery (as in ARIES), the system replays all log records from
+    the last checkpoint forward to redo committed updates, then scans backward to
+    undo any uncommitted transactions.
+  keywords:
+  - write-ahead logging
+  - checkpointing
+  - recovery
+  similarity_threshold: 0.65
+  notes: WAL and checkpointing defined separately; interaction is the answer.
+  broad: true
+  sections:
+  - Section 19.3  Recovery and Atomicity
+  - Section 19.3.1 Log Records
+  - Section 19.3.2 Database Modification
+  - Section 19.3.5 Using the Log to Redo and Undo Transactions
+  - Section 19.3.6 Checkpoints
+  - Section 19.4  Recovery Algorithm
+  - Section 19.4.2 Recovery After a System Crash
+  - Section 19.5  Buffer Management
+  - Section 19.5.1 Log-Record Buffering
+  - Section 19.5.2 Database Buffering
+  - Section 19.5.4 Fuzzy Checkpointing
+  - Section 19.9  ARIES
+  - Section 19.9.1 Data Structures
+  - Section 19.9.2 Recovery Algorithm
+  - 'Section 19.25 In the ARIES recovery algorithm:'
+- id: cs_004
+  mode: cross_section_evidence
+  question: What's the relationship between functional dependencies and lossless-join
+    decomposition?
+  expected_answer: A decomposition of R into R1 and R2 is lossless-join if and only
+    if the shared attributes R1∩R2 functionally determine all attributes of R1 or
+    of R2—i.e., R1∩R2 is a superkey for at least one of them. This condition is verified
+    by checking the given functional dependencies. When satisfied, the natural join
+    of R1 and R2 reconstructs R exactly with no spurious tuples.
+  keywords:
+  - functional dependencies
+  - lossless-join decomposition
+  similarity_threshold: 0.62
+  notes: FDs are foundational (earlier chapter); decomposition applies them (later).
+  broad: true
+  sections:
+  - Section 7.1  Features of Good Relational Designs
+  - Section 7.1.1 Decomposition
+  - Section 7.1.2 Lossless Decomposition
+  - Section 7.2  Decomposition Using Functional Dependencies
+  - Section 7.2.3 Lossless Decomposition and Functional Dependencies
+  - Section 7.5  Algorithms for Decomposition Using Functional Dependencies
+  - Section 7.5.1 BCNF Decomposition
+- id: cs_005
+  mode: cross_section_evidence
+  question: How does the query optimizer use statistics from the catalog?
+  expected_answer: The query optimizer reads statistics stored in the system catalog—number
+    of tuples per relation, number of distinct values per attribute, and value-distribution
+    histograms—to estimate the cost (in I/O operations and CPU) of alternative query
+    plans. It enumerates join orders, access methods (index scan vs. sequential scan),
+    and join algorithms, selects the plan with minimum estimated cost, and generates
+    executable code for it.
+  keywords:
+  - query optimizer
+  - statistics
+  - catalog
+  similarity_threshold: 0.62
+  notes: Optimizer and catalog usually separate sections; bridge via shared statistics
+    entities.
+  broad: true
+  sections:
+  - Section 1.6.2 The Query Processor
+  - Section 13.4  Data-Dictionary Storage
+  - Section 15.1  Overview
+  - Section 15.2  Measures of Query Cost
+  - Section 16.1  Overview
+  - Section 16.3  Estimating Statistics of Expression Results
+  - Section 16.3.1 Catalog Information
+  - Section 16.3.2 Selection Size Estimation
+  - Section 16.3.3 Join Size Estimation
+  - Section 16.3.4 Size Estimation for Other Operations
+  - Section 16.3.5 Estimation of Number of Distinct Values
+  - Section 16.4  Choice of Evaluation Plans
+  - Section 16.4.1 Cost-Based Join-Order Selection
+  - Section 16.4.2 Cost-Based Optimization with Equivalence Rules
+  - Section 16.4.3 Heuristics in Optimization
+- id: cs_006
+  mode: cross_section_evidence
+  question: Why do isolation levels affect phantom reads?
+  expected_answer: Phantom reads occur when a transaction re-executes a predicate-based
+    query and finds new rows inserted by a committed concurrent transaction. Lower
+    isolation levels (Read Committed, Repeatable Read) lock only existing rows, leaving
+    the predicate range open to new insertions. Serializable isolation prevents phantoms
+    by using predicate locks or next-key locks that block any insert satisfying the
+    scanned predicate.
+  keywords:
+  - isolation levels
+  - phantom reads
+  similarity_threshold: 0.62
+  notes: Isolation levels and phantom phenomena defined in separate subsections.
+  broad: false
+  sections:
+  - Section 17.8  Transaction Isolation Levels
+  - Section 17.9  Implementation of Isolation Levels
+  - Section 18.4  Insert Operations, Delete Operations, and Predicate Reads
+  - Section 18.4.3 Predicate Reads and The Phantom Phenomenon
+  - Section 18.1.3 The Two-Phase Locking Protocol
+- id: pl_001
+  mode: polysemy
+  question: What is a key in the context of relations and tuples?
+  expected_answer: In the relational model, a key is a set of attributes that uniquely
+    identifies each tuple in a relation. A superkey is any attribute set with this
+    uniqueness property; a candidate key is a minimal superkey (no proper subset is
+    also a superkey); and the primary key is the candidate key chosen by the designer
+    as the principal identifier, whose attributes are prohibited from being null.
+  keywords:
+  - key
+  - relations
+  - tuples
+  similarity_threshold: 0.62
+  notes: Context entities disambiguate to relational key, not encryption/sort key.
+  broad: false
+  sections:
+  - Section 2.3  Keys
+- id: pl_002
+  mode: polysemy
+  question: Explain a lock in a transaction context.
+  expected_answer: In transaction management, a lock is a concurrency-control mechanism
+    that regulates access to a shared data item. A shared (read) lock allows multiple
+    transactions to read the item simultaneously; an exclusive (write) lock permits
+    only one transaction to modify it and blocks all other accesses. Lock protocols
+    such as two-phase locking specify when locks must be acquired and released to
+    ensure conflict-serializable schedules.
+  keywords:
+  - lock
+  - transaction
+  similarity_threshold: 0.62
+  notes: Transaction context disambiguates from OS/file locking.
+  broad: false
+  sections:
+  - Section 17.9  Implementation of Isolation Levels
+  - Section 17.9.1 Locking
+  - Section 18.1  Lock-Based Protocols
+  - Section 18.1.1 Locks
+  - Section 18.1.2 Granting of Locks
+  - Section 18.1.3 The Two-Phase Locking Protocol
+  - Section 18.1.4 Implementation of Locking
+- id: pl_003
+  mode: polysemy
+  question: How does a hash work for indexing?
+  expected_answer: A hash index applies a hash function to a search-key value to compute
+    a bucket address in a hash table stored on disk. To look up a key, the hash function
+    is evaluated and the target bucket is scanned for matching records, giving O(1)
+    average access time. Static hashing uses a fixed bucket count; extendible and
+    linear hashing grow the table dynamically to handle overflow without degrading
+    performance.
+  keywords:
+  - hash
+  - indexing
+  similarity_threshold: 0.62
+  notes: Disambiguates hash indexing from hash join or cryptographic hashing.
+  broad: false
+  sections:
+  - Section 14.5  Hash Indices
+  - Section 24.5  Hash Indices
+  - Section 24.5.1 Static Hashing
+  - Section 24.5.2 Dynamic Hashing
+  - Section 24.5.3 Comparison of Ordered Indexing and Hashing
+  - Section 14.1  Basic Concepts
+- id: pl_004
+  mode: polysemy
+  question: What's a schedule when talking about transactions?
+  expected_answer: A schedule in transaction management is an ordering that interleaves
+    the read, write, commit, and abort operations of multiple concurrent transactions
+    while preserving the internal order of each transaction's operations. A serial
+    schedule runs transactions sequentially with no interleaving; a serializable schedule
+    is any interleaved schedule whose effect on the database is equivalent to some
+    serial schedule.
+  keywords:
+  - schedule
+  - transactions
+  similarity_threshold: 0.62
+  notes: Transaction schedule, not OS scheduling.
+  broad: false
+  sections:
+  - Section 17.5  Transaction Isolation
+  - Section 17.6  Serializability
+  - Section 17.7  Transaction Isolation and Atomicity
+  - Section 17.7.1 Recoverable Schedules
+  - Section 17.7.2 Cascadeless Schedules
+  - Section 17.2  A Simple Transaction Model
+  - Section 17.1  Transaction Concept
+- id: pl_005
+  mode: polysemy
+  question: Describe a view in SQL.
+  expected_answer: A view in SQL is a named virtual relation defined by a stored query
+    expression. It does not physically store data; querying the view re-executes the
+    defining query at runtime. Views simplify complex queries, restrict visible data
+    for security, and can be made updatable when defined on a single base table without
+    aggregation or distinct. Materialized views do store results and must be refreshed
+    when the base data changes.
+  keywords:
+  - view
+  - SQL
+  similarity_threshold: 0.62
+  notes: SQL view, disambiguated from UI/MVC view.
+  broad: false
+  sections:
+  - Section 4.2  Views
+  - Section 4.2.1 View Definition
+  - Section 4.2.2 Using Views in SQL Queries
+  - Section 4.2.3 Materialized Views
+  - Section 4.2.4 Update of a View
+  - Section 16.5  Materialized Views
+- id: pl_006
+  mode: polysemy
+  question: What does normal form mean in database design?
+  expected_answer: A normal form is a standard that characterizes and eliminates redundancy
+    and update anomalies in relational schemas. 1NF requires all attributes to be
+    atomic; 2NF eliminates partial dependencies on the primary key; 3NF eliminates
+    transitive dependencies on non-prime attributes; BCNF strengthens 3NF by requiring
+    every determinant to be a superkey. Higher normal forms (4NF, 5NF) address multi-valued
+    and join dependencies.
+  keywords:
+  - normal form
+  - database design
+  similarity_threshold: 0.62
+  notes: Normal form (normalization), not statistical/geometric 'normal'.
+  broad: true
+  sections:
+  - Section 7.3  Normal Forms
+  - Section 7.3.1 Boyce-Codd Normal Form
+  - Section 7.3.2 Third Normal Form
+  - Section 7.3.3 Comparison of BCNF and 3NF
+  - Section 7.3.4 Higher Normal Forms
+  - Section 7.8  Atomic Domains and First Normal Form
+  - Section 7.6.2 Fourth Normal Form
+  - Section 7.7  More Normal Forms
+  - Section 7.1  Features of Good Relational Designs
+  - Section 7.1.3 Normalization Theory
+  - Section 7.6.1 Multivalued Dependencies
