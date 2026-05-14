@@ -1,0 +1,461 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+
+        // ── Application ──────────────────────────────────────────────────────
+        {
+            "name": "App | Chat",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "src.main",
+            "args": ["chat"],
+            "python": "/home/user/miniconda3/envs/tokensmith/bin/python",
+            "cwd": "${workspaceFolder}",
+            "env": { "PYTHONPATH": "${workspaceFolder}" },
+            "justMyCode": false
+        },
+        {
+            "name": "App | Chat (partial index)",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "src.main",
+            "args": ["chat", "--partial"],
+            "python": "/home/user/miniconda3/envs/tokensmith/bin/python",
+            "cwd": "${workspaceFolder}",
+            "env": { "PYTHONPATH": "${workspaceFolder}" },
+            "justMyCode": false
+        },
+        {
+            "name": "App | Index",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "src.main",
+            "args": ["index"],
+            "python": "/home/user/miniconda3/envs/tokensmith/bin/python",
+            "cwd": "${workspaceFolder}",
+            "env": { "PYTHONPATH": "${workspaceFolder}" },
+            "justMyCode": false
+        },
+
+        // ── Build / Pipeline ─────────────────────────────────────────────────
+        {
+            "name": "Build | PDF → Markdown",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "src.preprocessing.extraction",
+            "python": "/home/user/miniconda3/envs/tokensmith/bin/python",
+            "cwd": "${workspaceFolder}",
+            "env": { "PYTHONPATH": "${workspaceFolder}" },
+            "justMyCode": false
+        },
+        {
+            "name": "Build | Rerun canonicalization",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "src.knowledge_graph.scripts.rerun_canonicalization",
+            "python": "/home/user/miniconda3/envs/tokensmith/bin/python",
+            "cwd": "${workspaceFolder}",
+            "env": { "PYTHONPATH": "${workspaceFolder}" },
+            "envFile": "${workspaceFolder}/.env",
+            "justMyCode": false
+        },
+        {
+            "name": "Build | KG pipeline",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "src.knowledge_graph.scripts.run_kg_pipeline",
+            "python": "/home/user/miniconda3/envs/tokensmith/bin/python",
+            "cwd": "${workspaceFolder}",
+            "env": { "PYTHONPATH": "${workspaceFolder}" },
+            "justMyCode": false
+        },
+
+        // ── Tools / Debug ────────────────────────────────────────────────────
+        {
+            "name": "Tool | Testbed",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "src.knowledge_graph.scripts.testbed",
+            "python": "/home/user/miniconda3/envs/tokensmith/bin/python",
+            "cwd": "${workspaceFolder}",
+            "env": { "PYTHONPATH": "${workspaceFolder}" },
+            "envFile": "${workspaceFolder}/.env",
+            "justMyCode": false
+        },
+        {
+            "name": "Tool | Chunk inspector",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "src.knowledge_graph.scripts.debug_chunk_inspector",
+            "args": [
+                "--query", "How does the recovery manager use ARIES to ensure atomicity?",
+                "--retriever", "kg",
+            ],
+            "python": "/home/user/miniconda3/envs/tokensmith/bin/python",
+            "cwd": "${workspaceFolder}",
+            "env": { "PYTHONPATH": "${workspaceFolder}" },
+            "envFile": "${workspaceFolder}/.env",
+            "justMyCode": false
+        },
+        {
+            "name": "Tool | Chunk inspector (kg_filtered_bm25)",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "src.knowledge_graph.scripts.debug_chunk_inspector",
+            "args": [
+                "--query", "How does the recovery manager use ARIES to ensure atomicity?",
+                "--retriever", "kg_filtered_bm25",
+                "--artifacts-dir", "index/sections",
+            ],
+            "python": "/home/user/miniconda3/envs/tokensmith/bin/python",
+            "cwd": "${workspaceFolder}",
+            "env": { "PYTHONPATH": "${workspaceFolder}" },
+            "envFile": "${workspaceFolder}/.env",
+            "justMyCode": false
+        },
+        {
+            "name": "Tool | Analyze query",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "src.knowledge_graph.scripts.analyze_query",
+            "args": [
+                "--query",
+                "How does the query optimizer estimate the cost of a nested-loop join versus a block nested-loop join?"
+            ],
+            "python": "/home/user/miniconda3/envs/tokensmith/bin/python",
+            "cwd": "${workspaceFolder}",
+            "env": { "PYTHONPATH": "${workspaceFolder}" },
+            "justMyCode": false
+        },
+        {
+            "name": "Tool | Generate canon cache",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "src.knowledge_graph.scripts.generate_canon_cache",
+            "args": [
+                "--config", "config/config.yaml",
+                "--output", "debug/canonicalization_cache.json"
+            ],
+            "python": "/home/user/miniconda3/envs/tokensmith/bin/python",
+            "cwd": "${workspaceFolder}",
+            "env": { "PYTHONPATH": "${workspaceFolder}" },
+            "envFile": "${workspaceFolder}/.env",
+            "justMyCode": false
+        },
+        {
+            "name": "Tool | LLM extract keywords",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "src.knowledge_graph.scripts.llm_extract_keywords",
+            "args": [
+                "--model", "google/gemini-3.1-flash-lite-preview"
+            ],
+            "python": "/home/user/miniconda3/envs/tokensmith/bin/python",
+            "cwd": "${workspaceFolder}",
+            "env": { "PYTHONPATH": "${workspaceFolder}" },
+            "envFile": "${workspaceFolder}/.env",
+            "justMyCode": false
+        },
+
+        // ── Benchmarks ───────────────────────────────────────────────────────
+        {
+            "name": "Bench | Retrieval",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "src.knowledge_graph.scripts.benchmark_retrieval",
+            "args": [
+                "--no-llm",
+                "--queries", "tests/benchmarks.yaml",
+                "--artifacts-dir", "index/sections/",
+                "--embed-model", "models/embedders/Qwen3-Embedding-4B-Q5_K_M.gguf",
+                "--output", "results.json"
+            ],
+            "python": "/home/user/miniconda3/envs/tokensmith/bin/python",
+            "cwd": "${workspaceFolder}",
+            "env": { "PYTHONPATH": "${workspaceFolder}" },
+            "justMyCode": false
+        },
+        {
+            "name": "Bench | Keyword extraction",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "src.knowledge_graph.scripts.benchmark_keyword_extraction",
+            "args": [
+                "--queries", "queries_debug.json",
+                "--output", "debug_kw_bench.json"
+            ],
+            "python": "/home/user/miniconda3/envs/tokensmith/bin/python",
+            "cwd": "${workspaceFolder}",
+            "env": { "PYTHONPATH": "${workspaceFolder}" },
+            "justMyCode": false
+        },
+        {
+            "name": "Bench | Keyword extraction experiment",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "src.knowledge_graph.scripts.keyword_extraction_experiment",
+            "args": [
+                "--n-chunks", "1",
+                "--adaptive-top-n",
+                "--models", "google/gemini-3.1-pro-preview"
+            ],
+            "python": "/home/user/miniconda3/envs/tokensmith/bin/python",
+            "cwd": "${workspaceFolder}",
+            "env": { "PYTHONPATH": "${workspaceFolder}" },
+            "justMyCode": false
+        },
+        {
+            "name": "Bench | Difficulty estimation",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "src.knowledge_graph.scripts.benchmark_difficulty",
+            "args": ["--output", "difficulty_results.json"],
+            "python": "/home/user/miniconda3/envs/tokensmith/bin/python",
+            "cwd": "${workspaceFolder}",
+            "env": { "PYTHONPATH": "${workspaceFolder}" },
+            "justMyCode": false
+        },
+        {
+            "name": "Bench | LLM extraction",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "src.knowledge_graph.scripts.benchmark_llm_extraction",
+            "args": [
+                "--models",
+                "google/gemini-3.1-flash-lite-preview",
+                "openai/gpt-oss-120b",
+                "deepseek/deepseek-v3.2",
+                "--sota-model", "anthropic/claude-opus-4.7",
+                "--n-chunks", "50",
+                "--adaptive-top-n",
+                "--seed", "42",
+                "--max-workers", "5"
+            ],
+            "python": "/home/user/miniconda3/envs/tokensmith/bin/python",
+            "cwd": "${workspaceFolder}",
+            "env": { "PYTHONPATH": "${workspaceFolder}" },
+            "envFile": "${workspaceFolder}/.env",
+            "justMyCode": false
+        },
+
+        // ── Experiments: KG Construction (A) ─────────────────────────────────
+        {
+            "name": "Exp A1 | Extractor keyword quality",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "src.knowledge_graph.scripts.experiment_a1_extractor_quality",
+            "args": [
+                "--run-dir", "data/knowledge_graph/runs/latest",
+                "--artifacts-dir", "index/sections",
+                "--embed-model", "models/embedders/Qwen3-Embedding-4B-Q5_K_M.gguf",
+                "--llm-model", "google/gemini-3.1-pro-preview",
+                "--output", "results_a1.json",
+                "-v"
+            ],
+            "python": "/home/user/miniconda3/envs/tokensmith/bin/python",
+            "cwd": "${workspaceFolder}",
+            "env": { "PYTHONPATH": "${workspaceFolder}" },
+            "envFile": "${workspaceFolder}/.env",
+            "justMyCode": false
+        },
+        {
+            "name": "Exp A2 | Adaptive vs fixed keyword count",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "src.knowledge_graph.scripts.experiment_a2_keyword_count",
+            "args": [
+                "--chunks-pkl", "index/sections/textbook_index_chunks.pkl",
+                "--sample", "100",
+                "--model", "google/gemini-3-flash-preview",
+                "--output", "results_a2.json",
+                "-v"
+            ],
+            "python": "/home/user/miniconda3/envs/tokensmith/bin/python",
+            "cwd": "${workspaceFolder}",
+            "env": { "PYTHONPATH": "${workspaceFolder}" },
+            "envFile": "${workspaceFolder}/.env",
+            "justMyCode": false
+        },
+        {
+            "name": "Exp A2b | Adaptive vs fixed vs free-form top-n (inspec)",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "src.knowledge_graph.scripts.experiment_a2b_adaptive_topn",
+            "args": [
+                "--sample", "100",
+                "--seed", "42",
+                "--model", "google/gemini-2.0-flash-lite-001",
+                "--output", "results_a2b.json",
+                "-v"
+            ],
+            "python": "/home/user/miniconda3/envs/tokensmith/bin/python",
+            "cwd": "${workspaceFolder}",
+            "env": { "PYTHONPATH": "${workspaceFolder}" },
+            "envFile": "${workspaceFolder}/.env",
+            "justMyCode": false
+        },
+        {
+            "name": "Exp A3 | Embedding vs keyword seed nodes",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "src.knowledge_graph.scripts.experiment_a3_seed_keywords",
+            "args": [
+                "--run-dir", "data/knowledge_graph/runs/latest",
+                "--output", "results_a3.json",
+                "-v"
+            ],
+            "python": "/home/user/miniconda3/envs/tokensmith/bin/python",
+            "cwd": "${workspaceFolder}",
+            "env": { "PYTHONPATH": "${workspaceFolder}" },
+            "justMyCode": false
+        },
+
+        // ── Experiments: Retrieval (B) ────────────────────────────────────────
+        {
+            "name": "Exp B1/B6 | Section pre-filter recall",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "src.knowledge_graph.scripts.experiment_b1_b6_section_filter",
+            "args": [
+                "--run-dir", "data/knowledge_graph/runs/latest",
+                "--output", "results_b1_b6.json",
+                "-v"
+            ],
+            "python": "/home/user/miniconda3/envs/tokensmith/bin/python",
+            "cwd": "${workspaceFolder}",
+            "env": { "PYTHONPATH": "${workspaceFolder}" },
+            "justMyCode": false
+        },
+        {
+            "name": "Tool | Populate benchmark sections (LLM)",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "src.knowledge_graph.scripts.populate_benchmark_sections",
+            "args": [
+                "--run-dir", "data/knowledge_graph/runs/latest",
+                "--benchmarks", "tests/benchmarks.yaml",
+                "--skip-existing"
+            ],
+            "python": "/home/user/miniconda3/envs/tokensmith/bin/python",
+            "cwd": "${workspaceFolder}",
+            "env": { "PYTHONPATH": "${workspaceFolder}" },
+            "justMyCode": false
+        },
+        {
+            "name": "Exp B2 | KG subgraph vs dense recall",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "src.knowledge_graph.scripts.experiment_b2_subgraph_recall",
+            "args": [
+                "--run-dir", "data/knowledge_graph/runs/latest",
+                "--artifacts-dir", "index/sections",
+                "--embed-model", "models/embedders/Qwen3-Embedding-4B-Q5_K_M.gguf",
+                "--output", "results_b2.json",
+                "-v"
+            ],
+            "python": "/home/user/miniconda3/envs/tokensmith/bin/python",
+            "cwd": "${workspaceFolder}",
+            "env": { "PYTHONPATH": "${workspaceFolder}" },
+            "justMyCode": false
+        },
+        {
+            "name": "Exp B3 | Summary tree for broad queries",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "src.knowledge_graph.scripts.experiment_b3_summary_broad",
+            "args": [
+                "--run-dir", "data/knowledge_graph/runs/latest",
+                "--artifacts-dir", "index/sections",
+                "--embed-model", "models/embedders/Qwen3-Embedding-4B-Q5_K_M.gguf",
+                "--llm-model", "google/gemini-3.1-pro-preview",
+                "--output", "results_b3.json",
+                "-v"
+            ],
+            "python": "/home/user/miniconda3/envs/tokensmith/bin/python",
+            "cwd": "${workspaceFolder}",
+            "env": { "PYTHONPATH": "${workspaceFolder}" },
+            "envFile": "${workspaceFolder}/.env",
+            "justMyCode": false
+        },
+        {
+            "name": "Exp B4 | Full retriever ablation",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "src.knowledge_graph.scripts.experiment_b4_full_ablation",
+            "args": [
+                "--run-dir", "data/knowledge_graph/runs/latest",
+                "--artifacts-dir", "index/sections",
+                "--embed-model", "models/embedders/Qwen3-Embedding-4B-Q5_K_M.gguf",
+                "--llm-model", "google/gemini-3.1-pro-preview",
+                "--output", "results_b4.json",
+                "-v"
+            ],
+            "python": "/home/user/miniconda3/envs/tokensmith/bin/python",
+            "cwd": "${workspaceFolder}",
+            "env": { "PYTHONPATH": "${workspaceFolder}" },
+            "envFile": "${workspaceFolder}/.env",
+            "justMyCode": false
+        },
+        {
+            "name": "Exp B5 | IDF-weighted KGNodeRetriever",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "src.knowledge_graph.scripts.experiment_b5_idf_weighting",
+            "args": [
+                "--run-dir", "data/knowledge_graph/runs/latest",
+                "--output", "results_b5.json",
+                "-v"
+            ],
+            "python": "/home/user/miniconda3/envs/tokensmith/bin/python",
+            "cwd": "${workspaceFolder}",
+            "env": { "PYTHONPATH": "${workspaceFolder}" },
+            "justMyCode": false
+        },
+
+        // ── Experiments: Difficulty (C) ───────────────────────────────────────
+        {
+            "name": "Exp C | Difficulty estimation (C1–C7)",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "src.knowledge_graph.scripts.experiment_c_difficulty",
+            "args": [
+                "--run-dir", "data/knowledge_graph/runs/latest",
+                "--artifacts-dir", "index/sections",
+                "--embed-model", "models/embedders/Qwen3-Embedding-4B-Q5_K_M.gguf",
+                "--llm-model", "google/gemini-3.1-pro-preview",
+                "--output", "results_c.json",
+                "-v"
+            ],
+            "python": "/home/user/miniconda3/envs/tokensmith/bin/python",
+            "cwd": "${workspaceFolder}",
+            "env": { "PYTHONPATH": "${workspaceFolder}" },
+            "envFile": "${workspaceFolder}/.env",
+            "justMyCode": false
+        },
+
+        // ── Retriever: KGFilteredBM25 ─────────────────────────────────────────
+        {
+            "name": "Tool | KGFilteredBM25 smoke test",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "src.knowledge_graph.kg_filtered_bm25",
+            "python": "/home/user/miniconda3/envs/tokensmith/bin/python",
+            "cwd": "${workspaceFolder}",
+            "env": { "PYTHONPATH": "${workspaceFolder}" },
+            "justMyCode": false
+        },
+
+        // ── Tests ─────────────────────────────────────────────────────────────
+        {
+            "name": "Test | pytest",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "pytest",
+            "args": ["tests/", "-v", "-s"],
+            "python": "/home/user/miniconda3/envs/tokensmith/bin/python",
+            "cwd": "${workspaceFolder}",
+            "env": { "PYTHONPATH": "${workspaceFolder}" },
+            "justMyCode": false
+        }
+    ]
+}
