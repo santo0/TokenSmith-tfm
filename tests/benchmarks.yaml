@@ -8,16 +8,11 @@ benchmarks:
   - grouping
   similarity_threshold: 0.8
   ideal_retrieved_chunks:
-  - 1039
-  - 1040
-  - 1496
-  - 1497
-  - 714
+  - 148
+  - 149
   broad: false
   sections:
   - Section 3.7.2 Aggregation with Grouping
-  - Section 3.7.1 Basic Aggregation
-  - Section 15.6.5 Aggregation
 - id: acid_properties
   question: What are the ACID properties of transactions?
   expected_answer: Atomicity ensures a transaction's actions are all-or-nothing, enforced
@@ -33,30 +28,13 @@ benchmarks:
   - transactions
   similarity_threshold: 0.82
   ideal_retrieved_chunks:
-  - 1143
-  - 1142
-  - 1145
-  - 1146
-  - 1148
+  - 1101
+  - 1102
+  - 1104
+  - 1106
   broad: true
   sections:
   - Section 17.1  Transaction Concept
-  - Section 17.4  Transaction Atomicity and Durability
-  - Section 17.5  Transaction Isolation
-  - Section 17.6  Serializability
-  - Section 17.7  Transaction Isolation and Atomicity
-  - Section 17.7.1 Recoverable Schedules
-  - Section 17.7.2 Cascadeless Schedules
-  - Section 17.8  Transaction Isolation Levels
-  - Section 17.9  Implementation of Isolation Levels
-  - Section 17.9.1 Locking
-  - Section 18.1  Lock-Based Protocols
-  - Section 18.1.3 The Two-Phase Locking Protocol
-  - Section 19.1  Failure Classification
-  - Section 19.3  Recovery and Atomicity
-  - Section 19.4  Recovery Algorithm
-  - Section 1.6.3 Transaction Management
-  - Section 4.3  Transactions
 - id: bptree
   question: How does a B+ tree index organize keys and support search, insert, and
     delete, and why is it preferred over binary trees for disk-based access
@@ -73,11 +51,12 @@ benchmarks:
   - disk-based access
   similarity_threshold: 0.78
   ideal_retrieved_chunks:
-  - 908
-  - 909
-  - 940
-  - 937
-  - 938
+  - 814
+  - 869
+  - 902
+  - 903
+  - 904
+  - 910
   broad: false
   sections:
   - Section 14.3  B + -Tree Index Files
@@ -85,9 +64,6 @@ benchmarks:
   - Section 14.3.2 Queries on B + -Trees
   - Section 14.3.3 Updates on B + -trees
   - Section 14.3.4 Complexity of B + -Tree Updates
-  - Section 14.3.5 Nonunique Search Keys
-  - Section 14.1  Basic Concepts
-  - Section 14.2.2 Multilevel Indices
 - id: fd_normalization
   question: What are functional dependencies?
   expected_answer: A functional dependency X -> Y asserts that tuples agreeing on
@@ -96,18 +72,13 @@ benchmarks:
   - functional dependencies
   similarity_threshold: 0.7
   ideal_retrieved_chunks:
-  - 438
+  - 421
+  - 423
   - 439
-  - 463
-  - 451
-  - 484
   broad: false
   sections:
   - Section 7.2  Decomposition Using Functional Dependencies
   - Section 7.2.2 Keys and Functional Dependencies
-  - Section 7.2.3 Lossless Decomposition and Functional Dependencies
-  - Section 7.4.1 Closure of a Set of Functional Dependencies
-  - Section 7.1.3 Normalization Theory
 - id: sql_isolation
   question: What isolation guarantees does SQL provide by default?
   expected_answer: Serializable. In the SQL standard, the default isolation level
@@ -121,19 +92,11 @@ benchmarks:
   - SQL
   similarity_threshold: 0.7
   ideal_retrieved_chunks:
-  - 1173
-  - 1174
-  - 1142
-  - 1143
-  - 1172
+  - 1129
+  - 1130
   broad: false
   sections:
   - Section 17.8  Transaction Isolation Levels
-  - Section 17.5  Transaction Isolation
-  - Section 17.10  Transactions as SQL Statements
-  - Section 17.6  Serializability
-  - Section 4.3  Transactions
-  - Section 17.9  Implementation of Isolation Levels
 - id: primary_foreign_keys
   question: Explain primary keys and foreign keys
   expected_answer: A primary key is a set of one or more attributes that uniquely
@@ -149,20 +112,11 @@ benchmarks:
   - foreign keys
   similarity_threshold: 0.72
   ideal_retrieved_chunks:
-  - 90
   - 91
-  - 119
   - 93
-  - 94
   broad: false
   sections:
   - Section 2.3  Keys
-  - Section 2.4  Schema Diagrams
-  - Section 4.4.5 Referential Integrity
-  - Section 4.4  Integrity Constraints
-  - Section 6.5  Primary Key
-  - Section 6.5.1 Entity Sets
-  - Section 3.2.2 Basic Schema Definition
 - id: database_schema
   question: What is a database schema
   expected_answer: A database schema is the overall logical design and structure of
@@ -175,21 +129,11 @@ benchmarks:
   - database schema
   similarity_threshold: 0.7
   ideal_retrieved_chunks:
-  - 49
-  - 50
-  - 51
-  - 250
-  - 60
+  - 52
+  - 88
   broad: false
   sections:
-  - Section 1.3.4 Instances and Schemas
   - Section 2.2  Database Schema
-  - Section 2.1  Structure of Relational Databases
-  - Section 2.3  Keys
-  - Section 2.4  Schema Diagrams
-  - Section 1.4.1 Data-Definition Language
-  - Section 1.4.2 The SQL Data-Definition Language
-  - Section 3.2.2 Basic Schema Definition
 - id: book_authors
   question: Tell me about the authors of the book
   expected_answer: The authors of Database System Concepts Seventh Edition are Abraham
@@ -203,12 +147,7 @@ benchmarks:
   - authors
   - book
   similarity_threshold: 0.65
-  ideal_retrieved_chunks:
-  - 1
-  - 2
-  - 0
-  - 3
-  - 22
+  ideal_retrieved_chunks: []
   broad: false
   sections: []
 - id: aries_atomicity
@@ -227,27 +166,23 @@ benchmarks:
   - atomicity
   similarity_threshold: 0.75
   ideal_retrieved_chunks:
-  - 1355
-  - 1356
-  - 1358
-  - 1353
-  - 1359
+  - 1300
+  - 1301
+  - 1302
+  - 1303
+  - 1304
+  - 1305
+  - 1306
+  - 1307
+  - 1308
+  - 1309
+  - 1310
+  - 1311
   broad: false
   sections:
-  - Section 19.3  Recovery and Atomicity
-  - Section 19.3.1 Log Records
-  - Section 19.3.2 Database Modification
-  - Section 19.3.5 Using the Log to Redo and Undo Transactions
-  - Section 19.3.6 Checkpoints
-  - Section 19.4  Recovery Algorithm
-  - Section 19.4.1 Transaction Rollback
-  - Section 19.4.2 Recovery After a System Crash
   - Section 19.9  ARIES
   - Section 19.9.1 Data Structures
   - Section 19.9.2 Recovery Algorithm
-  - Section 19.9.3 Other Features
-  - 'Section 19.25 In the ARIES recovery algorithm:'
-  - Section 17.4  Transaction Atomicity and Durability
 - id: oltp_vs_analytics
   question: Contrast the goals of Online Transaction Processing and data analytics
   expected_answer: Online Transaction Processing (OLTP) supports a large number of
@@ -264,19 +199,11 @@ benchmarks:
   - data analytics
   similarity_threshold: 0.73
   ideal_retrieved_chunks:
-  - 33
-  - 34
-  - 738
-  - 739
-  - 741
+  - 38
+  - 712
   broad: true
   sections:
-  - Section 11.1  Overview of Analytics
-  - Section 11.2  Data Warehousing
-  - Section 25.2.2 Database-Application Classes
   - Section 1.1 Database-System Applications
-  - Section 11.2.2 Multidimensional Data and Warehouse Schemas
-  - Section 11.2.3 Database Support for Data Warehouses
 - id: lossy_decomposition
   question: Show me what happens during a lossy decomposition
   expected_answer: A lossy decomposition occurs when a relation R is decomposed into
@@ -292,18 +219,12 @@ benchmarks:
   - lossy decomposition
   similarity_threshold: 0.7
   ideal_retrieved_chunks:
-  - 431
-  - 430
-  - 432
-  - 433
-  - 440
+  - 415
+  - 416
   broad: false
   sections:
   - Section 7.1  Features of Good Relational Designs
   - Section 7.1.1 Decomposition
-  - Section 7.1.2 Lossless Decomposition
-  - Section 7.2  Decomposition Using Functional Dependencies
-  - Section 7.2.3 Lossless Decomposition and Functional Dependencies
 - id: physical_storage_media
   question: What are different physical storage media?
   expected_answer: Physical storage media include cache memory (fastest, most volatile),
@@ -317,21 +238,14 @@ benchmarks:
   - physical storage media
   similarity_threshold: 0.65
   ideal_retrieved_chunks:
-  - 736
-  - 737
-  - 738
-  - 739
-  - 740
+  - 759
+  - 760
+  - 761
+  - 762
+  - 763
   broad: true
   sections:
   - Section 12.1  Overview of Physical Storage Media
-  - Section 12.3  Magnetic Disks
-  - Section 12.3.1 Physical Characteristics of Disks
-  - Section 12.3.2 Performance Measures of Disks
-  - Section 12.4  Flash Memory
-  - Section 12.2  Storage Interfaces
-  - Section 12.6  Disk-Block Access
-  - Section 17.3  Storage Structure
 - id: hdd_vs_ssd
   question: What are the main differences between HDD and SSD storage devices?
   expected_answer: HDDs use rotating magnetic platters with mechanical read/write
@@ -347,7 +261,8 @@ benchmarks:
   - storage devices
   similarity_threshold: 0.65
   ideal_retrieved_chunks:
-  - 737
+  - 760
+  - 762
   broad: false
   sections:
   - Section 12.1  Overview of Physical Storage Media
@@ -355,7 +270,6 @@ benchmarks:
   - Section 12.3.1 Physical Characteristics of Disks
   - Section 12.3.2 Performance Measures of Disks
   - Section 12.4  Flash Memory
-  - Section 12.2  Storage Interfaces
 - id: storage_media_comparison
   question: How do different physical storage media differ in terms of volatility,
     access speed, and cost?
@@ -373,13 +287,11 @@ benchmarks:
   - cost
   similarity_threshold: 0.65
   ideal_retrieved_chunks:
-  - 736
-  - 737
-  - 738
-  - 739
-  - 740
-  - 748
-  - 751
+  - 759
+  - 760
+  - 761
+  - 762
+  - 763
   broad: true
   sections:
   - Section 12.1  Overview of Physical Storage Media
@@ -387,7 +299,6 @@ benchmarks:
   - Section 12.3.1 Physical Characteristics of Disks
   - Section 12.3.2 Performance Measures of Disks
   - Section 12.4  Flash Memory
-  - Section 12.2  Storage Interfaces
 - id: shared_nothing_architecture
   question: What is a shared-nothing architecture?
   expected_answer: A shared-nothing architecture is a distributed database design
@@ -401,14 +312,10 @@ benchmarks:
   similarity_threshold: 0.65
   ideal_retrieved_chunks:
   - 1326
+  - 1358
   broad: false
   sections:
   - Section 20.4.7 Shared Nothing
-  - Section 20.4  Parallel Systems
-  - Section 20.4.4 Parallel Database Architectures
-  - Section 20.4.5 Shared Memory
-  - Section 20.4.6 Shared Disk
-  - Section 10.2.4 Parallel and Distributed Databases
 - id: ec_001
   mode: entity_confusability
   question: What's the difference between two-phase locking and strict two-phase locking?
@@ -427,9 +334,9 @@ benchmarks:
   sections:
   - Section 18.1  Lock-Based Protocols
   - Section 18.1.3 The Two-Phase Locking Protocol
-  - Section 17.7.1 Recoverable Schedules
-  - Section 17.7.2 Cascadeless Schedules
-  - Section 17.9.1 Locking
+  ideal_retrieved_chunks:
+  - 1149
+  - 1150
 - id: ec_002
   mode: entity_confusability
   question: When should I use a B+ tree instead of a B-tree?
@@ -451,8 +358,11 @@ benchmarks:
   - Section 14.3.2 Queries on B + -Trees
   - Section 14.4  B + -Tree Extensions
   - Section 14.4.5 B-Tree Index Files
-  - Section 14.4.1 B + -Tree File Organization
-  - Section 24.5.3 Comparison of Ordered Indexing and Hashing
+  ideal_retrieved_chunks:
+  - 869
+  - 902
+  - 903
+  - 904
 - id: ec_003
   mode: entity_confusability
   question: Explain the difference between serializability and serializable schedules.
@@ -474,9 +384,10 @@ benchmarks:
   - Section 17.7  Transaction Isolation and Atomicity
   - Section 17.7.1 Recoverable Schedules
   - Section 17.7.2 Cascadeless Schedules
-  - Section 17.8  Transaction Isolation Levels
-  - Section 17.9  Implementation of Isolation Levels
-  - Section 18.1.3 The Two-Phase Locking Protocol
+  ideal_retrieved_chunks:
+  - 1119
+  - 1122
+  - 1129
 - id: ec_004
   mode: entity_confusability
   question: How is 3NF different from BCNF?
@@ -497,10 +408,11 @@ benchmarks:
   - Section 7.3.2 Third Normal Form
   - Section 7.3.3 Comparison of BCNF and 3NF
   - Section 7.4.4 Dependency Preservation
-  - Section 7.5  Algorithms for Decomposition Using Functional Dependencies
-  - Section 7.5.1 BCNF Decomposition
-  - Section 7.5.2 3NF Decomposition
-  - Section 7.5.3 Correctness of the 3NF Algorithm
+  ideal_retrieved_chunks:
+  - 428
+  - 433
+  - 434
+  - 435
 - id: ec_005
   mode: entity_confusability
   question: What distinguishes hash indexing from hash join?
@@ -522,10 +434,10 @@ benchmarks:
   - Section 24.5  Hash Indices
   - Section 24.5.1 Static Hashing
   - Section 24.5.2 Dynamic Hashing
-  - Section 24.5.3 Comparison of Ordered Indexing and Hashing
-  - Section 15.5  Join Operation
-  - Section 22.3  Parallel Join
-  - Section 22.3.1 Partitioned Join
+  ideal_retrieved_chunks:
+  - 909
+  - 979
+  - 980
 - id: ec_006
   mode: entity_confusability
   question: ACID vs. BASE — when does each apply?
@@ -551,6 +463,10 @@ benchmarks:
   - Section 21.4.2 Updates and Consistency of Replicas
   - Section 23.4.1 Consistency of Replicas
   - Section 21.7  Parallel Key-Value Stores
+  ideal_retrieved_chunks:
+  - 1582
+  - 1583
+  - 1584
 - id: cs_001
   mode: cross_section_evidence
   question: How does strict two-phase locking prevent cascading rollbacks?
@@ -572,6 +488,10 @@ benchmarks:
   - Section 17.7.1 Recoverable Schedules
   - Section 17.7.2 Cascadeless Schedules
   - Section 17.9.1 Locking
+  ideal_retrieved_chunks:
+  - 1149
+  - 1150
+  - 1152
 - id: cs_002
   mode: cross_section_evidence
   question: Why does multiversion concurrency control avoid read locks?
@@ -594,6 +514,12 @@ benchmarks:
   - Section 18.7.2 Multiversion Two-Phase Locking
   - Section 18.8  Snapshot Isolation
   - Section 18.8.1 Multiversioning in Snapshot Isolation
+  ideal_retrieved_chunks:
+  - 1137
+  - 1138
+  - 1192
+  - 1194
+  - 1195
 - id: cs_003
   mode: cross_section_evidence
   question: How do write-ahead logging and checkpointing work together during recovery?
@@ -620,12 +546,15 @@ benchmarks:
   - Section 19.4.2 Recovery After a System Crash
   - Section 19.5  Buffer Management
   - Section 19.5.1 Log-Record Buffering
-  - Section 19.5.2 Database Buffering
   - Section 19.5.4 Fuzzy Checkpointing
   - Section 19.9  ARIES
   - Section 19.9.1 Data Structures
   - Section 19.9.2 Recovery Algorithm
-  - 'Section 19.25 In the ARIES recovery algorithm:'
+  ideal_retrieved_chunks:
+  - 1250
+  - 1255
+  - 1263
+  - 1264
 - id: cs_004
   mode: cross_section_evidence
   question: What's the relationship between functional dependencies and lossless-join
@@ -647,8 +576,9 @@ benchmarks:
   - Section 7.1.2 Lossless Decomposition
   - Section 7.2  Decomposition Using Functional Dependencies
   - Section 7.2.3 Lossless Decomposition and Functional Dependencies
-  - Section 7.5  Algorithms for Decomposition Using Functional Dependencies
-  - Section 7.5.1 BCNF Decomposition
+  ideal_retrieved_chunks:
+  - 416
+  - 424
 - id: cs_005
   mode: cross_section_evidence
   question: How does the query optimizer use statistics from the catalog?
@@ -667,11 +597,8 @@ benchmarks:
     entities.
   broad: true
   sections:
-  - Section 1.6.2 The Query Processor
   - Section 13.4  Data-Dictionary Storage
-  - Section 15.1  Overview
   - Section 15.2  Measures of Query Cost
-  - Section 16.1  Overview
   - Section 16.3  Estimating Statistics of Expression Results
   - Section 16.3.1 Catalog Information
   - Section 16.3.2 Selection Size Estimation
@@ -680,8 +607,11 @@ benchmarks:
   - Section 16.3.5 Estimation of Number of Distinct Values
   - Section 16.4  Choice of Evaluation Plans
   - Section 16.4.1 Cost-Based Join-Order Selection
-  - Section 16.4.2 Cost-Based Optimization with Equivalence Rules
-  - Section 16.4.3 Heuristics in Optimization
+  ideal_retrieved_chunks:
+  - 1039
+  - 1040
+  - 1041
+  - 1702
 - id: cs_006
   mode: cross_section_evidence
   question: Why do isolation levels affect phantom reads?
@@ -702,7 +632,11 @@ benchmarks:
   - Section 17.9  Implementation of Isolation Levels
   - Section 18.4  Insert Operations, Delete Operations, and Predicate Reads
   - Section 18.4.3 Predicate Reads and The Phantom Phenomenon
-  - Section 18.1.3 The Two-Phase Locking Protocol
+  ideal_retrieved_chunks:
+  - 1140
+  - 1175
+  - 1176
+  - 1184
 - id: pl_001
   mode: polysemy
   question: What is a key in the context of relations and tuples?
@@ -720,6 +654,10 @@ benchmarks:
   broad: false
   sections:
   - Section 2.3  Keys
+  ideal_retrieved_chunks:
+  - 85
+  - 90
+  - 91
 - id: pl_002
   mode: polysemy
   question: Explain a lock in a transaction context.
@@ -736,13 +674,16 @@ benchmarks:
   notes: Transaction context disambiguates from OS/file locking.
   broad: false
   sections:
-  - Section 17.9  Implementation of Isolation Levels
   - Section 17.9.1 Locking
   - Section 18.1  Lock-Based Protocols
   - Section 18.1.1 Locks
   - Section 18.1.2 Granting of Locks
   - Section 18.1.3 The Two-Phase Locking Protocol
   - Section 18.1.4 Implementation of Locking
+  ideal_retrieved_chunks:
+  - 1142
+  - 1143
+  - 1144
 - id: pl_003
   mode: polysemy
   question: How does a hash work for indexing?
@@ -763,8 +704,12 @@ benchmarks:
   - Section 24.5  Hash Indices
   - Section 24.5.1 Static Hashing
   - Section 24.5.2 Dynamic Hashing
-  - Section 24.5.3 Comparison of Ordered Indexing and Hashing
-  - Section 14.1  Basic Concepts
+  ideal_retrieved_chunks:
+  - 852
+  - 853
+  - 909
+  - 910
+  - 911
 - id: pl_004
   mode: polysemy
   question: What's a schedule when talking about transactions?
@@ -788,6 +733,9 @@ benchmarks:
   - Section 17.7.2 Cascadeless Schedules
   - Section 17.2  A Simple Transaction Model
   - Section 17.1  Transaction Concept
+  ideal_retrieved_chunks:
+  - 1116
+  - 1117
 - id: pl_005
   mode: polysemy
   question: Describe a view in SQL.
@@ -809,7 +757,9 @@ benchmarks:
   - Section 4.2.2 Using Views in SQL Queries
   - Section 4.2.3 Materialized Views
   - Section 4.2.4 Update of a View
-  - Section 16.5  Materialized Views
+  ideal_retrieved_chunks:
+  - 197
+  - 198
 - id: pl_006
   mode: polysemy
   question: What does normal form mean in database design?
@@ -829,11 +779,8 @@ benchmarks:
   - Section 7.3  Normal Forms
   - Section 7.3.1 Boyce-Codd Normal Form
   - Section 7.3.2 Third Normal Form
-  - Section 7.3.3 Comparison of BCNF and 3NF
-  - Section 7.3.4 Higher Normal Forms
   - Section 7.8  Atomic Domains and First Normal Form
   - Section 7.6.2 Fourth Normal Form
   - Section 7.7  More Normal Forms
-  - Section 7.1  Features of Good Relational Designs
-  - Section 7.1.3 Normalization Theory
-  - Section 7.6.1 Multivalued Dependencies
+  ideal_retrieved_chunks:
+  - 417
