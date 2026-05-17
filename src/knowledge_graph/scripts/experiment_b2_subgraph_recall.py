@@ -15,7 +15,6 @@ from __future__ import annotations
 
 import argparse
 import json
-import os
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -46,7 +45,7 @@ def main() -> None:
     from src.retriever import FAISSRetriever, load_artifacts
     from src.ranking.ranker import EnsembleRanker
     from src.knowledge_graph.scripts.eval_utils import (
-        load_labeled_benchmarks, recall_at_k, precision_at_k, ndcg_at_k,
+        load_labeled_benchmarks, recall_at_k,
         scores_to_ranked_ids, print_table,
     )
 
@@ -65,9 +64,10 @@ def main() -> None:
     canonical_lookup = CanonicalLookup(syn_table, can_kw, can_emb) if syn_table else None
 
     print(f"Loading FAISS artifacts from {artifacts_path}...")
-    faiss_idx, _, raw_chunks, _, _ = load_artifacts(str(artifacts_path), args.index_prefix)
+    faiss_idx, _, raw_chunks, _, metadata = load_artifacts(str(artifacts_path), args.index_prefix)
+    chunk_id_map = [m["chunk_id"] for m in metadata]
 
-    faiss_ret = FAISSRetriever(faiss_idx, args.embed_model)
+    faiss_ret = FAISSRetriever(faiss_idx, args.embed_model, chunk_id_map=chunk_id_map)
     kg_ret = KGNodeRetriever(
         graph, kg_chunks,
         neighbor_weight=args.neighbor_weight,

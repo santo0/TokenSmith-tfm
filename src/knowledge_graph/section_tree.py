@@ -226,6 +226,52 @@ class SectionTree:
             chunk_scores = {cid: s / max_score for cid, s in chunk_scores.items()}
         return chunk_scores
 
+    def get_section_scores(
+        self,
+        query_keywords: set[str],
+        query: str | None = None,
+        heading_alpha: float = 0.5,
+        inheritance_decay: float = 0.5,
+        alpha: float = 0.6,
+    ) -> dict[str, float]:
+        """Return heading → normalized section-relevance score.
+
+        Same scoring logic as ``get_chunk_scores`` (steps 1-2) but returns
+        section-level scores directly without mapping through chunk IDs.
+        Useful for section-level retrieval evaluation.
+        """
+        if not self.node_index:
+            return {}
+
+        query_tokens: set[str] = set()
+        if query is not None:
+            query_tokens = _tokenize_query(query)
+
+        own_scores: dict[str, float] = {}
+        for heading, node in self.node_index.items():
+            kg_score = self._score_section_kg(node, query_keywords, alpha)
+            if query_tokens and node.heading_keywords:
+                heading_score = self._score_section_heading(node, query_tokens, alpha)
+                own_scores[heading] = heading_alpha * heading_score + (1 - heading_alpha) * kg_score
+            else:
+                own_scores[heading] = kg_score
+
+        effective: dict[str, float] = {}
+
+        def _propagate(node: SectionNode, parent_eff: float) -> None:
+            eff = own_scores.get(node.heading, 0.0) + inheritance_decay * parent_eff
+            effective[node.heading] = eff
+            for child in node.children:
+                _propagate(child, eff)
+
+        for top_level in self.root.children:
+            _propagate(top_level, 0.0)
+
+        max_score = max(effective.values(), default=0.0)
+        if max_score > 0:
+            effective = {h: s / max_score for h, s in effective.items()}
+        return effective
+
     # ── Serialization ─────────────────────────────────────────────────────────
 
     def to_dict(self) -> dict:

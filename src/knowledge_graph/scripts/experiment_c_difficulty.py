@@ -146,8 +146,9 @@ def main() -> None:
             apath = Path(args.artifacts_dir)
             if not apath.is_absolute():
                 apath = root / apath
-            faiss_idx, _, raw_chunks, _, _ = load_artifacts(str(apath), args.index_prefix)
-            faiss_ret = FAISSRetriever(faiss_idx, args.embed_model)
+            faiss_idx, _, raw_chunks, _, metadata = load_artifacts(str(apath), args.index_prefix)
+            chunk_id_map = [m["chunk_id"] for m in metadata]
+            faiss_ret = FAISSRetriever(faiss_idx, args.embed_model, chunk_id_map=chunk_id_map)
             print(f"FAISS enabled ({len(raw_chunks)} chunks).")
         except Exception as e:
             print(f"FAISS not available: {e}")

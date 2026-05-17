@@ -93,12 +93,13 @@ def main() -> None:
     summary_index, summary_entries = load_summary_data(str(run_path))
 
     print(f"Loading artifacts from {artifacts_path}...")
-    faiss_idx, bm25_idx, raw_chunks, _, _ = load_artifacts(str(artifacts_path), args.index_prefix)
+    faiss_idx, bm25_idx, raw_chunks, _, metadata = load_artifacts(str(artifacts_path), args.index_prefix)
+    chunk_id_map = [m["chunk_id"] for m in metadata]
     raw_chunks_dict = {i: t for i, t in enumerate(raw_chunks)}
 
     # Build all individual retrievers
     retrievers: dict = {
-        "faiss": FAISSRetriever(faiss_idx, args.embed_model),
+        "faiss": FAISSRetriever(faiss_idx, args.embed_model, chunk_id_map=chunk_id_map),
         "bm25": BM25Retriever(bm25_idx),
         "kg_node": KGNodeRetriever(
             graph, kg_chunks,

@@ -93,8 +93,9 @@ def main() -> None:
             artifacts_path = Path(args.artifacts_dir)
             if not artifacts_path.is_absolute():
                 artifacts_path = root / artifacts_path
-            faiss_idx, _, raw_chunks, _, _ = load_artifacts(str(artifacts_path), args.index_prefix)
-            faiss_retriever = FAISSRetriever(faiss_idx, args.embed_model)
+            faiss_idx, _, raw_chunks, _, metadata = load_artifacts(str(artifacts_path), args.index_prefix)
+            chunk_id_map = [m["chunk_id"] for m in metadata]
+            faiss_retriever = FAISSRetriever(faiss_idx, args.embed_model, chunk_id_map=chunk_id_map)
             dense_chunks_list = raw_chunks
             print(f"Dense baseline (FAISS) enabled with {len(dense_chunks_list)} chunks.")
         except Exception as e:

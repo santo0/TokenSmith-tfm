@@ -456,6 +456,20 @@
             "cwd": "${workspaceFolder}",
             "env": { "PYTHONPATH": "${workspaceFolder}" },
             "justMyCode": false
+        },
+
+        // ── Tools ────────────────────────────────────────────────────────────
+        {
+            "name": "Tool | Chunk Tagger",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "tools.chunk_tagger.server",
+            "python": "/home/user/miniconda3/envs/tokensmith/bin/python",
+            "cwd": "${workspaceFolder}",
+            "env": { "PYTHONPATH": "${workspaceFolder}" },
+            "envFile": "${workspaceFolder}/.env",
+            "args": ["--port", "7654"],
+            "justMyCode": false
         }
     ]
 }
