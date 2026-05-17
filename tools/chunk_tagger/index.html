@@ -1,0 +1,779 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>TokenSmith · Chunk Tagger</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; font-family: 'Segoe UI', system-ui, monospace; font-size: 13px; }
+
+/* ── header ── */
+#header {
+  background: #1a1a2e; color: #e0e0e0; padding: 6px 14px;
+  display: flex; align-items: center; gap: 10px; flex-shrink: 0;
+  border-bottom: 2px solid #4a4a8a;
+}
+#header h1 { font-size: 14px; color: #a0a0ff; white-space: nowrap; }
+#nav-info { flex: 1; text-align: center; font-size: 12px; color: #ccc; }
+#progress-info { font-size: 11px; color: #aaa; white-space: nowrap; }
+.hbtn {
+  padding: 4px 10px; border: 1px solid #555; border-radius: 4px;
+  background: #2a2a4e; color: #ddd; cursor: pointer; font-size: 12px;
+}
+.hbtn:hover { background: #3a3a6e; }
+.hbtn.primary { background: #4a4aae; border-color: #7070cc; }
+.hbtn.primary:hover { background: #5a5abe; }
+
+/* ── main layout ── */
+#app { display: flex; height: calc(100vh - 37px); overflow: hidden; }
+
+/* ── left panel ── */
+#left { width: 320px; flex-shrink: 0; border-right: 1px solid #ccc; display: flex; flex-direction: column; }
+#search-wrap { padding: 6px; border-bottom: 1px solid #ddd; background: #fafafa; }
+#search-wrap input { width: 100%; padding: 4px 8px; border: 1px solid #ccc; border-radius: 4px; font-size: 12px; }
+#tree { flex: 1; overflow-y: auto; }
+
+.ch-node {
+  padding: 4px 8px; background: #e8e8f0; font-weight: 600; cursor: pointer;
+  user-select: none; border-bottom: 1px solid #ccc; display: flex; align-items: center; gap: 4px;
+}
+.ch-node:hover { background: #d8d8e8; }
+.ch-node .arrow { width: 12px; }
+
+.sec-node {
+  padding: 3px 8px 3px 22px; cursor: pointer; user-select: none;
+  border-bottom: 1px solid #eee; display: flex; align-items: center; gap: 4px;
+  background: #f5f5ff;
+}
+.sec-node:hover { background: #eaeaf8; }
+.sec-node.hinted { background: #fff9c4 !important; }
+
+.leaf-node {
+  padding: 2px 8px 2px 34px; cursor: pointer; user-select: none;
+  border-bottom: 1px solid #f0f0f0; display: flex; align-items: center; gap: 4px;
+}
+.leaf-node:hover { background: #f0f8ff; }
+.leaf-node.hinted { background: #fffce0 !important; }
+
+.chunk-row {
+  padding: 2px 8px 2px 46px; cursor: pointer; border-bottom: 1px solid #f5f5f5;
+  font-family: monospace; font-size: 11px; color: #444; display: flex; align-items: flex-start; gap: 4px;
+}
+.chunk-row:hover { background: #e8f4ff; }
+.chunk-row.tagged { background: #d4edda; }
+.chunk-row.tagged:hover { background: #c3e6cb; }
+.chunk-row .dot { flex-shrink: 0; width: 10px; }
+.chunk-row .cid { flex-shrink: 0; color: #666; }
+.chunk-row .preview { color: #555; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+
+.tagged-indicator { color: #c0392b; font-size: 10px; }
+
+/* ── right panel ── */
+#right { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+#query-info { padding: 8px 12px; background: #f8f8ff; border-bottom: 1px solid #ddd; flex-shrink: 0; }
+#query-info .q { font-weight: 600; color: #1a1a4e; margin-bottom: 3px; }
+#query-info .meta { color: #555; font-size: 11px; line-height: 1.6; }
+#query-info .tagged-chips { margin-top: 4px; display: flex; flex-wrap: wrap; gap: 4px; align-items: center; }
+.chip {
+  display: inline-flex; align-items: center; gap: 3px;
+  padding: 1px 6px; background: #4a4aae; color: white;
+  border-radius: 10px; font-size: 11px; cursor: pointer;
+}
+.chip:hover { background: #c0392b; }
+
+#controls { padding: 6px 12px; border-bottom: 1px solid #ddd; display: flex; gap: 8px; flex-shrink: 0; align-items: center; }
+.cbtn {
+  padding: 4px 10px; border: 1px solid #aaa; border-radius: 4px;
+  background: white; cursor: pointer; font-size: 12px;
+}
+.cbtn:hover { background: #e8e8ff; }
+.cbtn:disabled { opacity: 0.5; cursor: not-allowed; }
+.cbtn.loading { opacity: 0.7; }
+.signal-label { font-size: 11px; color: #888; margin-left: 6px; }
+
+#table-wrap { flex: 1; overflow-y: auto; }
+table { width: 100%; border-collapse: collapse; }
+thead { position: sticky; top: 0; background: #f0f0f8; z-index: 1; }
+th { padding: 5px 8px; border-bottom: 2px solid #ccc; font-size: 12px; text-align: left; white-space: nowrap; }
+td { padding: 4px 8px; border-bottom: 1px solid #eee; font-size: 12px; vertical-align: top; }
+tr.tagged-row td { background: #d4edda; }
+tr.expanded-row td { background: #fafafa; padding: 8px 12px; font-size: 12px; line-height: 1.6; white-space: pre-wrap; font-family: Georgia, serif; color: #222; }
+tr:hover:not(.expanded-row) td { background: #e8f4ff; }
+tr.tagged-row:hover td { background: #c3e6cb; }
+
+.badge { display: inline-block; padding: 1px 4px; border-radius: 3px; font-size: 10px; font-weight: 600; }
+.b-f { background: #007bff; color: white; }
+.b-b { background: #28a745; color: white; }
+.b-s { background: #6f42c1; color: white; }
+
+.score-cell { font-family: monospace; color: #333; }
+.score-na { color: #ccc; }
+.llm-bar { height: 8px; background: #4a4aae; border-radius: 2px; display: inline-block; }
+
+#loading {
+  position: fixed; inset: 0; background: rgba(26,26,46,0.85); color: white;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px;
+  font-size: 16px; z-index: 999;
+}
+#loading .spinner {
+  width: 40px; height: 40px; border: 4px solid #555; border-top-color: #a0a0ff;
+  border-radius: 50%; animation: spin 0.8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.empty-msg { padding: 24px; text-align: center; color: #aaa; font-size: 12px; }
+
+.chunk-text-copy { cursor: copy; border-radius: 3px; transition: background 0.15s; }
+.chunk-text-copy:hover { background: #e8f0ff; }
+.chunk-text-copy.copied { background: #d4edda; color: #155724; }
+</style>
+</head>
+<body>
+
+<div id="loading">
+  <div class="spinner"></div>
+  <div>Loading artifacts — this may take up to 60 s for the embedding model…</div>
+</div>
+
+<div id="header" style="display:none">
+  <h1>Chunk Tagger</h1>
+  <button class="hbtn" onclick="navigate(-1)">◀ Prev</button>
+  <div id="nav-info">—</div>
+  <button class="hbtn" onclick="navigate(1)">Next ▶</button>
+  <button class="hbtn primary" onclick="saveAndRefresh()">💾 Save</button>
+  <div id="progress-info">—</div>
+</div>
+
+<div id="app" style="display:none">
+
+  <!-- Left: section tree -->
+  <div id="left">
+    <div id="search-wrap" style="display:flex;gap:4px">
+      <input id="search-input" type="text" placeholder="Search sections / chunks… (Ctrl+F)" style="flex:1">
+      <button onclick="collapseAll()" title="Collapse all" style="padding:3px 7px;border:1px solid #ccc;border-radius:4px;background:#fff;cursor:pointer;font-size:12px">⊟</button>
+    </div>
+    <div id="tree"></div>
+  </div>
+
+  <!-- Right: query panel -->
+  <div id="right">
+    <div id="query-info">
+      <div class="q" id="q-text"></div>
+      <div class="meta" id="q-meta"></div>
+      <div class="tagged-chips" id="tagged-chips"></div>
+    </div>
+    <div id="controls">
+      <button class="cbtn" id="btn-retrieve" onclick="doRetrieve()">🔍 Retrieve</button>
+      <button class="cbtn" id="btn-hint" onclick="doLLMHint()" style="display:none">💡 LLM Hint</button>
+      <button class="cbtn" id="btn-score" onclick="doLLMScore()" style="display:none">⚡ LLM Score</button>
+      <button class="cbtn" id="btn-copy-golden" onclick="copyGolden(this)" title="Copy query + tagged chunks to clipboard">📋 Copy golden</button>
+      <span class="signal-label" id="signal-label"></span>
+    </div>
+    <div id="table-wrap">
+      <div class="empty-msg">Click <strong>Retrieve</strong> to load candidates for this query.</div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ─────────────────────────────────────────────────────────────────────────────
+// State
+// ─────────────────────────────────────────────────────────────────────────────
+const S = {
+  sectionsTree: {},
+  benchmarks: [],
+  currentIdx: 0,
+  taggedChunks: {},      // {benchmark_id: Set<int>}
+  retrievalScores: {},   // {chunk_id: {faiss, bm25, summary}}
+  llmScores: {},         // {str_chunk_id: float}
+  llmHintSections: new Set(),
+  chunkCache: {},        // {chunk_id: {text, section, ...}}
+  expandedChapters: new Set(),
+  expandedSections: new Set(),
+  expandedLeaves: new Set(),
+  expandedRows: new Set(),
+  llmAvailable: false,
+  hasSummary: false,
+  searchFilter: '',
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Init
+// ─────────────────────────────────────────────────────────────────────────────
+async function init() {
+  let data;
+  // Poll until server is ready (embedding model load may take ~60s)
+  for (let i = 0; i < 120; i++) {
+    try {
+      const r = await fetch('/api/data');
+      if (r.ok) { data = await r.json(); break; }
+    } catch (_) {}
+    await new Promise(r => setTimeout(r, 1000));
+  }
+  if (!data) { document.getElementById('loading').textContent = 'Server failed to start.'; return; }
+
+  S.sectionsTree = data.sections_tree;
+  S.benchmarks = data.benchmarks;
+  S.llmAvailable = data.llm_available;
+  S.hasSummary = data.has_summary;
+
+  for (const b of S.benchmarks) {
+    S.taggedChunks[b.id] = new Set(b.ideal_retrieved_chunks || []);
+  }
+
+  document.getElementById('loading').style.display = 'none';
+  document.getElementById('header').style.display = '';
+  document.getElementById('app').style.display = '';
+
+  if (S.llmAvailable) {
+    document.getElementById('btn-hint').style.display = '';
+    document.getElementById('btn-score').style.display = '';
+  }
+
+  document.getElementById('search-input').addEventListener('input', e => {
+    S.searchFilter = e.target.value.toLowerCase();
+    renderLeft();
+  });
+
+  // Single delegated handler for the whole tree — avoids inline onclick escaping issues
+  document.getElementById('tree').addEventListener('click', e => {
+    const chunkEl = e.target.closest('[data-cid]');
+    const chEl    = e.target.closest('[data-ch]');
+    const secEl   = e.target.closest('[data-sec]');
+    const leafEl  = e.target.closest('[data-leaf]');
+    if (chunkEl)     toggleTag(Number(chunkEl.dataset.cid));
+    else if (chEl)   toggleChapter(chEl.dataset.ch);
+    else if (secEl)  toggleSection(secEl.dataset.sec);
+    else if (leafEl) toggleLeaf(leafEl.dataset.leaf);
+  });
+
+  document.addEventListener('keydown', e => {
+    if ((e.ctrlKey || e.metaKey) && e.key === 'f') {
+      e.preventDefault();
+      document.getElementById('search-input').focus();
+    }
+  });
+
+  renderAll();
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Helpers
+// ─────────────────────────────────────────────────────────────────────────────
+function currentBM() { return S.benchmarks[S.currentIdx]; }
+function currentTags() { return S.taggedChunks[currentBM().id] || new Set(); }
+
+function toggleTag(chunkId) {
+  const id = currentBM().id;
+  if (!S.taggedChunks[id]) S.taggedChunks[id] = new Set();
+  const s = S.taggedChunks[id];
+  s.has(chunkId) ? s.delete(chunkId) : s.add(chunkId);
+  renderAll();
+}
+
+function esc(s) {
+  return String(s)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+function fmtScore(v) {
+  if (v === null || v === undefined) return '<span class="score-na">—</span>';
+  return `<span class="score-cell">${v.toFixed(3)}</span>`;
+}
+
+function progressCount() {
+  return S.benchmarks.filter(b => {
+    const t = S.taggedChunks[b.id];
+    return t && t.size > 0;
+  }).length;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Navigation & Save
+// ─────────────────────────────────────────────────────────────────────────────
+async function saveAndRefresh() {
+  const b = currentBM();
+  const chunks = [...currentTags()].sort((a, b) => a - b);
+  await fetch('/api/save', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({benchmark_id: b.id, ideal_retrieved_chunks: chunks}),
+  });
+  b.ideal_retrieved_chunks = chunks;
+  renderHeader();
+}
+
+async function navigate(delta) {
+  await saveAndRefresh();
+  S.currentIdx = Math.max(0, Math.min(S.benchmarks.length - 1, S.currentIdx + delta));
+  S.retrievalScores = {};
+  S.llmScores = {};
+  S.llmHintSections = new Set();
+  S.expandedRows = new Set();
+  renderAll();
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Retrieval
+// ─────────────────────────────────────────────────────────────────────────────
+async function doRetrieve() {
+  const btn = document.getElementById('btn-retrieve');
+  btn.textContent = '⏳ Retrieving…'; btn.disabled = true;
+  setSignalLabel('');
+  try {
+    const b = currentBM();
+    const data = await fetch('/api/retrieve', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({query: b.question, top_k: 30}),
+    }).then(r => r.json());
+
+    const allIds = new Set([
+      ...Object.keys(data.faiss || {}).map(Number),
+      ...Object.keys(data.bm25 || {}).map(Number),
+      ...Object.keys(data.summary || {}).map(Number),
+    ]);
+
+    S.retrievalScores = {};
+    for (const id of allIds) {
+      S.retrievalScores[id] = {
+        faiss: data.faiss?.[id] ?? null,
+        bm25: data.bm25?.[id] ?? null,
+        summary: data.summary?.[id] ?? null,
+      };
+    }
+
+    const parts = [`FAISS:${Object.keys(data.faiss||{}).length}`, `BM25:${Object.keys(data.bm25||{}).length}`];
+    if (S.hasSummary) parts.push(`Summary:${Object.keys(data.summary||{}).length}`);
+    setSignalLabel(parts.join('  '));
+    S.llmScores = {};
+    renderRight();
+  } finally {
+    btn.textContent = '🔍 Retrieve'; btn.disabled = false;
+  }
+}
+
+function setSignalLabel(txt) {
+  document.getElementById('signal-label').textContent = txt;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// LLM features
+// ─────────────────────────────────────────────────────────────────────────────
+async function doLLMHint() {
+  const btn = document.getElementById('btn-hint');
+  btn.textContent = '⏳ Hinting…'; btn.disabled = true;
+  try {
+    const b = currentBM();
+    const data = await fetch('/api/llm-hint', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({query: b.question, keywords: b.keywords || []}),
+    }).then(r => r.json());
+    S.llmHintSections = new Set(data.suggested_sections || []);
+    // Auto-expand chapters that contain hinted sections
+    for (const [ch, secs] of Object.entries(S.sectionsTree)) {
+      for (const parent of Object.keys(secs)) {
+        if (S.llmHintSections.has(parent)) S.expandedChapters.add(ch);
+        for (const leaf of Object.keys(secs[parent])) {
+          if (S.llmHintSections.has(leaf)) {
+            S.expandedChapters.add(ch);
+            S.expandedSections.add(parent);
+          }
+        }
+      }
+    }
+    renderLeft();
+  } finally {
+    btn.textContent = '💡 LLM Hint'; btn.disabled = false;
+  }
+}
+
+async function doLLMScore() {
+  const btn = document.getElementById('btn-score');
+  btn.textContent = '⏳ Scoring…'; btn.disabled = true;
+  try {
+    const chunkIds = Object.keys(S.retrievalScores).map(Number);
+    if (chunkIds.length === 0) { alert('Run Retrieve first.'); return; }
+    const b = currentBM();
+    const resp = await fetch('/api/llm-score', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({query: b.question, chunk_ids: chunkIds}),
+    });
+    const data = await resp.json();
+    if (!resp.ok) {
+      setSignalLabel(`LLM score error: ${data.detail || resp.status}`);
+      return;
+    }
+    // Normalize keys: LLM may return "chunk_id 908", "908", or 908 — extract the integer
+    const raw = data.scores || {};
+    const normalized = {};
+    for (const [k, v] of Object.entries(raw)) {
+      const m = String(k).match(/\d+/);
+      if (m) normalized[m[0]] = Number(v);
+    }
+    S.llmScores = normalized;
+    const n = Object.keys(normalized).length;
+    setSignalLabel(document.getElementById('signal-label').textContent.replace(/ +LLM:\d+/, '') +
+      (n > 0 ? `  LLM:${n}` : '  LLM: no scores returned'));
+    renderRight();
+  } finally {
+    btn.textContent = '⚡ LLM Score'; btn.disabled = false;
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Chunk expansion (right panel row click)
+// ─────────────────────────────────────────────────────────────────────────────
+async function onRowClick(chunkId) {
+  if (S.expandedRows.has(chunkId)) {
+    S.expandedRows.delete(chunkId);
+  } else {
+    S.expandedRows.add(chunkId);
+    if (!S.chunkCache[chunkId]) {
+      const info = await fetch(`/api/chunk/${chunkId}`).then(r => r.json());
+      S.chunkCache[chunkId] = info;
+    }
+    scrollLeftToChunk(chunkId);
+  }
+  renderRight();
+}
+
+function scrollLeftToChunk(chunkId) {
+  // Find section for this chunk and expand it
+  const info = S.chunkCache[chunkId];
+  if (!info) return;
+  const section = info.section;
+  for (const [ch, secs] of Object.entries(S.sectionsTree)) {
+    for (const [parent, leaves] of Object.entries(secs)) {
+      for (const [leaf, ids] of Object.entries(leaves)) {
+        if (ids.includes(chunkId)) {
+          S.expandedChapters.add(ch);
+          S.expandedSections.add(parent);
+          S.expandedLeaves.add(leaf);
+          renderLeft();
+          setTimeout(() => {
+            const el = document.getElementById(`lc-${chunkId}`);
+            if (el) el.scrollIntoView({behavior: 'smooth', block: 'center'});
+          }, 50);
+          return;
+        }
+      }
+    }
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Render: header
+// ─────────────────────────────────────────────────────────────────────────────
+function renderHeader() {
+  const b = currentBM();
+  const total = S.benchmarks.length;
+  const idx = S.currentIdx;
+  const mode = b.mode ? ` [${b.mode}]` : '';
+  document.getElementById('nav-info').textContent =
+    `${idx + 1} / ${total}  ·  ${b.id}${mode}`;
+  document.getElementById('progress-info').textContent =
+    `Progress: ${progressCount()} / ${total} tagged`;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Render: query info
+// ─────────────────────────────────────────────────────────────────────────────
+function renderQueryInfo() {
+  const b = currentBM();
+  const tagged = currentTags();
+  document.getElementById('q-text').textContent = b.question;
+
+  const secs = (b.sections || []).join('; ') || '—';
+  const kws  = (b.keywords || []).join(', ')  || '—';
+  const broad = b.broad ? ' · broad' : '';
+  document.getElementById('q-meta').innerHTML =
+    `<b>Sections:</b> ${esc(secs)}<br><b>Keywords:</b> ${esc(kws)}${broad}`;
+
+  const chips = [...tagged].sort((a, b) => a - b).map(id =>
+    `<span class="chip" onclick="toggleTag(${id})" title="Click to remove">[${id} ×]</span>`
+  ).join('');
+  document.getElementById('tagged-chips').innerHTML =
+    tagged.size ? chips : '<span style="color:#aaa;font-size:11px">(none tagged)</span>';
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Render: left panel (section tree)
+// ─────────────────────────────────────────────────────────────────────────────
+function renderLeft() {
+  const tagged = currentTags();
+  const hinted = S.llmHintSections;
+  const filter = S.searchFilter;
+
+  // Build all chunk IDs that belong to hinted sections (for left-panel tagging indicator)
+  const hintedChunkIds = new Set();
+  for (const [ch, secs] of Object.entries(S.sectionsTree)) {
+    for (const [parent, leaves] of Object.entries(secs)) {
+      for (const [leaf, ids] of Object.entries(leaves)) {
+        if (hinted.has(parent) || hinted.has(leaf)) {
+          for (const id of ids) hintedChunkIds.add(id);
+        }
+      }
+    }
+  }
+
+  let html = '';
+  const sortedChapters = Object.keys(S.sectionsTree).sort((a, b) => {
+    const na = parseInt(a.match(/\d+/)?.[0] || '0');
+    const nb = parseInt(b.match(/\d+/)?.[0] || '0');
+    return na - nb;
+  });
+
+  for (const chapter of sortedChapters) {
+    const secs = S.sectionsTree[chapter];
+
+    // Check if this chapter has anything matching the filter
+    const chapterHasTagged = Object.values(secs).some(leaves =>
+      Object.values(leaves).some(ids => ids.some(id => tagged.has(id)))
+    );
+
+    // Filter: skip chapter if filter active and nothing matches
+    if (filter) {
+      const chapterMatches = chapter.toLowerCase().includes(filter) ||
+        Object.keys(secs).some(p => p.toLowerCase().includes(filter) ||
+          Object.keys(secs[p]).some(l => l.toLowerCase().includes(filter)));
+      if (!chapterMatches) continue;
+    }
+
+    const expanded = S.expandedChapters.has(chapter);
+    const taggedMark = chapterHasTagged ? '<span class="tagged-indicator"> ●</span>' : '';
+    html += `<div class="ch-node" data-ch="${esc(chapter)}">
+      <span class="arrow">${expanded ? '▼' : '▶'}</span>
+      ${esc(chapter)}${taggedMark}
+    </div>`;
+
+    if (!expanded) continue;
+
+    const sortedParents = Object.keys(secs).sort();
+    for (const parent of sortedParents) {
+      const leaves = secs[parent];
+
+      const parentHasTagged = Object.values(leaves).some(ids => ids.some(id => tagged.has(id)));
+      const parentHinted = hinted.has(parent);
+
+      if (filter && !parent.toLowerCase().includes(filter) &&
+          !Object.keys(leaves).some(l => l.toLowerCase().includes(filter))) continue;
+
+      const secExpanded = S.expandedSections.has(parent);
+      const hintedClass = parentHinted ? ' hinted' : '';
+      const taggedMark2 = parentHasTagged ? '<span class="tagged-indicator"> ●</span>' : '';
+
+      html += `<div class="sec-node${hintedClass}" data-sec="${esc(parent)}">
+        <span class="arrow">${secExpanded ? '▼' : '▶'}</span>
+        ${esc(parent)}${taggedMark2}
+      </div>`;
+
+      if (!secExpanded) continue;
+
+      const sortedLeaves = Object.keys(leaves).sort();
+      for (const leaf of sortedLeaves) {
+        const ids = leaves[leaf];
+        const leafHasTagged = ids.some(id => tagged.has(id));
+        const leafHinted = hinted.has(leaf);
+        const leafSameAsParent = leaf === parent;
+
+        if (filter && !leaf.toLowerCase().includes(filter)) continue;
+
+        // Only render leaf header if different from parent
+        if (!leafSameAsParent) {
+          const leafExpanded = S.expandedLeaves.has(leaf);
+          const hintedLeafClass = leafHinted ? ' hinted' : '';
+          const taggedMark3 = leafHasTagged ? '<span class="tagged-indicator"> ●</span>' : '';
+          html += `<div class="leaf-node${hintedLeafClass}" data-leaf="${esc(leaf)}">
+            <span class="arrow">${leafExpanded ? '▼' : '▶'}</span>
+            ${esc(leaf)}${taggedMark3}
+          </div>`;
+          if (!leafExpanded) continue;
+        }
+
+        for (const cid of ids) {
+          const isTagged = tagged.has(cid);
+          const info = S.chunkCache[cid];
+          const preview = info ? info.text_preview.substring(0, 55) : `chunk ${cid}`;
+          html += `<div class="chunk-row${isTagged ? ' tagged' : ''}"
+            id="lc-${cid}" data-cid="${cid}">
+            <span class="dot">${isTagged ? '●' : '○'}</span>
+            <span class="cid">[${cid}]</span>
+            <span class="preview">${esc(preview)}…</span>
+          </div>`;
+        }
+      }
+    }
+  }
+
+  if (!html) html = '<div class="empty-msg">No sections match your search.</div>';
+  document.getElementById('tree').innerHTML = html;
+}
+
+function toggleChapter(ch) {
+  S.expandedChapters.has(ch) ? S.expandedChapters.delete(ch) : S.expandedChapters.add(ch);
+  renderLeft();
+}
+function toggleSection(sec) {
+  S.expandedSections.has(sec) ? S.expandedSections.delete(sec) : S.expandedSections.add(sec);
+  renderLeft();
+}
+function toggleLeaf(leaf) {
+  S.expandedLeaves.has(leaf) ? S.expandedLeaves.delete(leaf) : S.expandedLeaves.add(leaf);
+  renderLeft();
+}
+async function copyGolden(btn) {
+  const b = currentBM();
+  const tagged = [...currentTags()].sort((a, c) => a - c);
+  if (tagged.length === 0) {
+    btn.textContent = '⚠ No chunks tagged';
+    setTimeout(() => { btn.textContent = '📋 Copy golden'; }, 1500);
+    return;
+  }
+
+  // Fetch any uncached chunks
+  await Promise.all(tagged.map(async id => {
+    if (!S.chunkCache[id]) {
+      S.chunkCache[id] = await fetch(`/api/chunk/${id}`).then(r => r.json());
+    }
+  }));
+
+  const preamble = 'Starting from now, I will give you a question and a list of chunks and you have to tell me which are the necessary chunks for answering the question. If the provided chunks are not enough for answering the question, tell me.';
+  const parts = [preamble, b.question];
+  for (const id of tagged) {
+    parts.push(S.chunkCache[id]?.text ?? `[chunk ${id} not found]`);
+  }
+  await navigator.clipboard.writeText(parts.join('\n\n'));
+
+  btn.textContent = '✅ Copied!';
+  setTimeout(() => { btn.textContent = '📋 Copy golden'; }, 1500);
+}
+
+async function copyChunkText(chunkId, el) {
+  const info = S.chunkCache[chunkId];
+  if (!info) return;
+  await navigator.clipboard.writeText(info.text);
+  el.classList.add('copied');
+  setTimeout(() => el.classList.remove('copied'), 1200);
+}
+
+function collapseAll() {
+  S.expandedChapters.clear();
+  S.expandedSections.clear();
+  S.expandedLeaves.clear();
+  renderLeft();
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Render: right panel (candidate table)
+// ─────────────────────────────────────────────────────────────────────────────
+function renderRight() {
+  const tagged = currentTags();
+  const scores = S.retrievalScores;
+
+  if (Object.keys(scores).length === 0) {
+    document.getElementById('table-wrap').innerHTML =
+      '<div class="empty-msg">Click <strong>Retrieve</strong> to load candidates for this query.</div>';
+    return;
+  }
+
+  // Sort: tagged first, then by max signal score descending
+  const candidates = Object.entries(scores).map(([id, s]) => ({id: Number(id), ...s}));
+  candidates.sort((a, b) => {
+    const at = tagged.has(a.id) ? 1 : 0, bt = tagged.has(b.id) ? 1 : 0;
+    if (at !== bt) return bt - at;
+    const aMax = Math.max(a.faiss ?? 0, a.bm25 ?? 0, a.summary ?? 0);
+    const bMax = Math.max(b.faiss ?? 0, b.bm25 ?? 0, b.summary ?? 0);
+    return bMax - aMax;
+  });
+
+  const hasLLM = Object.keys(S.llmScores).length > 0;
+
+  let rows = '';
+  for (const c of candidates) {
+    const isTagged = tagged.has(c.id);
+    const exp = S.expandedRows.has(c.id);
+
+    const badges = [
+      c.faiss !== null ? '<span class="badge b-f">F</span>' : '',
+      c.bm25  !== null ? '<span class="badge b-b">B</span>' : '',
+      c.summary !== null ? '<span class="badge b-s">S</span>' : '',
+    ].join(' ');
+
+    const llmVal = S.llmScores[String(c.id)] ?? S.llmScores[c.id] ?? null;
+    let llmCell = '<span class="score-na">—</span>';
+    if (llmVal !== null) {
+      const pct = Math.round(Number(llmVal) * 100);
+      const barW = Math.round(Number(llmVal) * 60);
+      llmCell = `<span class="llm-bar" style="width:${barW}px"></span> ${pct}%`;
+    }
+
+    rows += `<tr class="${isTagged ? 'tagged-row' : ''}" onclick="onRowClick(${c.id})">
+      <td>
+        <span onclick="event.stopPropagation(); toggleTag(${c.id})" style="cursor:pointer">
+          ${isTagged ? '●' : '○'}
+        </span>
+        &nbsp;${c.id}&nbsp;${badges}
+      </td>
+      <td>${fmtScore(c.faiss)}</td>
+      <td>${fmtScore(c.bm25)}</td>
+      ${S.hasSummary ? `<td>${fmtScore(c.summary)}</td>` : ''}
+      ${hasLLM ? `<td>${llmCell}</td>` : ''}
+    </tr>`;
+
+    if (exp) {
+      const info = S.chunkCache[c.id];
+      const text = info ? esc(info.text) : 'Loading…';
+      const section = info ? `<em style="color:#666;font-size:11px">${esc(info.section)}</em><br><br>` : '';
+      rows += `<tr class="expanded-row" onclick="onRowClick(${c.id})">
+        <td colspan="${3 + (S.hasSummary ? 1 : 0) + (hasLLM ? 1 : 0)}">
+          ${section}<span
+            class="chunk-text-copy"
+            data-copy-id="${c.id}"
+            onclick="event.stopPropagation(); copyChunkText(${c.id}, this)"
+            title="Click to copy text"
+          >${text}</span>
+        </td>
+      </tr>`;
+    }
+  }
+
+  const summaryTh = S.hasSummary ? '<th>Summary</th>' : '';
+  const llmTh = hasLLM ? '<th>LLM</th>' : '';
+
+  document.getElementById('table-wrap').innerHTML = `
+    <table>
+      <thead>
+        <tr>
+          <th>Chunk</th>
+          <th>FAISS</th>
+          <th>BM25</th>
+          ${summaryTh}
+          ${llmTh}
+        </tr>
+      </thead>
+      <tbody>${rows}</tbody>
+    </table>`;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Render all
+// ─────────────────────────────────────────────────────────────────────────────
+function renderAll() {
+  renderHeader();
+  renderQueryInfo();
+  renderLeft();
+  renderRight();
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Boot
+// ─────────────────────────────────────────────────────────────────────────────
+init();
+</script>
+</body>
+</html>
