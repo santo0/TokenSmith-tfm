@@ -1,13 +1,22 @@
 """B4 — Full ablation: hybrid retrieval outperforms any single method.
 
 Tests 8 retriever configurations on all labeled benchmarks.
-Metrics: recall@10 (ground-truth chunks) + LLM-as-judge quality score.
+Metrics: recall@k and precision@k (ground-truth chunks), and optionally
+LLM-as-judge quality score.
 
 Usage:
     python -m src.knowledge_graph.scripts.experiment_b4_full_ablation \\
         --run-dir data/knowledge_graph/runs/latest \\
         --artifacts-dir index/sections \\
         --embed-model <model-path> \\
+        --output results_b4.json
+
+    # With LLM judge (requires OPENROUTER_API_KEY):
+    python -m src.knowledge_graph.scripts.experiment_b4_full_ablation \\
+        --run-dir data/knowledge_graph/runs/latest \\
+        --artifacts-dir index/sections \\
+        --embed-model <model-path> \\
+        --llm \\
         --output results_b4.json
 """
 
@@ -53,14 +62,17 @@ def main() -> None:
     parser.add_argument("--neighbor-weight", type=float, default=0.5)
     parser.add_argument("--llm-model", default="google/gemini-3-flash-preview")
     parser.add_argument("--api-key", default=None)
-    parser.add_argument("--no-llm", action="store_true", help="Skip LLM grading (recall only)")
+    parser.add_argument("--llm", action="store_true", default=False,
+                        help="Enable LLM-as-judge scoring (requires OPENROUTER_API_KEY).")
     parser.add_argument("--output", default=None)
     parser.add_argument("-v", "--verbose", action="store_true")
     args = parser.parse_args()
 
     load_dotenv()
     api_key = args.api_key or os.environ.get("OPENROUTER_API_KEY")
-    use_llm = not args.no_llm and bool(api_key)
+    if args.llm and not api_key:
+        raise SystemExit("No OPENROUTER_API_KEY — LLM-as-judge requires an API key.")
+    use_llm = args.llm and bool(api_key)
 
     from src.knowledge_graph.io import (
         load_graph_chunks_and_tree, load_summary_data,
@@ -73,7 +85,7 @@ def main() -> None:
     from src.ranking.ranker import EnsembleRanker
     from src.knowledge_graph.openrouter_client import OpenRouterClient
     from src.knowledge_graph.scripts.eval_utils import (
-        load_labeled_benchmarks, recall_at_k, scores_to_ranked_ids,
+        load_labeled_benchmarks, recall_at_k, precision_at_k, scores_to_ranked_ids,
         retrieved_tuples, llm_judge, print_table,
     )
 
@@ -157,6 +169,7 @@ def main() -> None:
                 ranked = ranked[:args.top_k]
 
             row[f"{cfg_name}_recall"] = round(recall_at_k(ranked, gold, args.top_k), 3)
+            row[f"{cfg_name}_precision"] = round(precision_at_k(ranked, gold, args.top_k), 3)
 
             if llm_client:
                 chunks_for_judge = [(cid, kg_chunks.get(cid, raw_chunks_dict.get(cid, "")))
@@ -172,8 +185,12 @@ def main() -> None:
             print(f"\n[{bm['id']}]")
             for cfg_name in CONFIGS:
                 r = row.get(f"{cfg_name}_recall", "N/A")
+                p = row.get(f"{cfg_name}_precision", "N/A")
                 j = row.get(f"{cfg_name}_judge", "N/A")
-                print(f"  {cfg_name:18s}: recall={r}  judge={j}")
+                line = f"  {cfg_name:18s}: recall={r}  precision={p}"
+                if use_llm:
+                    line += f"  judge={j}"
+                print(line)
 
         per_query.append(row)
 
@@ -183,27 +200,37 @@ def main() -> None:
     print(f"B4 Results — Full ablation: recall@{args.top_k} + LLM judge (n={n} queries)")
     print(f"{'=' * 90}")
 
+    def _mean_col(key: str) -> float | None:
+        vals = [r[key] for r in per_query if r.get(key) is not None]
+        return round(sum(vals) / len(vals), 3) if vals else None
+
     summary_rows = []
     for cfg_name in CONFIGS:
-        recall_vals = [r[f"{cfg_name}_recall"] for r in per_query if r.get(f"{cfg_name}_recall") is not None]
-        judge_vals = [r[f"{cfg_name}_judge"] for r in per_query if r.get(f"{cfg_name}_judge") is not None]
-        summary_rows.append({
+        row_s: dict = {
             "config": cfg_name,
-            f"recall@{args.top_k}": round(sum(recall_vals) / len(recall_vals), 3) if recall_vals else None,
-            "llm_judge": round(sum(judge_vals) / len(judge_vals), 3) if judge_vals else None,
-        })
+            f"recall@{args.top_k}": _mean_col(f"{cfg_name}_recall"),
+            f"precision@{args.top_k}": _mean_col(f"{cfg_name}_precision"),
+        }
+        if use_llm:
+            row_s["llm_judge"] = _mean_col(f"{cfg_name}_judge")
+        summary_rows.append(row_s)
 
-    print_table(summary_rows, ["config", f"recall@{args.top_k}", "llm_judge"])
+    table_cols = ["config", f"recall@{args.top_k}", f"precision@{args.top_k}"]
+    if use_llm:
+        table_cols.append("llm_judge")
+    print_table(summary_rows, table_cols)
     print(f"{'=' * 90}")
 
     result = {
         "n_benchmarks": n,
         "top_k": args.top_k,
+        "llm_scoring": use_llm,
         "configs": list(CONFIGS.keys()),
         "macro": {
             cfg_name: {
-                "recall": next((r[f"recall@{args.top_k}"] for r in summary_rows if r["config"] == cfg_name), None),
-                "judge": next((r["llm_judge"] for r in summary_rows if r["config"] == cfg_name), None),
+                "recall": _mean_col(f"{cfg_name}_recall"),
+                "precision": _mean_col(f"{cfg_name}_precision"),
+                **({"judge": _mean_col(f"{cfg_name}_judge")} if use_llm else {}),
             }
             for cfg_name in CONFIGS
         },
