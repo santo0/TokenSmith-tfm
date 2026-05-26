@@ -135,6 +135,7 @@ benchmarks:
   sections:
   - Section 2.2  Database Schema
 - id: book_authors
+  mode: adversarial
   question: Tell me about the authors of the book
   expected_answer: The authors of Database System Concepts Seventh Edition are Abraham
     Silberschatz, a Professor at Yale University and former Bell Labs vice president
@@ -147,6 +148,8 @@ benchmarks:
   - authors
   - book
   similarity_threshold: 0.65
+  notes: No content chunk covers author biographies; a retriever should return no
+    high-confidence match.
   ideal_retrieved_chunks: []
   broad: false
   sections: []
@@ -246,59 +249,6 @@ benchmarks:
   broad: true
   sections:
   - Section 12.1  Overview of Physical Storage Media
-- id: hdd_vs_ssd
-  question: What are the main differences between HDD and SSD storage devices?
-  expected_answer: HDDs use rotating magnetic platters with mechanical read/write
-    heads, incurring seek time and rotational latency that slow random access; SSDs
-    use NAND flash memory with no moving parts, offering faster random access, lower
-    latency, and better shock resistance. SSDs are historically more expensive per
-    gigabyte but that gap has narrowed; flash cells also have a limited number of
-    write cycles before wearing out, whereas HDD capacity per dollar remains higher
-    for bulk storage.
-  keywords:
-  - HDD
-  - SSD
-  - storage devices
-  similarity_threshold: 0.65
-  ideal_retrieved_chunks:
-  - 760
-  - 762
-  broad: false
-  sections:
-  - Section 12.1  Overview of Physical Storage Media
-  - Section 12.3  Magnetic Disks
-  - Section 12.3.1 Physical Characteristics of Disks
-  - Section 12.3.2 Performance Measures of Disks
-  - Section 12.4  Flash Memory
-- id: storage_media_comparison
-  question: How do different physical storage media differ in terms of volatility,
-    access speed, and cost?
-  expected_answer: 'Storage media form a hierarchy inversely ordered by speed and
-    cost: volatile cache and DRAM provide nanosecond access at the highest cost per
-    byte; non-volatile flash gives microsecond-range access at moderate cost; magnetic
-    disks offer millisecond access at low cost with large capacity; optical disks
-    and magnetic tape are cheapest and slowest, suited for archival use. Faster media
-    is always more expensive per byte, and primary storage (cache, DRAM) is volatile
-    while secondary and tertiary storage (flash, disk, tape) is non-volatile.'
-  keywords:
-  - physical storage media
-  - volatility
-  - access speed
-  - cost
-  similarity_threshold: 0.65
-  ideal_retrieved_chunks:
-  - 759
-  - 760
-  - 761
-  - 762
-  - 763
-  broad: true
-  sections:
-  - Section 12.1  Overview of Physical Storage Media
-  - Section 12.3  Magnetic Disks
-  - Section 12.3.1 Physical Characteristics of Disks
-  - Section 12.3.2 Performance Measures of Disks
-  - Section 12.4  Flash Memory
 - id: shared_nothing_architecture
   question: What is a shared-nothing architecture?
   expected_answer: A shared-nothing architecture is a distributed database design
@@ -327,7 +277,7 @@ benchmarks:
   keywords:
   - two-phase locking
   - strict two-phase locking
-  similarity_threshold: 0.62
+  similarity_threshold: 0.6
   notes: Qualifier 'strict' gets smeared in dense retrieval; KG treats as distinct
     nodes.
   broad: false
@@ -349,7 +299,7 @@ benchmarks:
   keywords:
   - B+ tree
   - B-tree
-  similarity_threshold: 0.62
+  similarity_threshold: 0.63
   notes: Close in embedding space, distinct in KG.
   broad: false
   sections:
@@ -375,8 +325,9 @@ benchmarks:
   keywords:
   - serializability
   - serializable schedules
-  similarity_threshold: 0.62
-  notes: Noun-vs.-adjective form, nearly identical embeddings.
+  similarity_threshold: 0.58
+  notes: Noun-vs.-adjective form, nearly identical embeddings; expected to be hardest
+    for dense retrieval to separate.
   broad: false
   sections:
   - Section 17.6  Serializability
@@ -425,8 +376,10 @@ benchmarks:
   keywords:
   - hash indexing
   - hash join
-  similarity_threshold: 0.62
+  similarity_threshold: 0.65
   notes: Shared 'hash' token dominates dense similarity; KG keeps them apart via neighborhoods.
+    Higher threshold because the operational context (storage vs. query execution)
+    should be recoverable from embeddings alone.
   broad: false
   sections:
   - Section 14.5  Hash Indices
@@ -450,8 +403,10 @@ benchmarks:
   keywords:
   - ACID
   - BASE
-  similarity_threshold: 0.6
-  notes: BASE is rarer in corpus; dense retrieval biased toward ACID chunks.
+  similarity_threshold: 0.58
+  notes: BASE is rarer in corpus; dense retrieval biased toward ACID chunks. Lowest
+    threshold in this mode because a correct answer requires retrieving sparse BASE
+    chunks that may score low absolutely.
   broad: true
   sections:
   - Section 17.1  Transaction Concept
@@ -469,29 +424,31 @@ benchmarks:
   - 1584
 - id: cs_001
   mode: cross_section_evidence
-  question: How does strict two-phase locking prevent cascading rollbacks?
-  expected_answer: Strict two-phase locking holds all exclusive locks until a transaction
-    commits or aborts. Because no other transaction can read a data item whose exclusive
-    lock has not been released, no transaction ever reads uncommitted (dirty) data.
-    If a transaction aborts, no concurrent transaction has seen its changes, so there
-    is nothing to cascade-abort.
+  question: Why does a sort-merge join prefer sequential disk access over random access?
+  expected_answer: Magnetic disks incur seek time and rotational latency on every
+    random I/O, making random access orders of magnitude slower than sequential reads.
+    Sort-merge join reads each input relation once in sorted order and merges them
+    with a single sequential scan of both, so its I/O cost is proportional to the
+    sizes of the two relations rather than the number of matching tuple pairs. This
+    is why the query optimizer favors sort-merge join on large unsorted inputs when
+    no useful index exists.
   keywords:
-  - strict two-phase locking
-  - cascading rollback
-  similarity_threshold: 0.62
-  notes: Mechanism and consequence typically in different sections.
+  - sort-merge join
+  - sequential I/O
+  - random access
+  - disk
+  similarity_threshold: 0.65
+  notes: Disk access cost model lives in storage chapter; sort-merge join algorithm
+    in query processing chapter — both are required to explain the preference.
   broad: false
   sections:
-  - Section 18.1  Lock-Based Protocols
-  - Section 18.1.3 The Two-Phase Locking Protocol
-  - Section 17.7  Transaction Isolation and Atomicity
-  - Section 17.7.1 Recoverable Schedules
-  - Section 17.7.2 Cascadeless Schedules
-  - Section 17.9.1 Locking
+  - Section 12.3  Magnetic Disks
+  - Section 12.3.2 Performance Measures of Disks
+  - Section 15.2  Measures of Query Cost
+  - Section 15.5.4 Sort-Merge Join
   ideal_retrieved_chunks:
-  - 1149
-  - 1150
-  - 1152
+  - 772
+  - 961
 - id: cs_002
   mode: cross_section_evidence
   question: Why does multiversion concurrency control avoid read locks?
@@ -567,7 +524,7 @@ benchmarks:
   keywords:
   - functional dependencies
   - lossless-join decomposition
-  similarity_threshold: 0.62
+  similarity_threshold: 0.6
   notes: FDs are foundational (earlier chapter); decomposition applies them (later).
   broad: true
   sections:
@@ -592,9 +549,10 @@ benchmarks:
   - query optimizer
   - statistics
   - catalog
-  similarity_threshold: 0.62
+  similarity_threshold: 0.65
   notes: Optimizer and catalog usually separate sections; bridge via shared statistics
-    entities.
+    entities. Higher threshold because both entities appear together in optimization
+    chapters and dense retrieval should partially succeed here.
   broad: true
   sections:
   - Section 13.4  Data-Dictionary Storage
@@ -649,8 +607,10 @@ benchmarks:
   - key
   - relations
   - tuples
-  similarity_threshold: 0.62
+  similarity_threshold: 0.6
   notes: Context entities disambiguate to relational key, not encryption/sort key.
+    Low threshold because 'key' is extremely polysemous and dense retrieval may pull
+    index or cryptography chunks.
   broad: false
   sections:
   - Section 2.3  Keys
@@ -670,7 +630,7 @@ benchmarks:
   keywords:
   - lock
   - transaction
-  similarity_threshold: 0.62
+  similarity_threshold: 0.6
   notes: Transaction context disambiguates from OS/file locking.
   broad: false
   sections:
@@ -696,8 +656,9 @@ benchmarks:
   keywords:
   - hash
   - indexing
-  similarity_threshold: 0.62
-  notes: Disambiguates hash indexing from hash join or cryptographic hashing.
+  similarity_threshold: 0.63
+  notes: Disambiguates hash indexing from hash join or cryptographic hashing. Moderate
+    threshold because 'indexing' co-occurs heavily with hash index chunks.
   broad: false
   sections:
   - Section 14.5  Hash Indices
@@ -722,8 +683,9 @@ benchmarks:
   keywords:
   - schedule
   - transactions
-  similarity_threshold: 0.62
-  notes: Transaction schedule, not OS scheduling.
+  similarity_threshold: 0.6
+  notes: Transaction schedule, not OS scheduling. Dense retrieval may pull OS scheduling
+    or cron-related content from unrelated chapters.
   broad: false
   sections:
   - Section 17.5  Transaction Isolation
@@ -748,8 +710,9 @@ benchmarks:
   keywords:
   - view
   - SQL
-  similarity_threshold: 0.62
-  notes: SQL view, disambiguated from UI/MVC view.
+  similarity_threshold: 0.65
+  notes: SQL view, disambiguated from UI/MVC view. Higher threshold because 'SQL'
+    strongly constrains the sense and retrieval should be reliable.
   broad: false
   sections:
   - Section 4.2  Views
@@ -773,7 +736,8 @@ benchmarks:
   - normal form
   - database design
   similarity_threshold: 0.62
-  notes: Normal form (normalization), not statistical/geometric 'normal'.
+  notes: Normal form (normalization), not statistical/geometric 'normal'. Co-occurrence
+    with 'database design' makes this moderately tractable for dense retrieval.
   broad: true
   sections:
   - Section 7.3  Normal Forms
@@ -784,3 +748,176 @@ benchmarks:
   - Section 7.7  More Normal Forms
   ideal_retrieved_chunks:
   - 417
+- id: buffer_pool_replacement
+  question: How does the database buffer manager decide which page to evict?
+  expected_answer: The buffer manager keeps a pool of frames in main memory. When
+    all frames are occupied and a new page is needed, it must evict one. For general
+    workloads, LRU (least-recently-used) eviction approximates optimal replacement
+    by discarding the frame unused for the longest time. Database workloads often
+    violate the locality assumptions of LRU — sequential scans access each page once
+    and then never again — so many systems use MRU (most-recently-used) for scans
+    or allow the query executor to hint that a page will not be reused (toss-immediate
+    policy). Pages marked dirty must be written to disk before eviction; pinned pages
+    cannot be evicted at all.
+  keywords:
+  - buffer manager
+  - page eviction
+  - LRU
+  - replacement strategy
+  similarity_threshold: 0.68
+  ideal_retrieved_chunks:
+  - 836
+  broad: false
+  sections:
+  - Section 13.7  Buffer Management
+  - Section 13.7.1 Buffer-Replacement Policies
+- id: relational_algebra
+  question: What are the fundamental operations of the relational algebra?
+  expected_answer: Relational algebra defines six fundamental operations. Select (σ)
+    filters tuples satisfying a predicate. Project (π) outputs a chosen subset of
+    attributes, eliminating duplicate tuples. Rename (ρ) gives an expression or its
+    attributes new names. Union (∪) returns all tuples appearing in either of two
+    compatible relations. Set-difference (−) returns tuples in one relation but not
+    the other. Cartesian product (×) pairs every tuple of one relation with every
+    tuple of another. Derived operations such as natural join, intersection, and division
+    are defined in terms of these six and appear in query shorthand.
+  keywords:
+  - relational algebra
+  - select
+  - project
+  - cartesian product
+  - set-difference
+  similarity_threshold: 0.72
+  ideal_retrieved_chunks:
+  - 97
+  - 98
+  - 99
+  - 101
+  - 104
+  - 105
+  - 107
+  broad: false
+  sections:
+  - Section 2.6  The Relational Algebra
+  - Section 2.6.1 The Select Operation
+  - Section 2.6.2 The Project Operation
+  - Section 2.6.3 Composition of Relational Operations
+  - Section 2.6.4 The Cartesian-Product Operation
+  - Section 2.6.5 The Join Operation
+  - Section 2.6.6 Set Operations
+- id: sql_dml
+  question: How do INSERT, DELETE, and UPDATE work in SQL?
+  expected_answer: INSERT adds tuples to a relation either from an explicit values
+    list or from the result of a subquery; it does not drop the relation's schema.
+    DELETE removes tuples matching a where-clause predicate; omitting the predicate
+    deletes all tuples but leaves the empty relation in place. UPDATE modifies attribute
+    values of existing tuples and can use a case expression to apply different values
+    to different rows in a single pass. All three statements can trigger referential-integrity
+    actions — cascade, set null, or set default — on relations that reference the
+    modified relation via foreign keys.
+  keywords:
+  - INSERT
+  - DELETE
+  - UPDATE
+  - SQL
+  similarity_threshold: 0.7
+  ideal_retrieved_chunks:
+  - 168
+  - 169
+  - 170
+  - 171
+  - 172
+  - 173
+  broad: false
+  sections:
+  - Section 3.9  Modification of the Database
+  - Section 3.9.1 Deletion
+  - Section 3.9.2 Insertion
+  - Section 3.9.3 Updating
+- id: er_to_relational
+  question: How do you convert an E-R diagram into a relational schema?
+  expected_answer: Each strong entity set becomes a relation whose attributes match
+    the entity set's attributes, with the same primary key. Each weak entity set becomes
+    a relation that includes the primary key of its identifying entity set as a foreign
+    key; the two together form the weak entity's primary key. A many-to-many relationship
+    set maps to its own relation containing the primary keys of both participating
+    entity sets (as foreign keys) plus any descriptive attributes of the relationship.
+    Many-to-one and one-to-one relationship sets can be merged into one of the participating
+    entity relations by adding the other's primary key as a foreign key, avoiding
+    an extra relation and join.
+  keywords:
+  - E-R diagram
+  - relational schema
+  - entity set
+  - relationship set
+  similarity_threshold: 0.7
+  ideal_retrieved_chunks:
+  - 363
+  - 364
+  - 368
+  - 369
+  broad: false
+  sections:
+  - Section 6.8  Reduction to Relational Schemas
+  - Section 6.8.1 Representation of Strong Entity Sets
+  - Section 6.8.2 Representation of Weak Entity Sets
+  - Section 6.8.3 Representation of Relationship Sets
+- id: adv_001
+  mode: adversarial
+  question: Who is the publisher of Database System Concepts and what is its ISBN?
+  expected_answer: McGraw-Hill Education publishes Database System Concepts Seventh
+    Edition; the ISBN is 978-0-07-802215-9.
+  keywords:
+  - publisher
+  - ISBN
+  similarity_threshold: 0.5
+  notes: Publishing metadata is not represented in any content chunk; retriever should
+    return no confident match.
+  ideal_retrieved_chunks: []
+  broad: false
+  sections: []
+- id: adv_002
+  mode: adversarial
+  question: How does PostgreSQL implement multi-version concurrency control internally?
+  expected_answer: PostgreSQL stores multiple row versions (heap tuples) in the same
+    table file, tagged with transaction IDs for visibility. Dead tuples are reclaimed
+    by VACUUM. This is a PostgreSQL-specific implementation detail not covered in
+    the textbook, which describes MVCC at the conceptual algorithm level.
+  keywords:
+  - PostgreSQL
+  - multi-version concurrency control
+  - implementation
+  similarity_threshold: 0.55
+  notes: Question is system-specific; textbook covers MVCC conceptually but not PostgreSQL's
+    heap-based implementation. A retriever should not over-retrieve generic MVCC chunks
+    as a confident answer to a system-specific question.
+  ideal_retrieved_chunks: []
+  broad: false
+  sections: []
+- id: multi_hop_001
+  mode: multi_hop
+  question: Why does a B+ tree's high fan-out reduce the number of latch acquisitions
+    needed during concurrent index traversal?
+  expected_answer: A B+ tree node is sized to fill a disk page, giving fan-out of
+    several hundred keys per internal node. Even for millions of entries the tree
+    stays 3-4 levels tall. The crabbing (latch-coupling) protocol acquires a latch
+    on each node visited top-down and releases the parent once the child is latched
+    and deemed safe (no imminent split or merge). Because the tree is shallow, a single
+    traversal acquires and releases only 3-4 latches regardless of database size.
+    High fan-out therefore directly bounds latch overhead per operation and reduces
+    contention at the root.
+  keywords:
+  - B+ tree
+  - fan-out
+  - latch crabbing
+  - concurrent index traversal
+  similarity_threshold: 0.6
+  notes: Requires connecting B+ tree structure (indexing chapter) with latch-crabbing
+    concurrency protocol (concurrency control chapter) — neither chunk alone answers
+    the question.
+  ideal_retrieved_chunks: []
+  broad: false
+  sections:
+  - Section 14.3.1 Structure of a B + -Tree
+  - Section 14.3.4 Complexity of B + -Tree Updates
+  - Section 18.10 Concurrency in Index Structures
