@@ -1,0 +1,669 @@
+benchmarks:
+- id: am_building_blocks
+  question: What are the four building blocks of additive manufacturing?
+  expected_answer: The four building blocks of AM are Machines, Materials, Digital,
+    and People. Machines encompasses not just 3D printers but all machinery required
+    to meet part requirements. Materials covers material science, metallurgy, polymers,
+    ceramics, and feedstock preparation. Digital encompasses design, simulation, sensing,
+    and all data input/output. People refers to the management and organization of
+    the multidisciplinary workforce needed for successful AM adoption.
+  keywords:
+  - building blocks
+  - additive manufacturing
+  - machines
+  - materials
+  - digital
+  - people
+  similarity_threshold: 0.78
+  ideal_retrieved_chunks: []
+  broad: false
+  sections:
+  - Section 1.1 The Components and Processes of Additive Manufacturing
+- id: seven_am_processes
+  question: What are the seven standard additive manufacturing processes?
+  expected_answer: The seven standard AM processes are Binder Jetting (liquid bonding
+    agent selectively deposited to join powder), Directed Energy Deposition (focused
+    energy fuses material as it is deposited), Material Extrusion (material heated
+    and delivered through a nozzle), Material Jetting (droplets of build material
+    deposited through a print head), Powder Bed Fusion (thermal energy selectively
+    fuses regions of a powder bed), Sheet Lamination (sheets of material bonded to
+    form an object), and Vat Photopolymerization (liquid photopolymer in a vat selectively
+    cured by light-activated polymerization).
+  keywords:
+  - seven AM processes
+  - binder jetting
+  - directed energy deposition
+  - material extrusion
+  - material jetting
+  - powder bed fusion
+  - sheet lamination
+  - vat photopolymerization
+  similarity_threshold: 0.8
+  ideal_retrieved_chunks: []
+  broad: true
+  sections:
+  - Section 1.2 Additive Manufacturing Processes
+- id: stl_file_format
+  question: What is an STL file and what are its limitations?
+  expected_answer: An STL (stereolithography / standard triangle language / standard
+    tessellation language) file describes only the surface geometry of a 3D object
+    using an unstructured triangulated surface with vertices in a Cartesian coordinate
+    system. It contains no color, material, texture, or scale information. Its main
+    limitations are that it stores little real information, making change tracking
+    difficult, and coarse triangulation produces faceted surfaces. Alternative formats
+    such as AMF and 3MF address these limitations by including metadata, color, texture,
+    multiple materials, and lattice information.
+  keywords:
+  - STL file
+  - stereolithography
+  - triangulated surface
+  - limitations
+  similarity_threshold: 0.75
+  ideal_retrieved_chunks: []
+  broad: false
+  sections:
+  - Section 1.1 The Components and Processes of Additive Manufacturing
+  - Section 4.1 Design Approach
+- id: tbga_maturity_model
+  question: What is the TBGA AM Maturity Model and how does it work?
+  expected_answer: The TBGA (The Barnes Global Advisors) AM Maturity Model is a framework
+    for matching product requirements to the skills and knowledge needed for AM adoption.
+    The Y-axis describes increasing product or design complexity and product requirements
+    (Levels 0 through 4), while the X-axis represents the learning and capability
+    needed to deploy, make, or manufacture parts to meet those requirements. Starting
+    at Level 0 and progressing incrementally reduces the risk of failure, analogous
+    to training before running a marathon. Jumping directly to Level 4 without building
+    foundational skills introduces high risk.
+  keywords:
+  - TBGA
+  - maturity model
+  - AM adoption
+  - levels
+  similarity_threshold: 0.75
+  ideal_retrieved_chunks: []
+  broad: false
+  sections:
+  - Section 1.3 The TBGA AM Maturity Model
+- id: reasons_for_am
+  question: What are the main reasons organizations choose to use additive manufacturing?
+  expected_answer: Organizations use AM for several interconnected reasons tied to
+    the Project Management Triple Constraint of Schedule, Scope, and Cost. Speed-related
+    reasons include faster time to market and compressed development cycles. Cost
+    benefits include net-shape production with reduced machining, elimination of tooling,
+    and fewer assembly operations. Complexity and design benefits allow parts that
+    follow load paths more closely, integrate functional features like internal cooling
+    channels, and reduce part count through unitization. Durability improves by eliminating
+    joints and weldments. Light weighting is possible because material is added only
+    where needed. Sustainability benefits include reduced material waste and lower
+    CO2 emissions.
+  keywords:
+  - reasons for AM
+  - speed
+  - cost
+  - complexity
+  - light weighting
+  - durability
+  similarity_threshold: 0.75
+  ideal_retrieved_chunks: []
+  broad: true
+  sections:
+  - Section 1.4 Reasons for Using AM
+- id: powder_bed_fusion_overview
+  question: How does powder bed fusion work?
+  expected_answer: Powder bed fusion (PBF) is an AM process in which thermal energy
+    selectively fuses regions of a powder bed. A layer is created by spreading powder
+    across a build area and stepwise lowering the bed by the slice thickness. A focused
+    energy beam—either a laser or an electron beam—fuses the powder particles together.
+    Materials must be in powder form and can be metal, ceramic, or polymer. Metal
+    systems (L-PBF) use a laser to melt metallic powder to near-full density, while
+    polymer systems (SLS) typically sinter the powder below its melting point.
+  keywords:
+  - powder bed fusion
+  - laser
+  - electron beam
+  - sintering
+  similarity_threshold: 0.75
+  ideal_retrieved_chunks: []
+  broad: false
+  sections:
+  - Section 2.3 Powder Bed Processes
+- id: directed_energy_deposition
+  question: What is directed energy deposition and what materials does it use?
+  expected_answer: Directed energy deposition (DED) is a family of AM processes in
+    which focused energy is used to fuse materials as they are deposited. The layer
+    is built by depositing beads onto a substrate (which can be an existing part),
+    with new deposits building beside or on top of previous beads. Two energy modes
+    are used — thermal energy melts the material in a fusion DED process akin to welding,
+    while kinetic energy accelerates powder in solid-state DED processes to create
+    metallurgical bonds without full melting. Materials are predominantly metallic
+    and can be in powder or wire form.
+  keywords:
+  - directed energy deposition
+  - DED
+  - powder
+  - wire
+  - fusion
+  similarity_threshold: 0.75
+  ideal_retrieved_chunks: []
+  broad: false
+  sections:
+  - Section 2.5 Molten Material-Addition Processes
+- id: vat_photopolymerization
+  question: Describe how vat photopolymerization works and what materials it uses.
+  expected_answer: Vat photopolymerization selectively cures liquid photopolymer held
+    in a vat using light-activated polymerization. The layer is created where focused
+    energy (a laser or focused light source) intersects the material in a stepwise
+    fashion, solidifying a cross-section of the liquid resin. Materials are primarily
+    polymers and composites, as well as metals suspended in photo-curable polymers.
+    Common implementations include stereolithography (SLA) and digital light processing
+    (DLP), differing mainly in whether the curing source is a point laser or a projected
+    image.
+  keywords:
+  - vat photopolymerization
+  - photopolymer
+  - stereolithography
+  - SLA
+  - curing
+  similarity_threshold: 0.73
+  ideal_retrieved_chunks: []
+  broad: false
+  sections:
+  - Section 2.2 Vat-based Processes
+- id: am_design_workflow
+  question: What are the eight steps of the AM design workflow?
+  expected_answer: The eight steps of the AM Design Workflow are (1) 3D Model Design—
+    creating a solid model that meets requirements; (2) Define Build Plan—sliced model,
+    build orientation, support structures, and toolpath; (3) Prepare Material—chemistry,
+    particle size distribution, certifications, and mixing; (4) Prepare AM System—
+    calibration and pre-use checks; (5) Execute Build—run the build while collecting
+    process data; (6) Inspect—dimensional and metallurgical inspection; (7) Post-
+    process—heat treatment, machining, and surface treatments; (8) Final Inspect—
+    dimensional, surface, and non-destructive evaluation.
+  keywords:
+  - AM design workflow
+  - build plan
+  - post-process
+  - inspect
+  similarity_threshold: 0.78
+  ideal_retrieved_chunks: []
+  broad: false
+  sections:
+  - Section 4.1 Design Approach
+- id: topology_optimization_vs_generative_design
+  question: What is the difference between topology optimization and generative design?
+  expected_answer: Topology optimization is a mathematical output from finite element
+    analysis (FEA) that determines where material should be placed within a design
+    space to maximize structural performance for given loads and constraints. Generative
+    design also uses FEA criteria to optimize material placement but goes further
+    by using algorithms and machine learning to rapidly generate and evaluate multiple
+    viable design alternatives from a set of user-defined parameters (performance,
+    materials, manufacturing methods, cost). While topology optimization produces
+    a single optimized layout, generative design explores many permutations and can
+    iterate automatically, though both may have file format and resolution challenges
+    when exporting to STL.
+  keywords:
+  - topology optimization
+  - generative design
+  - FEA
+  - finite element analysis
+  similarity_threshold: 0.75
+  ideal_retrieved_chunks: []
+  broad: false
+  sections:
+  - Section 4.1 Design Approach
+- id: ndt_methods_overview
+  question: What nondestructive testing methods are used for AM parts?
+  expected_answer: NDT methods for AM parts include radiographic inspection (X-rays
+    or CT scanning to detect internal pores, cracks, and inclusions), ultrasonic inspection
+    (sound pulses to detect volumetric discontinuities in conductive materials), eddy-current
+    inspection (electromagnetic coil for surface and near- surface discontinuities
+    in conductive materials), magnetic particle inspection (for ferromagnetic materials,
+    detects surface and near-surface flaws), penetrant inspection (capillary action
+    draws liquid penetrant into surface-open cracks), resonance inspection (treats
+    the part like a tuning fork to screen for anomalies), and thermographic inspection
+    (infrared imaging to detect temperature differences indicating bonding or other
+    defects). AM-specific approaches also include process monitoring, process control,
+    and in-situ NDT performed during the build.
+  keywords:
+  - nondestructive testing
+  - NDT
+  - radiographic
+  - ultrasonic
+  - penetrant
+  - eddy-current
+  similarity_threshold: 0.78
+  ideal_retrieved_chunks: []
+  broad: true
+  sections:
+  - Section 5.2 Nondestructive Testing (NDT)
+- id: titanium_in_am
+  question: Why are titanium alloys commonly used in additive manufacturing and what
+    challenges arise?
+  expected_answer: Titanium alloys, especially Ti-6Al-4V, are valued for their high
+    strength-to-weight ratio, toughness, and corrosion resistance. AM reduces the
+    buy-to-fly ratio—the amount of raw material needed versus the finished part—which
+    is important because titanium is expensive to procure and machine. Challenges
+    include a high propensity for distortion, residual stresses, and cracking during
+    fusion AM due to the high strength-to-stiffness ratio; these are managed through
+    thoughtful design, processing, and stress relief or HIP treatments. Ti-6Al-4V
+    can be used in nearly every AM process because it is weldable and can absorb its
+    oxide in vacuum conditions.
+  keywords:
+  - titanium alloys
+  - Ti-6Al-4V
+  - buy:fly ratio
+  - residual stresses
+  similarity_threshold: 0.75
+  ideal_retrieved_chunks: []
+  broad: false
+  sections:
+  - Section 3.2 Metallic Materials
+- id: am_build_orientation
+  question: How does build orientation affect an AM part?
+  expected_answer: Build orientation in AM affects multiple aspects of the final part.
+    It influences build time and material utilization (minimizing build height reduces
+    cost), surface roughness including staircasing effects on angled faces, thermal
+    cycling and residual stresses, microstructure and mechanical properties (AM materials
+    can be anisotropic—weaker along the Z build axis), and the extent of support structures
+    required and subsequent post-processing effort. Guidelines vary by process; for
+    example, PBF metal parts should keep features under 45 degrees from the vertical
+    to minimize supports, while holes should be oriented in the X-Y build plane.
+  keywords:
+  - build orientation
+  - staircasing
+  - residual stresses
+  - support structures
+  - anisotropy
+  similarity_threshold: 0.73
+  ideal_retrieved_chunks: []
+  broad: false
+  sections:
+  - Section 4.1 Design Approach
+  - Section 4.2 Design Optimization
+- id: am_qualification_overview
+  question: What does AM qualification involve?
+  expected_answer: AM qualification ensures that machines, facilities, personnel,
+    feedstock, and processes reliably produce parts meeting requirements. It includes
+    facility qualification (environment, utilities, safety), machine qualification
+    (verifying that the AM system performs within specifications), part qualification
+    (demonstrating that a specific part geometry and material combination meets design
+    requirements), process qualification/validation (confirming the process is stable
+    and repeatable), personnel qualification (training and competency verification),
+    and feedstock qualification (verifying material chemistry, particle size distribution,
+    and other properties). Production acceptance testing, statistical process control,
+    and lot acceptance testing are also part of sustaining qualification once production
+    begins.
+  keywords:
+  - qualification
+  - machine qualification
+  - part qualification
+  - feedstock qualification
+  - personnel qualification
+  similarity_threshold: 0.78
+  ideal_retrieved_chunks: []
+  broad: true
+  sections:
+  - Section 6.1 Qualification
+- id: digital_thread_am
+  question: What is the digital thread in additive manufacturing?
+  expected_answer: The digital thread in AM is an end-to-end digital data flow that
+    links every phase of the AM lifecycle—from design (CAD, topology optimization,
+    simulation) through file preparation (STL/AMF/3MF slicing and toolpath generation),
+    build execution and process monitoring, quality assurance, and post-processing—
+    into a traceable, interconnected record. Key requirements include data integrity,
+    interoperability between software systems, and security of intellectual property.
+    Challenges include the instability of AM process technologies, high implementation
+    costs, and the need for a workforce skilled in both AM and digital tools. A robust
+    digital thread enables distributed manufacturing, build monitoring, simulation-
+    driven design, and standards alignment.
+  keywords:
+  - digital thread
+  - additive manufacturing
+  - data flow
+  - simulation
+  - distributed manufacturing
+  similarity_threshold: 0.75
+  ideal_retrieved_chunks: []
+  broad: true
+  sections:
+  - Section 7.1 Digital Trends Throughout Manufacturing
+  - Section 7.2 The Digital Thread in Design for Additive Manufacturing
+- id: ec_am_001
+  mode: entity_confusability
+  question: What is the difference between binder jetting and material jetting?
+  expected_answer: In binder jetting a liquid bonding agent (polymer adhesive) is
+    selectively deposited through a print head to bind loose powder particles; the
+    powder bed itself forms the layer and energy is applied thermally to cure the
+    binder, with a sintering or infiltration step required for metals. In material
+    jetting the build material itself (not just a binder) is selectively deposited
+    as droplets through a print head, and the layer is built by precise X-Y deposition
+    with the slice thickness defining the step. Both use print heads and both require
+    post-cure thermal steps, but binder jetting binds pre-spread powder while material
+    jetting deposits the actual part material directly.
+  keywords:
+  - binder jetting
+  - material jetting
+  similarity_threshold: 0.65
+  notes: Both are jetting processes using print heads; dense retrieval tends to conflate
+    them.
+  ideal_retrieved_chunks: []
+  broad: false
+  sections:
+  - Section 1.2 Additive Manufacturing Processes
+  - Section 2.3 Powder Bed Processes
+  - Section 2.4 Liquid-Addition Processes
+- id: ec_am_002
+  mode: entity_confusability
+  question: How does material extrusion differ from directed energy deposition?
+  expected_answer: Material extrusion heats a polymer filament (or metal-bound filament)
+    and pushes it through a nozzle to deposit beads layer by layer; energy comes from
+    resistive heating of the nozzle, and metals require a subsequent sintering step.
+    Directed energy deposition uses a focused beam (laser, electron beam, or arc)
+    to melt the material—powder or wire—as it is simultaneously deposited onto a substrate,
+    resulting in immediate fusion without a separate sintering step. DED is primarily
+    used for metals and can repair or add features to existing parts; material extrusion
+    handles polymers and bound-metal feedstocks and cannot directly deposit onto existing
+    parts in the same repair mode.
+  keywords:
+  - material extrusion
+  - directed energy deposition
+  - DED
+  - FDM
+  similarity_threshold: 0.65
+  notes: Both are deposition processes; naming overlap with 'extrusion' in industrial
+    DED systems.
+  ideal_retrieved_chunks: []
+  broad: false
+  sections:
+  - Section 1.2 Additive Manufacturing Processes
+  - Section 2.5 Molten Material-Addition Processes
+- id: ec_am_003
+  mode: entity_confusability
+  question: What is the difference between process monitoring and process control
+    in AM?
+  expected_answer: Process monitoring records and tracks the inputs and responses
+    of an AM process (e.g., laser power, melt-pool size, bed temperature) while it
+    is running to verify it stays within acceptable limits, but it does not intervene.
+    Process control goes further by using the data from monitoring to actively adjust
+    input parameters in a closed loop, keeping the process within desired limits in
+    real time. In-situ NDT uses the same sensors and analysis but yields a pass/fail
+    determination about specific regions of the part being built, rather than just
+    confirming process conformance.
+  keywords:
+  - process monitoring
+  - process control
+  - in-situ NDT
+  similarity_threshold: 0.65
+  notes: The three terms are often grouped together and their distinctions are subtle.
+  ideal_retrieved_chunks: []
+  broad: false
+  sections:
+  - Section 5.2 Nondestructive Testing (NDT)
+- id: ec_am_004
+  mode: entity_confusability
+  question: How does topology optimization differ from generative design in AM?
+  expected_answer: Topology optimization is a single-solution mathematical method
+    using FEA to determine the optimal material layout within a design space for given
+    loads and constraints, outputting one optimized geometry. Generative design also
+    performs FEA-driven optimization but uses algorithms and machine learning to automatically
+    explore many permutations, generating multiple design alternatives from user-defined
+    goals such as performance, material, manufacturing method, and cost. Generative
+    design is therefore a broader design-exploration strategy that iterates autonomously,
+    whereas topology optimization produces a single deterministic result requiring
+    manual iteration.
+  keywords:
+  - topology optimization
+  - generative design
+  similarity_threshold: 0.62
+  notes: Frequently used interchangeably in industry; the textbook distinguishes them
+    explicitly.
+  ideal_retrieved_chunks: []
+  broad: false
+  sections:
+  - Section 4.1 Design Approach
+- id: ec_am_005
+  mode: entity_confusability
+  question: What distinguishes certification from qualification in additive manufacturing?
+  expected_answer: Qualification in AM is the process of establishing that machines,
+    facilities, personnel, feedstock, and processes reliably and repeatably produce
+    parts meeting requirements; it is a prerequisite activity focused on the manufacturing
+    system. Certification is the formal approval by a regulatory or standards authority
+    (e.g., FAA, FDA) that a product, process, or system meets the required standards
+    and is approved for a specific use. Qualification feeds evidence into a certification
+    package, but certification also encompasses design approval, material data, and
+    compliance with airworthiness or safety standards beyond the manufacturing process
+    alone.
+  keywords:
+  - certification
+  - qualification
+  - additive manufacturing
+  similarity_threshold: 0.62
+  notes: The two terms are closely linked and often confused; the book treats them
+    in separate chapters.
+  ideal_retrieved_chunks: []
+  broad: false
+  sections:
+  - Section 5.1 Certification
+  - Section 6.1 Qualification
+- id: cs_am_001
+  mode: cross_section_evidence
+  question: How do support structures in a build plan affect post-processing cost?
+  expected_answer: Support structures are defined in Step 2 (Define Build Plan) of
+    the AM Design Workflow and serve to anchor overhanging features during the build.
+    However, they must be removed during Step 7 (Post-processing), which adds machining
+    time, material waste, and surface finishing work. The amount of support material
+    is directly controlled by build orientation—keeping features above 45 degrees
+    from vertical in PBF reduces the need for supports. Minimizing support material
+    therefore reduces both raw material cost and post-processing labor, connecting
+    build planning decisions in Step 2 directly to cost outcomes in Step 7.
+  keywords:
+  - support structures
+  - build plan
+  - post-processing
+  - cost
+  similarity_threshold: 0.65
+  notes: Support design in Step 2 and its post-processing consequence in Step 7 are
+    covered in different subsections.
+  ideal_retrieved_chunks: []
+  broad: false
+  sections:
+  - Section 4.1 Design Approach
+  - Section 4.2 Design Optimization
+- id: cs_am_002
+  mode: cross_section_evidence
+  question: Why is the buy-to-fly ratio important for selecting AM over conventional
+    manufacturing for titanium parts?
+  expected_answer: The buy-to-fly ratio measures how much raw material must be purchased
+    relative to the final part weight. Titanium alloys are expensive to buy and costly
+    to machine, meaning a high buy-to-fly ratio in conventional subtractive manufacturing
+    leads to large amounts of expensive swarf. AM adds material only where needed,
+    dramatically lowering this ratio and reducing both material procurement cost and
+    machining time. This economic justification connects the materials chapter (titanium's
+    cost and machinability) with the business chapter's AM cost model, which includes
+    feedstock and process costs as key inputs.
+  keywords:
+  - buy-to-fly ratio
+  - titanium
+  - cost
+  - conventional manufacturing
+  similarity_threshold: 0.65
+  notes: Materials properties (Chapter 3) and the business cost model (Chapter 8)
+    must be synthesized.
+  ideal_retrieved_chunks: []
+  broad: true
+  sections:
+  - Section 3.2 Metallic Materials
+  - Section 8.3 The Business Case
+- id: cs_am_003
+  mode: cross_section_evidence
+  question: How does the digital thread connect the design phase to quality assurance
+    in AM?
+  expected_answer: The digital thread links the design phase—where the 3D CAD model,
+    topology optimization outputs, and simulation results are generated—to quality
+    assurance by carrying the as-designed model alongside as-built process data (collected
+    during build execution through process monitoring) through to post- build inspection.
+    In quality assurance, the as-built geometry from CT scanning can be digitally
+    compared to the original CAD model, and process monitoring logs are used as evidence
+    of compliance. The digital thread therefore ensures traceability from design intent
+    through manufacture to final acceptance, supporting both lot acceptance testing
+    and part acceptance testing.
+  keywords:
+  - digital thread
+  - design
+  - quality assurance
+  - process monitoring
+  - CT scanning
+  similarity_threshold: 0.65
+  notes: Design chapter (4/7) and qualification/NDT chapters (5/6) must be bridged.
+  ideal_retrieved_chunks: []
+  broad: true
+  sections:
+  - Section 7.2 The Digital Thread in Design for Additive Manufacturing
+  - Section 7.5 The Digital Thread in AM Quality Assurance Post-Processing and Standards
+    Alignment
+  - Section 6.2 Production Acceptance Testing
+- id: cs_am_004
+  mode: cross_section_evidence
+  question: How does the TBGA Maturity Model relate to building a business case for
+    AM?
+  expected_answer: The TBGA AM Maturity Model describes increasing levels of AM adoption
+    from Level 0 (basic prototyping) to Level 4 (complex, certified production parts).
+    The business case chapter maps each maturity level to the supply chain, work-in-
+    process, and sustainability implications of that level. At lower levels costs
+    and risks are lower but so are the potential benefits; at higher levels the investment
+    in skills, equipment, and qualification is justified by performance improvements,
+    part consolidation, and supply chain resilience. The maturity model therefore
+    provides the organizational readiness framework that informs the economic feasibility
+    analysis in the business case.
+  keywords:
+  - TBGA maturity model
+  - business case
+  - AM adoption
+  - levels
+  similarity_threshold: 0.65
+  notes: Maturity model introduced in Chapter 1 and reused as the organizing framework
+    in Chapter 8.
+  ideal_retrieved_chunks: []
+  broad: true
+  sections:
+  - Section 1.3 The TBGA AM Maturity Model
+  - Section 8.2 Pre-Production to Production
+- id: pl_am_001
+  mode: polysemy
+  question: What does 'layer' mean in the context of additive manufacturing?
+  expected_answer: In additive manufacturing, a layer is the fundamental 2D cross-
+    section that a 3D printer creates at one time. The final 3D part is built as a
+    stack of these discrete layers. Each layer corresponds to one slice from the build
+    file and has a defined thickness determined by the process and material. For powder
+    bed processes a layer is formed by spreading powder and fusing a cross-section;
+    for extrusion processes a layer is a deposited bead; for vat photopolymerization
+    a layer is the region of resin cured by the energy source. The layer thickness
+    is a primary parameter controlling surface finish, resolution, and build time.
+  keywords:
+  - layer
+  - additive manufacturing
+  - slice
+  similarity_threshold: 0.65
+  notes: Layer is a common English word; context must steer retrieval toward AM process
+    layers, not network layers or material layers in composites.
+  ideal_retrieved_chunks: []
+  broad: false
+  sections:
+  - Section 1.1 The Components and Processes of Additive Manufacturing
+  - Section 1.2 Additive Manufacturing Processes
+- id: pl_am_002
+  mode: polysemy
+  question: What is a build in additive manufacturing?
+  expected_answer: In AM, a build refers to the complete set of parts, test coupons,
+    and support structures arranged on a build platform and processed together in
+    a single machine run. The build is defined by a build file (or build plan) that
+    specifies part orientations, nesting layout, slice thickness, support structures,
+    and toolpath. The build is treated like a released engineering document because
+    orientation and nesting decisions critically affect part quality, cost, and compliance.
+    Multiple part numbers can be included in a single build.
+  keywords:
+  - build
+  - additive manufacturing
+  - build file
+  - build plan
+  similarity_threshold: 0.65
+  notes: '"Build" can mean the physical machine run, the resulting object, or the
+    build file; context disambiguates.'
+  ideal_retrieved_chunks: []
+  broad: false
+  sections:
+  - Section 1.1 The Components and Processes of Additive Manufacturing
+  - Section 4.1 Design Approach
+- id: pl_am_003
+  mode: polysemy
+  question: What does 'feedstock' mean in additive manufacturing?
+  expected_answer: In AM, feedstock refers to the raw material input to the 3D printing
+    process. Feedstock can take different physical forms depending on the process
+    — powder (metal, ceramic, or polymer) for powder bed fusion, binder jetting, and
+    blown-powder DED; wire (metal welding wire) for wire-fed DED processes; filament
+    (polymer or metal-bound polymer) for material extrusion; liquid resin for vat
+    photopolymerization; and sheets for sheet lamination. Feedstock qualification
+    involves verifying chemistry, particle size distribution (for powders), gauge
+    (for wire/sheet), and certifications before use in a qualified process.
+  keywords:
+  - feedstock
+  - additive manufacturing
+  - powder
+  - wire
+  - filament
+  similarity_threshold: 0.65
+  notes: Feedstock could be confused with generic supply-chain or agriculture terminology;
+    the AM context is specific.
+  ideal_retrieved_chunks: []
+  broad: false
+  sections:
+  - Section 2.1 Processes and Process Organization
+  - Section 6.1 Qualification
+- id: pl_am_004
+  mode: polysemy
+  question: What is sintering in the context of AM?
+  expected_answer: In additive manufacturing, sintering is a post-build thermal process
+    in which a 'green' or 'brown' part (held together by a temporary binder or loosely
+    fused powder) is heated to a temperature below the melting point, causing the
+    particles to bond and densify without fully melting. Sintering is required in
+    binder jetting and bound-metal material extrusion to achieve the target density
+    and mechanical properties. It is distinct from selective laser sintering (SLS),
+    where a laser fuses polymer powder in place during the build, and from hot isostatic
+    pressing (HIP), which uses pressure and heat together to close internal porosity.
+  keywords:
+  - sintering
+  - binder jetting
+  - green part
+  - density
+  similarity_threshold: 0.65
+  notes: Sintering appears in both the build process (SLS) and post-processing contexts;
+    the distinction matters.
+  ideal_retrieved_chunks: []
+  broad: false
+  sections:
+  - Section 2.3 Powder Bed Processes
+  - Section 2.4 Liquid-Addition Processes
+  - Section 2.5 Molten Material-Addition Processes
+- id: pl_am_005
+  mode: polysemy
+  question: What does 'resolution' mean when referring to AM parts or files?
+  expected_answer: In AM, resolution has two related but distinct meanings. File resolution
+    refers to the fineness of the STL triangulation—more triangles yield a better
+    approximation of curved surfaces but increase file size. Print resolution refers
+    to the smallest feature or finest detail the AM machine can physically produce,
+    determined by the energy source spot size (e.g., laser beam diameter in PBF),
+    layer thickness, and material behavior. Low file resolution can introduce faceting
+    artifacts even if the machine has high print resolution; conversely, high file
+    resolution cannot compensate for a machine's physical resolution limits.
+  keywords:
+  - resolution
+  - STL
+  - feature size
+  - layer thickness
+  similarity_threshold: 0.62
+  notes: Resolution refers both to the digital file and to the physical print capability;
+    retrieval should address both.
+  ideal_retrieved_chunks: []
+  broad: false
+  sections:
+  - Section 4.1 Design Approach

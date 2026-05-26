@@ -106,6 +106,9 @@ def main() -> None:
     parser.add_argument("--llm-model", default="google/gemini-3-flash-preview")
     parser.add_argument("--api-key", default=None)
     parser.add_argument("--no-llm", action="store_true")
+    parser.add_argument("--include-unanswerable", action="store_true",
+                        help="Include benchmarks with empty ideal_retrieved_chunks "
+                             "(unanswerable queries). Recall metrics will be null for these.")
     parser.add_argument("--output", default=None)
     parser.add_argument("-v", "--verbose", action="store_true")
     args = parser.parse_args()
@@ -163,8 +166,12 @@ def main() -> None:
         llm_client = OpenRouterClient(api_key, retries=2)
         print(f"LLM judge enabled: {args.llm_model}")
 
-    benchmarks = load_labeled_benchmarks(args.benchmarks)
-    print(f"Evaluating {len(benchmarks)} labeled benchmarks...")
+    if args.include_unanswerable:
+        from src.knowledge_graph.scripts.eval_utils import load_benchmarks
+        benchmarks = load_benchmarks(args.benchmarks)
+    else:
+        benchmarks = load_labeled_benchmarks(args.benchmarks)
+    print(f"Evaluating {len(benchmarks)} benchmarks{'  (including unanswerable)' if args.include_unanswerable else ''}...")
 
     import networkx as nx
 
@@ -180,7 +187,8 @@ def main() -> None:
     per_query: list[dict] = []
     for bm in benchmarks:
         query = bm["question"]
-        gold: list[int] = bm["ideal_retrieved_chunks"]
+        gold: list[int] = bm.get("ideal_retrieved_chunks") or []
+        is_answerable: bool = bm.get("answerable", True)
 
         # Retrieve (combined faiss+kg or kg-only)
         kg_scores = kg_ret.get_scores(query, args.top_k_max, list(kg_chunks.values()))
@@ -193,8 +201,13 @@ def main() -> None:
         else:
             ranked_ids = scores_to_ranked_ids(kg_scores, args.top_k_max)
 
-        recall_k = recall_at_k(ranked_ids, gold, args.top_k)
-        recall_kmax = recall_at_k(ranked_ids, gold, args.top_k_max)
+        # Recall is undefined (None) for unanswerable queries with no gold chunks
+        if gold:
+            recall_k = recall_at_k(ranked_ids, gold, args.top_k)
+            recall_kmax = recall_at_k(ranked_ids, gold, args.top_k_max)
+        else:
+            recall_k = None
+            recall_kmax = None
 
         # LLM judge
         judge_score: float | None = None
@@ -237,6 +250,7 @@ def main() -> None:
 
         row = {
             "id": bm["id"],
+            "answerable": is_answerable,
             "n_gold": len(gold),
             "gold_tokens": gold_token_count,
             "over_budget": over_budget,
@@ -251,9 +265,9 @@ def main() -> None:
             "community_span": community_span,
             # Centrality (C3)
             "mean_betweenness": round(mean_betweenness, 6),
-            # Retrieval quality
-            f"recall@{args.top_k}": round(recall_k, 3),
-            f"recall@{args.top_k_max}": round(recall_kmax, 3),
+            # Retrieval quality (None for unanswerable queries)
+            f"recall@{args.top_k}": round(recall_k, 3) if recall_k is not None else None,
+            f"recall@{args.top_k_max}": round(recall_kmax, 3) if recall_kmax is not None else None,
             "judge_score": round(judge_score, 3) if judge_score is not None else None,
             "hard_label": int((judge_score or 0.0) < args.difficulty_threshold) if judge_score is not None else None,
         }
@@ -310,12 +324,20 @@ def main() -> None:
         print(f"\nC4: Gold chunks over context budget ({len(over)} queries)  "
               f"judge={m_over:.3f} vs under-budget ({len(under)})  judge={m_under:.3f}")
 
-    # C5: near-zero recall@kmax → out-of-scope
-    zero_recall = [r for r in per_query if r[f"recall@{args.top_k_max}"] == 0.0]
+    # C5: near-zero recall@kmax → out-of-scope (answerable queries only)
+    answerable_rows = [r for r in per_query if r.get("answerable", True)]
+    zero_recall = [r for r in answerable_rows if r[f"recall@{args.top_k_max}"] == 0.0]
     print(f"\nC5: recall@{args.top_k_max}=0 → possible out-of-scope: "
-          f"{len(zero_recall)}/{n} queries")
+          f"{len(zero_recall)}/{len(answerable_rows)} answerable queries")
     for r in zero_recall:
         print(f"  [{r['id']}]")
+
+    # Unanswerable queries (labelled answerable=false in benchmark)
+    unanswerable_rows = [r for r in per_query if not r.get("answerable", True)]
+    if unanswerable_rows:
+        print(f"\nUnanswerable queries ({len(unanswerable_rows)} total — no gold chunks):")
+        for r in unanswerable_rows:
+            print(f"  [{r['id']}]")
 
     # -----------------------------------------------------------------------
     # C6/C7: Logistic regression pilot (LOOCV AUC)
@@ -359,6 +381,7 @@ def main() -> None:
         "difficulty_threshold": args.difficulty_threshold,
         "per_query": per_query,
         "c5_out_of_scope": [r["id"] for r in zero_recall],
+        "unanswerable": [r["id"] for r in unanswerable_rows],
     }
 
     if args.output:
