@@ -11,6 +11,7 @@ benchmarks:
   - 148
   - 149
   broad: false
+  difficulty: easy
   sections:
   - Section 3.7.2 Aggregation with Grouping
 - id: acid_properties
@@ -33,6 +34,7 @@ benchmarks:
   - 1104
   - 1106
   broad: true
+  difficulty: easy
   sections:
   - Section 17.1  Transaction Concept
 - id: bptree
@@ -58,6 +60,7 @@ benchmarks:
   - 904
   - 910
   broad: false
+  difficulty: hard
   sections:
   - Section 14.3  B + -Tree Index Files
   - Section 14.3.1 Structure of a B + -Tree
@@ -76,6 +79,7 @@ benchmarks:
   - 423
   - 439
   broad: false
+  difficulty: easy
   sections:
   - Section 7.2  Decomposition Using Functional Dependencies
   - Section 7.2.2 Keys and Functional Dependencies
@@ -95,6 +99,7 @@ benchmarks:
   - 1129
   - 1130
   broad: false
+  difficulty: easy
   sections:
   - Section 17.8  Transaction Isolation Levels
 - id: primary_foreign_keys
@@ -115,6 +120,7 @@ benchmarks:
   - 91
   - 93
   broad: false
+  difficulty: easy
   sections:
   - Section 2.3  Keys
 - id: database_schema
@@ -132,6 +138,7 @@ benchmarks:
   - 52
   - 88
   broad: false
+  difficulty: easy
   sections:
   - Section 2.2  Database Schema
 - id: book_authors
@@ -182,6 +189,7 @@ benchmarks:
   - 1310
   - 1311
   broad: false
+  difficulty: easy
   sections:
   - Section 19.9  ARIES
   - Section 19.9.1 Data Structures
@@ -205,6 +213,7 @@ benchmarks:
   - 38
   - 712
   broad: true
+  difficulty: hard
   sections:
   - Section 1.1 Database-System Applications
 - id: lossy_decomposition
@@ -225,6 +234,7 @@ benchmarks:
   - 415
   - 416
   broad: false
+  difficulty: easy
   sections:
   - Section 7.1  Features of Good Relational Designs
   - Section 7.1.1 Decomposition
@@ -247,6 +257,7 @@ benchmarks:
   - 762
   - 763
   broad: true
+  difficulty: easy
   sections:
   - Section 12.1  Overview of Physical Storage Media
 - id: shared_nothing_architecture
@@ -264,6 +275,7 @@ benchmarks:
   - 1326
   - 1358
   broad: false
+  difficulty: easy
   sections:
   - Section 20.4.7 Shared Nothing
 - id: ec_001
@@ -281,6 +293,7 @@ benchmarks:
   notes: Qualifier 'strict' gets smeared in dense retrieval; KG treats as distinct
     nodes.
   broad: false
+  difficulty: hard
   sections:
   - Section 18.1  Lock-Based Protocols
   - Section 18.1.3 The Two-Phase Locking Protocol
@@ -302,6 +315,7 @@ benchmarks:
   similarity_threshold: 0.63
   notes: Close in embedding space, distinct in KG.
   broad: false
+  difficulty: hard
   sections:
   - Section 14.3  B + -Tree Index Files
   - Section 14.3.1 Structure of a B + -Tree
@@ -329,6 +343,7 @@ benchmarks:
   notes: Noun-vs.-adjective form, nearly identical embeddings; expected to be hardest
     for dense retrieval to separate.
   broad: false
+  difficulty: hard
   sections:
   - Section 17.6  Serializability
   - Section 17.5  Transaction Isolation
@@ -353,6 +368,7 @@ benchmarks:
   similarity_threshold: 0.62
   notes: Both normalization entities; dense retrieval blends them.
   broad: false
+  difficulty: hard
   sections:
   - Section 7.3  Normal Forms
   - Section 7.3.1 Boyce-Codd Normal Form
@@ -381,6 +397,7 @@ benchmarks:
     Higher threshold because the operational context (storage vs. query execution)
     should be recoverable from embeddings alone.
   broad: false
+  difficulty: hard
   sections:
   - Section 14.5  Hash Indices
   - Section 15.5.5 Hash Join
@@ -408,6 +425,7 @@ benchmarks:
     threshold in this mode because a correct answer requires retrieving sparse BASE
     chunks that may score low absolutely.
   broad: true
+  difficulty: hard
   sections:
   - Section 17.1  Transaction Concept
   - Section 17.4  Transaction Atomicity and Durability
@@ -441,6 +459,7 @@ benchmarks:
   notes: Disk access cost model lives in storage chapter; sort-merge join algorithm
     in query processing chapter — both are required to explain the preference.
   broad: false
+  difficulty: hard
   sections:
   - Section 12.3  Magnetic Disks
   - Section 12.3.2 Performance Measures of Disks
@@ -464,6 +483,7 @@ benchmarks:
   similarity_threshold: 0.62
   notes: MVCC definition and lock-overhead justification often in separate sections.
   broad: false
+  difficulty: hard
   sections:
   - Section 17.9.3 Multiple Versions and Snapshot Isolation
   - Section 18.7  Multiversion Schemes
@@ -493,6 +513,7 @@ benchmarks:
   similarity_threshold: 0.65
   notes: WAL and checkpointing defined separately; interaction is the answer.
   broad: true
+  difficulty: hard
   sections:
   - Section 19.3  Recovery and Atomicity
   - Section 19.3.1 Log Records
@@ -527,6 +548,7 @@ benchmarks:
   similarity_threshold: 0.6
   notes: FDs are foundational (earlier chapter); decomposition applies them (later).
   broad: true
+  difficulty: hard
   sections:
   - Section 7.1  Features of Good Relational Designs
   - Section 7.1.1 Decomposition
@@ -554,6 +576,7 @@ benchmarks:
     entities. Higher threshold because both entities appear together in optimization
     chapters and dense retrieval should partially succeed here.
   broad: true
+  difficulty: hard
   sections:
   - Section 13.4  Data-Dictionary Storage
   - Section 15.2  Measures of Query Cost
@@ -585,6 +608,7 @@ benchmarks:
   similarity_threshold: 0.62
   notes: Isolation levels and phantom phenomena defined in separate subsections.
   broad: false
+  difficulty: hard
   sections:
   - Section 17.8  Transaction Isolation Levels
   - Section 17.9  Implementation of Isolation Levels
@@ -612,6 +636,7 @@ benchmarks:
     Low threshold because 'key' is extremely polysemous and dense retrieval may pull
     index or cryptography chunks.
   broad: false
+  difficulty: hard
   sections:
   - Section 2.3  Keys
   ideal_retrieved_chunks:
@@ -633,6 +658,7 @@ benchmarks:
   similarity_threshold: 0.6
   notes: Transaction context disambiguates from OS/file locking.
   broad: false
+  difficulty: hard
   sections:
   - Section 17.9.1 Locking
   - Section 18.1  Lock-Based Protocols
@@ -660,6 +686,7 @@ benchmarks:
   notes: Disambiguates hash indexing from hash join or cryptographic hashing. Moderate
     threshold because 'indexing' co-occurs heavily with hash index chunks.
   broad: false
+  difficulty: hard
   sections:
   - Section 14.5  Hash Indices
   - Section 24.5  Hash Indices
@@ -687,6 +714,7 @@ benchmarks:
   notes: Transaction schedule, not OS scheduling. Dense retrieval may pull OS scheduling
     or cron-related content from unrelated chapters.
   broad: false
+  difficulty: hard
   sections:
   - Section 17.5  Transaction Isolation
   - Section 17.6  Serializability
@@ -714,6 +742,7 @@ benchmarks:
   notes: SQL view, disambiguated from UI/MVC view. Higher threshold because 'SQL'
     strongly constrains the sense and retrieval should be reliable.
   broad: false
+  difficulty: easy
   sections:
   - Section 4.2  Views
   - Section 4.2.1 View Definition
@@ -739,6 +768,7 @@ benchmarks:
   notes: Normal form (normalization), not statistical/geometric 'normal'. Co-occurrence
     with 'database design' makes this moderately tractable for dense retrieval.
   broad: true
+  difficulty: hard
   sections:
   - Section 7.3  Normal Forms
   - Section 7.3.1 Boyce-Codd Normal Form
@@ -768,6 +798,7 @@ benchmarks:
   ideal_retrieved_chunks:
   - 836
   broad: false
+  difficulty: easy
   sections:
   - Section 13.7  Buffer Management
   - Section 13.7.1 Buffer-Replacement Policies
@@ -797,6 +828,7 @@ benchmarks:
   - 105
   - 107
   broad: false
+  difficulty: easy
   sections:
   - Section 2.6  The Relational Algebra
   - Section 2.6.1 The Select Operation
@@ -829,6 +861,7 @@ benchmarks:
   - 172
   - 173
   broad: false
+  difficulty: easy
   sections:
   - Section 3.9  Modification of the Database
   - Section 3.9.1 Deletion
@@ -857,6 +890,7 @@ benchmarks:
   - 368
   - 369
   broad: false
+  difficulty: easy
   sections:
   - Section 6.8  Reduction to Relational Schemas
   - Section 6.8.1 Representation of Strong Entity Sets
