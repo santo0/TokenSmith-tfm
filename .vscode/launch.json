@@ -367,6 +367,24 @@
                 "--run-dir", "data/knowledge_graph/runs/latest",
                 "--artifacts-dir", "index/sections",
                 "--embed-model", "models/embedders/Qwen3-Embedding-4B-Q5_K_M.gguf",
+                "--output", "results_b3.json",
+                "-v"
+            ],
+            "python": "/home/user/miniconda3/envs/tokensmith/bin/python",
+            "cwd": "${workspaceFolder}",
+            "env": { "PYTHONPATH": "${workspaceFolder}" },
+            "justMyCode": false
+        },
+        {
+            "name": "Exp B3 | Summary tree for broad queries (+ LLM judge)",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "src.knowledge_graph.scripts.experiment_b3_summary_broad",
+            "args": [
+                "--run-dir", "data/knowledge_graph/runs/latest",
+                "--artifacts-dir", "index/sections",
+                "--embed-model", "models/embedders/Qwen3-Embedding-4B-Q5_K_M.gguf",
+                "--llm",
                 "--llm-model", "google/gemini-3.1-pro-preview",
                 "--output", "results_b3.json",
                 "-v"
@@ -386,6 +404,24 @@
                 "--run-dir", "data/knowledge_graph/runs/latest",
                 "--artifacts-dir", "index/sections",
                 "--embed-model", "models/embedders/Qwen3-Embedding-4B-Q5_K_M.gguf",
+                "--output", "results_b4.json",
+                "-v"
+            ],
+            "python": "/home/user/miniconda3/envs/tokensmith/bin/python",
+            "cwd": "${workspaceFolder}",
+            "env": { "PYTHONPATH": "${workspaceFolder}" },
+            "justMyCode": false
+        },
+        {
+            "name": "Exp B4 | Full retriever ablation (+ LLM judge)",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "src.knowledge_graph.scripts.experiment_b4_full_ablation",
+            "args": [
+                "--run-dir", "data/knowledge_graph/runs/latest",
+                "--artifacts-dir", "index/sections",
+                "--embed-model", "models/embedders/Qwen3-Embedding-4B-Q5_K_M.gguf",
+                "--llm",
                 "--llm-model", "google/gemini-3.1-pro-preview",
                 "--output", "results_b4.json",
                 "-v"
@@ -411,8 +447,60 @@
             "env": { "PYTHONPATH": "${workspaceFolder}" },
             "justMyCode": false
         },
+        {
+            "name": "Exp B5 | IDF-weighted KGNodeRetriever (+ LLM judge)",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "src.knowledge_graph.scripts.experiment_b5_idf_weighting",
+            "args": [
+                "--run-dir", "data/knowledge_graph/runs/latest",
+                "--llm",
+                "--llm-model", "google/gemini-3.1-pro-preview",
+                "--output", "results_b5.json",
+                "-v"
+            ],
+            "python": "/home/user/miniconda3/envs/tokensmith/bin/python",
+            "cwd": "${workspaceFolder}",
+            "env": { "PYTHONPATH": "${workspaceFolder}" },
+            "envFile": "${workspaceFolder}/.env",
+            "justMyCode": false
+        },
+
+        {
+            "name": "Bench | Section-filtered FAISS",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "src.knowledge_graph.scripts.benchmark_retrieval",
+            "args": [
+                "--no-llm",
+                "--run-dir", "data/knowledge_graph/runs/latest",
+                "--artifacts-dir", "index/sections",
+                "--embed-model", "models/embedders/Qwen3-Embedding-4B-Q5_K_M.gguf",
+                "--queries", "tests/benchmarks.yaml",
+                "--output", "results_section_filtered_faiss.json",
+                "-v"
+            ],
+            "python": "/home/user/miniconda3/envs/tokensmith/bin/python",
+            "cwd": "${workspaceFolder}",
+            "env": { "PYTHONPATH": "${workspaceFolder}" },
+            "justMyCode": false
+        },
 
         // ── Experiments: Difficulty (C) ───────────────────────────────────────
+        {
+            "name": "Exp C | Score differentiation probe",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "src.knowledge_graph.scripts.experiment_score_differentiation",
+            "args": [
+                "--artifacts-dir", "index/sections",
+                "--embed-model", "models/embedders/Qwen3-Embedding-4B-Q5_K_M.gguf"
+            ],
+            "python": "/home/user/miniconda3/envs/tokensmith/bin/python",
+            "cwd": "${workspaceFolder}",
+            "env": { "PYTHONPATH": "${workspaceFolder}" },
+            "justMyCode": false
+        },
         {
             "name": "Exp C | Difficulty estimation (C1–C7)",
             "type": "debugpy",
@@ -430,6 +518,72 @@
             "cwd": "${workspaceFolder}",
             "env": { "PYTHONPATH": "${workspaceFolder}" },
             "envFile": "${workspaceFolder}/.env",
+            "justMyCode": false
+        },
+        {
+            "name": "Exp C | Global centrality",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "src.knowledge_graph.scripts.experiment_c_global_centrality",
+            "args": [
+                "--run-dir", "data/knowledge_graph/runs/latest",
+                "--output", "results_c_global_centrality.json",
+                "-v"
+            ],
+            "python": "/home/user/miniconda3/envs/tokensmith/bin/python",
+            "cwd": "${workspaceFolder}",
+            "env": { "PYTHONPATH": "${workspaceFolder}" },
+            "envFile": "${workspaceFolder}/.env",
+            "justMyCode": false
+        },
+        {
+            "name": "Exp C | Inter-concept distance",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "src.knowledge_graph.scripts.experiment_c_interconcept_distance",
+            "args": [
+                "--run-dir", "data/knowledge_graph/runs/latest",
+                "--output", "results_c_interconcept_distance.json",
+                "-v"
+            ],
+            "python": "/home/user/miniconda3/envs/tokensmith/bin/python",
+            "cwd": "${workspaceFolder}",
+            "env": { "PYTHONPATH": "${workspaceFolder}" },
+            "envFile": "${workspaceFolder}/.env",
+            "justMyCode": false
+        },
+        {
+            "name": "Exp C | Query-gold distance",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "src.knowledge_graph.scripts.experiment_c_query_gold_distance",
+            "args": [
+                "--run-dir", "data/knowledge_graph/runs/latest",
+                "--baseline-results", "results_c.json",
+                "--output", "results_c_query_gold_distance.json",
+                "-v"
+            ],
+            "python": "/home/user/miniconda3/envs/tokensmith/bin/python",
+            "cwd": "${workspaceFolder}",
+            "env": { "PYTHONPATH": "${workspaceFolder}" },
+            "envFile": "${workspaceFolder}/.env",
+            "justMyCode": false
+        },
+        {
+            "name": "Exp C | Comparison easy / hard / unanswerable",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "src.knowledge_graph.scripts.experiment_c_comparison",
+            "args": [
+                "--answerable",   "results_c.json",
+                "--unanswerable", "results_c_unanswerable.json",
+                "--benchmarks",   "tests/benchmarks.yaml",
+                "--output",       "results_c_comparison.json",
+                "--html",         "results_c_comparison.html"
+            ],
+            "python": "/home/user/miniconda3/envs/tokensmith/bin/python",
+            "cwd": "${workspaceFolder}",
+            "env": { "PYTHONPATH": "${workspaceFolder}" },
             "justMyCode": false
         },
 
