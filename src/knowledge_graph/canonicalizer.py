@@ -113,7 +113,7 @@ class Canonicalizer:
 
         # 2d — build structures
         canonical_keywords = sorted(
-            set(synonym_table.values()) | set(singletons))
+            set(synonym_table.values()) | set(singletons) | set(all_keywords))
 
         logger.info("  [2d] Embedding %d canonical keywords…",
                     len(canonical_keywords))
@@ -280,6 +280,81 @@ class Canonicalizer:
             updated.append(ExtractionResult(
                 chunk_id=er.chunk_id, keywords=canonical_nodes))
         return updated
+
+
+class NullCanonicalizer:
+    """Drop-in replacement for Canonicalizer that skips all merging.
+
+    Normalizes keywords (lowercase + lemmatize via Normalizer) but performs
+    no embedding clustering or LLM verification. Produces an empty synonym
+    table — every normalized keyword maps only to itself. Used for the
+    canonicalization ablation experiment (D1).
+
+    Args:
+        embedding_model: Sentence-transformer model name. Embeddings are still
+            generated so the keyword FAISS index remains functional at query time.
+    """
+
+    def __init__(self, embedding_model: str, normalizer: Normalizer | None = None):
+        self._normalizer = normalizer or Normalizer()
+        logger.info("Loading embedding model: %s", embedding_model)
+        self._model = SentenceTransformer(embedding_model)
+        self._embedding_model_name = embedding_model
+
+    def get_config(self) -> dict[str, Any]:
+        return {
+            "class": self.__class__.__name__,
+            "embedding_model": self._embedding_model_name,
+        }
+
+    def _normalize_kw(self, kw: str) -> str:
+        result = self._normalizer.normalize([kw])
+        return result[0] if result else kw.strip().lower()
+
+    def canonicalize(
+        self, extractions: list[ExtractionResult]
+    ) -> tuple[list[ExtractionResult], CanonicalizationResult]:
+        # Collect globally unique normalized keywords (mirrors Canonicalizer._collect_keywords)
+        seen: set[str] = set()
+        all_keywords: list[str] = []
+        for er in extractions:
+            for kw in er.keywords:
+                norm = self._normalize_kw(kw)
+                if norm and norm not in seen:
+                    all_keywords.append(norm)
+                    seen.add(norm)
+
+        logger.info(
+            "NullCanonicalizer: %d unique normalized keywords, 0 merges", len(all_keywords)
+        )
+        embeddings = self._model.encode(all_keywords, show_progress_bar=False)
+
+        # Apply normalization and per-chunk deduplication; no synonym remapping
+        updated: list[ExtractionResult] = []
+        for er in extractions:
+            chunk_seen: set[str] = set()
+            chunk_kws: list[str] = []
+            for kw in er.keywords:
+                norm = self._normalize_kw(kw)
+                if norm and norm not in chunk_seen:
+                    chunk_kws.append(norm)
+                    chunk_seen.add(norm)
+            updated.append(ExtractionResult(chunk_id=er.chunk_id, keywords=chunk_kws))
+
+        stats = {
+            "keywords_after_stage1": len(all_keywords),
+            "candidate_groups": 0,
+            "singletons": len(all_keywords),
+            "merges_performed": 0,
+            "canonical_keywords_final": len(all_keywords),
+            "llm_calls": 0,
+        }
+        return updated, CanonicalizationResult(
+            synonym_table={},
+            canonical_keywords=all_keywords,
+            canonical_embeddings=np.array(embeddings, dtype=np.float32),
+            stats=stats,
+        )
 
 
 class MockCanonicalizer:

@@ -151,6 +151,11 @@ def main() -> None:
     parser.add_argument("--api-key", default=None)
     parser.add_argument("--no-llm", action="store_true")
     parser.add_argument("--output", default=None)
+    parser.add_argument("--unanswerable-benchmarks", default=None,
+                        help="Path to benchmarks_unanswerable.yaml; produces "
+                             "inter-concept distances with no retrieval eval.")
+    parser.add_argument("--unanswerable-output", default=None,
+                        help="Output path for unanswerable-query distance results.")
     parser.add_argument("-v", "--verbose", action="store_true")
     args = parser.parse_args()
 
@@ -163,8 +168,8 @@ def main() -> None:
     )
     from src.knowledge_graph.query import CanonicalLookup, KGNodeRetriever, extract_query_nodes
     from src.knowledge_graph.scripts.eval_utils import (
-        load_labeled_benchmarks, recall_at_k, scores_to_ranked_ids,
-        retrieved_tuples, llm_judge, print_table,
+        load_benchmarks, load_labeled_benchmarks, recall_at_k,
+        scores_to_ranked_ids, llm_judge, print_table,
     )
 
     root = Path(__file__).parent.parent.parent.parent
@@ -369,8 +374,56 @@ def main() -> None:
     if args.output:
         out = Path(args.output)
         with open(out, "w") as f:
-            json.dump(result, f, indent=2, default=lambda o: None if math.isnan(float(o)) else float(o))
+            json.dump(result, f, indent=2,
+                      default=lambda o: None if math.isnan(float(o)) else float(o))
         print(f"Results written to {out}")
+
+    # ------------------------------------------------------------------
+    # Optional: compute inter-concept distances for unanswerable benchmarks
+    # ------------------------------------------------------------------
+    if args.unanswerable_benchmarks and args.unanswerable_output:
+        unans_bms = load_benchmarks(args.unanswerable_benchmarks)
+        print(f"\nComputing inter-concept distances for "
+              f"{len(unans_bms)} unanswerable benchmarks...")
+
+        unans_rows: list[dict] = []
+        for bm in unans_bms:
+            query = bm["question"]
+            query_nodes = extract_query_nodes(query, graph, canonical_lookup)
+            if not query_nodes and args.verbose:
+                print(f"  [{bm['id']}] No query nodes matched — distances set to 0")
+
+            mean_d, max_d, min_d, n_disc, n_pairs = _compute_interconcept_distances(
+                query_nodes, graph
+            )
+            mean_d_out = round(mean_d, 3) if not math.isinf(mean_d) else None
+            max_d_out  = round(max_d, 3)  if not math.isinf(max_d)  else None
+            min_d_out  = round(min_d, 3)  if not math.isinf(min_d)  else None
+
+            row = {
+                "id": bm["id"],
+                "n_query_nodes":        len(query_nodes),
+                "n_concept_pairs":      n_pairs,
+                "n_disconnected_pairs": n_disc,
+                "mean_distance": mean_d_out,
+                "max_distance":  max_d_out,
+                "min_distance":  min_d_out,
+            }
+            if args.verbose:
+                print(f"  [{bm['id']}] nodes={len(query_nodes)}"
+                      f"  pairs={n_pairs}"
+                      f"  mean={mean_d_out}  max={max_d_out}")
+            unans_rows.append(row)
+
+        unans_result = {
+            "n_benchmarks": len(unans_rows),
+            "per_query": unans_rows,
+        }
+        unans_out = Path(args.unanswerable_output)
+        with open(unans_out, "w") as f:
+            json.dump(unans_result, f, indent=2,
+                      default=lambda o: None if math.isnan(float(o)) else float(o))
+        print(f"Unanswerable results written to {unans_out}")
 
 
 if __name__ == "__main__":

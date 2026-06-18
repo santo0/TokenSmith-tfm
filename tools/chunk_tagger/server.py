@@ -88,7 +88,7 @@ def _call_llm(prompt: str, json_mode: bool = False) -> str:
     client = OpenRouterClient(key)
     fmt = {"type": "json_object"} if json_mode else None
     return client.chat(
-        "google/gemini-2.0-flash-lite-001",
+        "google/gemini-2.5-flash",
         [{"role": "user", "content": prompt}],
         response_format=fmt,
     )

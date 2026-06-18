@@ -11,10 +11,6 @@ from src.knowledge_graph.linkers import BaseLinker
 from src.knowledge_graph.extractors import BaseExtractor
 from src.knowledge_graph.canonicalizer import Canonicalizer
 
-
-logger = logging.getLogger(__name__)
-
-
 logger = logging.getLogger(__name__)
 
 
@@ -37,7 +33,8 @@ def build_kg(
     os.makedirs(os.path.dirname(raw_extractions_path), exist_ok=True)
     with open(raw_extractions_path, "w", encoding="utf-8") as f:
         json.dump(
-            [{"chunk_id": er.chunk_id, "keywords": er.keywords, "stats": er.stats} for er in extractions],
+            [{"chunk_id": er.chunk_id, "keywords": er.keywords, "stats": er.stats}
+                for er in extractions],
             f,
         )
 

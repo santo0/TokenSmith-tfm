@@ -1,20 +1,22 @@
 """A2b — Adaptive vs fixed vs free-form top-n keyword extraction quality.
 
-Loads midas/inspec via mlcroissant, samples N documents, runs three extraction
-conditions via OpenRouterClient, then evaluates each against extractive_keyphrases.
+Loads annotated chunks (produced by annotate_chunks.py), runs three extraction
+conditions via OpenRouterClient, then evaluates each against the gold keywords.
 
 Conditions:
-  A  adaptive   top_n = ceil(sqrt(word_count)) per document
-  B  fixed-5    top_n = 5 for all documents
+  A  adaptive   top_n = ceil(sqrt(word_count)) per chunk
+  B  fixed-5    top_n = 5 for all chunks
   C  free-form  no count constraint; model decides
 
-Metrics per condition (macro-averaged over documents):
-  precision, recall, F1 vs extractive_keyphrases
-  mean extracted count, mean reference count
+Metrics per condition (macro-averaged over chunks):
+  precision, recall, F1 vs gold keywords
+  mean extracted count, mean gold count
 
 Usage:
     python -m src.knowledge_graph.scripts.experiment_a2b_adaptive_topn \\
-        --sample 200 --model google/gemini-2.0-flash-lite-001 --output results_a2b.json -v
+        --annotated-chunks annotated_chunks.json \\
+        --model google/gemini-2.5-flash \\
+        --output results_a2b.json -v
 """
 
 from __future__ import annotations
@@ -23,7 +25,6 @@ import argparse
 import json
 import math
 import os
-import random
 import re
 import statistics
 from pathlib import Path
@@ -38,36 +39,6 @@ _FREEFORM_PROMPT = (
     "Return the result as a raw JSON list of strings. "
     "Do not include any other text or explanation."
 )
-
-# HuggingFace croissant prefixes field names with the record-set name.
-_RECORD_SET = "generation"
-
-
-def _field(record: dict, name: str) -> object:
-    """Return record[name] trying both prefixed and bare key."""
-    return record.get(f"{_RECORD_SET}/{name}", record.get(name))
-
-
-def _as_str(value: object) -> str:
-    if isinstance(value, (bytes, bytearray)):
-        return value.decode()
-    return str(value) if value is not None else ""
-
-
-def _as_str_list(value: object) -> list[str]:
-    if value is None:
-        return []
-    if isinstance(value, list):
-        return [_as_str(v) for v in value]
-    s = _as_str(value).strip()
-    if s.startswith("["):
-        try:
-            parsed = json.loads(s)
-            if isinstance(parsed, list):
-                return [_as_str(v) for v in parsed]
-        except json.JSONDecodeError:
-            pass
-    return [s] if s else []
 
 
 def _parse_keywords(content: str) -> list[str]:
@@ -125,12 +96,15 @@ def _aggregate(scores: list[dict[str, float]], key: str) -> dict[str, float]:
 
 def main() -> None:
     parser = argparse.ArgumentParser(
-        description="A2b: Adaptive vs fixed vs free-form top-n keyword extraction quality on inspec.",
+        description="A2b: Adaptive vs fixed vs free-form top-n keyword extraction quality.",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
-    parser.add_argument("--sample", type=int, default=200, help="Number of documents to sample")
-    parser.add_argument("--seed", type=int, default=42)
-    parser.add_argument("--model", default="google/gemini-2.0-flash-lite-001")
+    parser.add_argument(
+        "--annotated-chunks",
+        default="annotated_chunks.json",
+        help="JSON produced by annotate_chunks.py",
+    )
+    parser.add_argument("--model", default="google/gemini-2.5-flash")
     parser.add_argument("--api-key", default=None)
     parser.add_argument("--output", default=None, help="Write results JSON here")
     parser.add_argument("-v", "--verbose", action="store_true")
@@ -141,19 +115,19 @@ def main() -> None:
     if not api_key:
         raise SystemExit("No OpenRouter API key. Set OPENROUTER_API_KEY or pass --api-key.")
 
-    from mlcroissant import Dataset
-
     from src.knowledge_graph.openrouter_client import OpenRouterClient
     from src.knowledge_graph.prompts import OPENROUTER_KEYWORD_EXTRACTION_PROMPT
 
-    print("Loading midas/inspec via croissant...")
-    ds = Dataset(jsonld="https://huggingface.co/api/datasets/midas/inspec/croissant")
-    all_records = list(ds.records(_RECORD_SET))
-    print(f"Loaded {len(all_records)} records.")
+    root = Path(__file__).parent.parent.parent.parent
+    ann_path = Path(args.annotated_chunks)
+    if not ann_path.is_absolute():
+        ann_path = root / ann_path
 
-    rng = random.Random(args.seed)
-    docs = rng.sample(all_records, min(args.sample, len(all_records)))
-    print(f"Sampled {len(docs)} documents.")
+    with open(ann_path) as f:
+        ann_data = json.load(f)
+
+    docs = [r for r in ann_data["records"] if r.get("keywords") is not None]
+    print(f"Loaded {len(docs)} annotated chunks from {ann_path}.")
 
     client = OpenRouterClient(api_key, retries=2)
 
@@ -162,14 +136,12 @@ def main() -> None:
     requests_a: list[dict] = []
     requests_b: list[dict] = []
     requests_c: list[dict] = []
-    doc_ids: list[object] = []
 
     for doc in docs:
-        text = _as_str(_field(doc, "document"))
-        word_count = len(text.split())
+        text = doc["text"]
+        word_count = doc.get("word_count", len(text.split()))
         top_n_a = math.ceil(math.sqrt(word_count))
         top_ns_a.append(top_n_a)
-        doc_ids.append(_as_str(_field(doc, "id")))
         requests_a.append(_build_request(OPENROUTER_KEYWORD_EXTRACTION_PROMPT.format(top_n=top_n_a), text))
         requests_b.append(_build_request(OPENROUTER_KEYWORD_EXTRACTION_PROMPT.format(top_n=5), text))
         requests_c.append(_build_request(_FREEFORM_PROMPT, text))
@@ -185,7 +157,7 @@ def main() -> None:
     outcomes_c = client.chat_many(requests_c, model=args.model)
     print("  done.")
 
-    # ── Score each document ───────────────────────────────────────────────────
+    # ── Score each chunk ──────────────────────────────────────────────────────
     records: list[dict] = []
     scores_a: list[dict] = []
     scores_b: list[dict] = []
@@ -201,9 +173,9 @@ def main() -> None:
         return _parse_keywords(str(outcome))
 
     for i, doc in enumerate(docs):
-        text = _as_str(_field(doc, "document"))
-        reference = _as_str_list(_field(doc, "extractive_keyphrases"))
-        word_count = len(text.split())
+        text = doc["text"]
+        reference: list[str] = doc["keywords"]
+        word_count = doc.get("word_count", len(text.split()))
 
         kws_a = _parse_safe(outcomes_a[i])
         kws_b = _parse_safe(outcomes_b[i])
@@ -223,14 +195,15 @@ def main() -> None:
 
         if args.verbose:
             print(
-                f"  doc[{i:3d}] words={word_count:4d} ref={len(reference):2d} "
+                f"  chunk[{i:3d}] id={doc['chunk_id']} words={word_count:4d} ref={len(reference):2d} "
                 f"| A: n={top_ns_a[i]:2d} ext={len(kws_a):2d} f1={m_a['f1']:.3f} "
                 f"| B: ext={len(kws_b):2d} f1={m_b['f1']:.3f} "
                 f"| C: ext={len(kws_c):2d} f1={m_c['f1']:.3f}"
             )
 
         records.append({
-            "doc_id": doc_ids[i],
+            "chunk_id": doc["chunk_id"],
+            "section": doc.get("section", ""),
             "word_count": word_count,
             "reference_count": len(reference),
             "A": {"top_n": top_ns_a[i], "extracted_count": len(kws_a), **m_a},
@@ -321,7 +294,7 @@ def main() -> None:
     print(f"Best F1: {best}  ({conditions[best]['mean_f1']:.4f})")
 
     print(f"\n{'─' * W}")
-    print(f"By document length  (tertile thresholds: short ≤ {t33}w, medium ≤ {t66}w, long > {t66}w)")
+    print(f"By chunk length  (tertile thresholds: short ≤ {t33}w, medium ≤ {t66}w, long > {t66}w)")
     for bname, bs in by_length.items():
         print(f"\n  [{bname.upper()}]  n={bs['n']}  ref μ={bs['mean_reference_count']:.1f}  ref σ²={bs['var_reference_count']:.2f}")
         _print_cond_table({k: bs[k] for k in ("A_adaptive", "B_fixed5", "C_freeform")})
@@ -331,9 +304,8 @@ def main() -> None:
     summary = {
         "config": {
             "model": args.model,
-            "sample": n,
-            "seed": args.seed,
-            "dataset": "midas/inspec",
+            "n": n,
+            "annotated_chunks": str(ann_path),
         },
         "reference_count": {"mean": mean_ref, "std": std_ref, "var": var_ref},
         "conditions": conditions,

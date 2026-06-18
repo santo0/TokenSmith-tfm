@@ -1,8 +1,27 @@
-"""A3 — Embedding-based seed keywords vs keyword matching for query nodes.
+"""A3 — Query node seeding strategies comparison.
 
-For each labeled benchmark query, compares two query-node extraction strategies:
-  1. extract_query_nodes      — exact n-gram match + canonical lookup
-  2. extract_query_nodes_embedding — pure embedding-based match
+For each labeled benchmark query, compares three strategies and two ablations:
+
+  S1  full         — extract_query_nodes: n-gram decomposition + canonical lookup
+                     (synonym table + embedding fallback) + greedy non-overlapping
+                     selection. The proposed best strategy.
+
+  S2  emb_query    — embed the whole query as a single vector, ANN over the
+                     canonical keyword FAISS index.
+
+  S3  emb_ngram    — embed each query n-gram independently via CanonicalLookup,
+                     accept matches above a similarity threshold. No overlap
+                     constraint.
+
+  A1  exact_only   — identical to S1 but canonical_lookup=None. Isolates the
+                     contribution of CanonicalLookup (synonym + embedding
+                     resolution). F1 delta vs S1 measures the value of canonical
+                     resolution alone.
+
+  A2  no_dedup     — identical to S1 scoring but without the greedy
+                     non-overlapping constraint. All n-grams that resolve to a
+                     graph node are included regardless of span overlap. Isolates
+                     the contribution of position-aware deduplication.
 
 Evaluation: precision, recall, F1 against the benchmark's gold ``keywords`` field
 (after normalization via the same Normalizer used in the graph).
@@ -18,7 +37,6 @@ from __future__ import annotations
 
 import argparse
 import json
-import os
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -41,7 +59,7 @@ def _prf(predicted: set[str], gold: set[str]) -> tuple[float, float, float]:
 
 def main() -> None:
     parser = argparse.ArgumentParser(
-        description="A3: Compare exact-match vs embedding seed-keyword extraction.",
+        description="A3: Compare seeding strategies for KG query node extraction.",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
     parser.add_argument("--run-dir", default="data/knowledge_graph/runs/latest")
@@ -49,17 +67,37 @@ def main() -> None:
     parser.add_argument(
         "--embed-model",
         default="sentence-transformers/all-MiniLM-L6-v2",
-        help="SentenceTransformer model for embedding extraction (must match KG build)",
+        help="SentenceTransformer model (must match KG build)",
     )
-    parser.add_argument("--top-k", type=int, default=10, help="Top-k for embedding extraction")
-    parser.add_argument("--sim-threshold", type=float, default=0.40,
-                        help="Minimum cosine similarity for embedding match")
+    parser.add_argument(
+        "--top-k", type=int, default=10,
+        help="Top-k for whole-query embedding extraction (S2)",
+    )
+    parser.add_argument(
+        "--sim-threshold", type=float, default=0.40,
+        help="Cosine similarity threshold for whole-query embedding match (S2)",
+    )
+    parser.add_argument(
+        "--ngram-threshold", type=float, default=0.85,
+        help="Cosine similarity threshold for per-ngram canonical resolve (S3)",
+    )
     parser.add_argument("--output", default=None)
     parser.add_argument("-v", "--verbose", action="store_true")
     args = parser.parse_args()
 
-    from src.knowledge_graph.io import load_graph_and_chunks, load_canonicalization_data, load_keyword_index, resolve_run_dir
-    from src.knowledge_graph.query import CanonicalLookup, extract_query_nodes, extract_query_nodes_embedding
+    from src.knowledge_graph.io import (
+        load_graph_and_chunks,
+        load_canonicalization_data,
+        load_keyword_index,
+        resolve_run_dir,
+    )
+    from src.knowledge_graph.query import (
+        CanonicalLookup,
+        TERM_BLACKLIST,
+        extract_query_nodes,
+        extract_query_nodes_embedding,
+    )
+    from src.knowledge_graph.ngrams import KW_PATTERN, extract_ngrams_with_spans
     from src.knowledge_graph.normalizer import Normalizer
     from src.knowledge_graph.scripts.eval_utils import load_benchmarks, print_table
 
@@ -77,10 +115,43 @@ def main() -> None:
 
     normalizer = Normalizer()
     benchmarks = load_benchmarks(args.benchmarks)
-    # Use all benchmarks that have keywords
     labeled = [b for b in benchmarks if b.get("keywords")]
 
     print(f"Evaluating on {len(labeled)} benchmarks with gold keywords...")
+
+    # S3: per-ngram embedding — embeds each ngram, no overlap constraint
+    def _ngram_embed_nodes(query: str) -> set[str]:
+        if canonical_lookup is None:
+            return set()
+        nodes: set[str] = set()
+        for ngram, _ in extract_ngrams_with_spans(query, KW_PATTERN):
+            if ngram.lower() in TERM_BLACKLIST:
+                continue
+            normalized = normalizer.normalize([ngram])
+            if not normalized:
+                continue
+            canonical, score = canonical_lookup.resolve_with_score(normalized[0])
+            if score >= args.ngram_threshold and graph.has_node(canonical):
+                nodes.add(canonical)
+        return nodes
+
+    # A2: same resolution as S1 but without greedy non-overlapping constraint
+    def _no_dedup_nodes(query: str) -> set[str]:
+        nodes: set[str] = set()
+        for ngram, _ in extract_ngrams_with_spans(query, KW_PATTERN):
+            if ngram.lower() in TERM_BLACKLIST:
+                continue
+            normalized = normalizer.normalize([ngram])
+            if not normalized:
+                continue
+            norm = normalized[0]
+            if graph.has_node(norm):
+                nodes.add(norm)
+            elif canonical_lookup is not None:
+                canonical, score = canonical_lookup.resolve_with_score(norm)
+                if score > 0 and graph.has_node(canonical):
+                    nodes.add(canonical)
+        return nodes
 
     rows = []
     for bm in labeled:
@@ -88,74 +159,130 @@ def main() -> None:
         gold_raw: list[str] = bm["keywords"]
         gold_norm = set(normalizer.normalize(gold_raw))
 
-        # Strategy 1: exact n-gram match
-        exact_nodes = set(extract_query_nodes(query, graph, canonical_lookup))
-        exact_norm = set(normalizer.normalize(list(exact_nodes)))
+        # S1: full strategy — n-gram + canonical lookup + greedy overlap constraint
+        s1_nodes = set(extract_query_nodes(query, graph, canonical_lookup))
+        s1_norm = set(normalizer.normalize(list(s1_nodes)))
 
-        # Strategy 2: embedding-based
-        emb_nodes: set[str] = set()
+        # S2: whole-query embedding ANN
+        s2_nodes: set[str] = set()
         if keyword_index is not None and can_kw:
-            emb_nodes = set(extract_query_nodes_embedding(
+            s2_nodes = set(extract_query_nodes_embedding(
                 query, graph, keyword_index, can_kw,
                 embedding_model=args.embed_model,
                 top_k=args.top_k,
                 similarity_threshold=args.sim_threshold,
             ))
-        emb_norm = set(normalizer.normalize(list(emb_nodes)))
+        s2_norm = set(normalizer.normalize(list(s2_nodes)))
 
-        p_ex, r_ex, f_ex = _prf(exact_norm, gold_norm)
-        p_em, r_em, f_em = _prf(emb_norm, gold_norm)
+        # S3: per-ngram embedding, no overlap constraint
+        s3_nodes = _ngram_embed_nodes(query)
+        s3_norm = set(normalizer.normalize(list(s3_nodes)))
+
+        # A1: exact-only — no canonical lookup
+        a1_nodes = set(extract_query_nodes(query, graph, None))
+        a1_norm = set(normalizer.normalize(list(a1_nodes)))
+
+        # A2: full resolution but no overlap deduplication
+        a2_nodes = _no_dedup_nodes(query)
+        a2_norm = set(normalizer.normalize(list(a2_nodes)))
+
+        p_s1, r_s1, f_s1 = _prf(s1_norm, gold_norm)
+        p_s2, r_s2, f_s2 = _prf(s2_norm, gold_norm)
+        p_s3, r_s3, f_s3 = _prf(s3_norm, gold_norm)
+        p_a1, r_a1, f_a1 = _prf(a1_norm, gold_norm)
+        p_a2, r_a2, f_a2 = _prf(a2_norm, gold_norm)
 
         if args.verbose:
             print(f"\n[{bm['id']}] {query}")
             print(f"  Gold:          {sorted(gold_norm)}")
-            print(f"  Exact matched: {sorted(exact_norm)}")
-            print(f"  Emb matched:   {sorted(emb_norm)}")
-            print(f"  Exact  P={p_ex:.2f} R={r_ex:.2f} F1={f_ex:.2f}")
-            print(f"  Emb    P={p_em:.2f} R={r_em:.2f} F1={f_em:.2f}")
+            print(f"  S1 full:       {sorted(s1_norm)}")
+            print(f"  S2 emb_query:  {sorted(s2_norm)}")
+            print(f"  S3 emb_ngram:  {sorted(s3_norm)}")
+            print(f"  A1 exact_only: {sorted(a1_norm)}")
+            print(f"  A2 no_dedup:   {sorted(a2_norm)}")
+            print(f"  S1  P={p_s1:.2f} R={r_s1:.2f} F1={f_s1:.2f}")
+            print(f"  S2  P={p_s2:.2f} R={r_s2:.2f} F1={f_s2:.2f}")
+            print(f"  S3  P={p_s3:.2f} R={r_s3:.2f} F1={f_s3:.2f}")
+            print(f"  A1  P={p_a1:.2f} R={r_a1:.2f} F1={f_a1:.2f}")
+            print(f"  A2  P={p_a2:.2f} R={r_a2:.2f} F1={f_a2:.2f}")
 
         rows.append({
             "id": bm["id"],
             "gold_n": len(gold_norm),
-            "exact_P": round(p_ex, 3),
-            "exact_R": round(r_ex, 3),
-            "exact_F1": round(f_ex, 3),
-            "emb_P": round(p_em, 3),
-            "emb_R": round(r_em, 3),
-            "emb_F1": round(f_em, 3),
+            "s1_P": round(p_s1, 3), "s1_R": round(r_s1, 3), "s1_F1": round(f_s1, 3),
+            "s2_P": round(p_s2, 3), "s2_R": round(r_s2, 3), "s2_F1": round(f_s2, 3),
+            "s3_P": round(p_s3, 3), "s3_R": round(r_s3, 3), "s3_F1": round(f_s3, 3),
+            "a1_P": round(p_a1, 3), "a1_R": round(r_a1, 3), "a1_F1": round(f_a1, 3),
+            "a2_P": round(p_a2, 3), "a2_R": round(r_a2, 3), "a2_F1": round(f_a2, 3),
         })
 
     # Macro-averages
     n = len(rows)
-    macro = {
-        "exact_P": sum(r["exact_P"] for r in rows) / n,
-        "exact_R": sum(r["exact_R"] for r in rows) / n,
-        "exact_F1": sum(r["exact_F1"] for r in rows) / n,
-        "emb_P": sum(r["emb_P"] for r in rows) / n,
-        "emb_R": sum(r["emb_R"] for r in rows) / n,
-        "emb_F1": sum(r["emb_F1"] for r in rows) / n,
-    }
+    metric_keys = (
+        "s1_P", "s1_R", "s1_F1",
+        "s2_P", "s2_R", "s2_F1",
+        "s3_P", "s3_R", "s3_F1",
+        "a1_P", "a1_R", "a1_F1",
+        "a2_P", "a2_R", "a2_F1",
+    )
+    macro = {k: round(sum(r[k] for r in rows) / n, 4) for k in metric_keys}
 
-    print(f"\n{'=' * 70}")
-    print("A3 Results — seed keyword extraction precision/recall/F1 vs gold keywords")
-    print(f"{'=' * 70}")
-    print_table(rows, ["id", "gold_n", "exact_P", "exact_R", "exact_F1",
-                        "emb_P", "emb_R", "emb_F1"])
+    W = 70
+    print(f"\n{'=' * W}")
+    print("A3 Results — seed keyword extraction P/R/F1 vs gold keywords")
+    print(f"{'=' * W}")
+    print_table(rows, [
+        "id", "gold_n",
+        "s1_P", "s1_R", "s1_F1",
+        "s2_P", "s2_R", "s2_F1",
+        "s3_P", "s3_R", "s3_F1",
+        "a1_P", "a1_R", "a1_F1",
+        "a2_P", "a2_R", "a2_F1",
+    ])
     print()
-    print(f"  Macro-average  exact: P={macro['exact_P']:.3f}  R={macro['exact_R']:.3f}  F1={macro['exact_F1']:.3f}")
-    print(f"  Macro-average  embed: P={macro['emb_P']:.3f}  R={macro['emb_R']:.3f}  F1={macro['emb_F1']:.3f}")
-    better = "embedding" if macro["emb_F1"] > macro["exact_F1"] else "exact-match"
-    print(f"  Higher macro-F1: {better}")
-    print(f"{'=' * 70}")
+
+    rows_summary = [
+        ("S1  full        ", "s1"),
+        ("S2  emb_query   ", "s2"),
+        ("S3  emb_ngram   ", "s3"),
+        ("A1  exact_only  ", "a1"),
+        ("A2  no_dedup    ", "a2"),
+    ]
+    for label, key in rows_summary:
+        print(
+            f"  {label}  "
+            f"P={macro[f'{key}_P']:.3f}  "
+            f"R={macro[f'{key}_R']:.3f}  "
+            f"F1={macro[f'{key}_F1']:.3f}"
+        )
+
+    best_key, best_f1 = max(
+        ((key, macro[f"{key}_F1"]) for _, key in rows_summary),
+        key=lambda x: x[1],
+    )
+    best_label = next(label.strip() for label, key in rows_summary if key == best_key)
+    print(f"\n  Best macro-F1: {best_label}  ({best_f1:.4f})")
+
+    # Component deltas
+    lookup_gain = round(macro["s1_F1"] - macro["a1_F1"], 4)
+    dedup_gain = round(macro["s1_F1"] - macro["a2_F1"], 4)
+    print(f"  CanonicalLookup gain (S1 - A1): {lookup_gain:+.4f}")
+    print(f"  Overlap dedup gain  (S1 - A2): {dedup_gain:+.4f}")
+    print(f"{'=' * W}")
 
     result = {
         "n_benchmarks": n,
-        "macro": {k: round(v, 4) for k, v in macro.items()},
+        "macro": macro,
         "per_query": rows,
+        "component_deltas": {
+            "canonical_lookup_f1_gain": lookup_gain,
+            "overlap_dedup_f1_gain": dedup_gain,
+        },
         "config": {
             "embed_model": args.embed_model,
             "top_k": args.top_k,
             "sim_threshold": args.sim_threshold,
+            "ngram_threshold": args.ngram_threshold,
         },
     }
 

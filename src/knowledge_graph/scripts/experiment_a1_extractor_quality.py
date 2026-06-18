@@ -1,17 +1,16 @@
 """A1 — LLM extracts more useful keywords than YAKE/KeyBERT.
 
-For each benchmark's gold chunks, runs three extractors (LLM/OpenRouter, KeyBERT,
-YAKE) and evaluates keyword quality two ways:
-  1. Lexical match P/R/F1 vs the benchmark's gold ``keywords`` field.
-  2. Downstream retrieval recall@k: seed KG subgraph expansion with extracted
-     keywords and retrieve; compare recall against dense FAISS baseline.
+Loads annotated chunks (produced by annotate_chunks.py) and compares three
+extraction families — LLM, KeyBERT, YAKE — against the gold keyword annotations.
+
+Metrics (macro-averaged over chunks):
+  precision, recall, F1 vs gold keywords
+  hallucination rate: keywords absent from the source text
 
 Usage:
     python -m src.knowledge_graph.scripts.experiment_a1_extractor_quality \\
-        --run-dir data/knowledge_graph/runs/latest \\
-        --artifacts-dir index/sections \\
-        --embed-model sentence-transformers/all-MiniLM-L6-v2 \\
-        --llm-model google/gemini-3-flash-preview \\
+        --annotated-chunks annotated_chunks.json \\
+        --llm-model google/gemini-2.5-flash \\
         --output results_a1.json
 """
 
@@ -20,6 +19,8 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import re
+import statistics
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -37,20 +38,33 @@ def _prf(predicted: set[str], gold: set[str]) -> tuple[float, float, float]:
     return p, r, f1
 
 
+def _normalize(text: str) -> str:
+    return re.sub(r"\s+", " ", text.lower()).strip()
+
+
+def _hallucination_rate(keywords: list[str], source_text: str) -> float:
+    if not keywords:
+        return 0.0
+    source_norm = source_text.lower()
+    hallucinated = sum(
+        1 for kw in keywords
+        if re.sub(r"[^\w\s]", "", kw.lower()).strip() not in source_norm
+    )
+    return hallucinated / len(keywords)
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(
         description="A1: Compare LLM / KeyBERT / YAKE keyword extraction quality.",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
-    parser.add_argument("--run-dir", default="data/knowledge_graph/runs/latest")
-    parser.add_argument("--benchmarks", default="tests/benchmarks.yaml")
-    parser.add_argument("--artifacts-dir", default=None,
-                        help="RAG artifacts dir (for FAISS dense baseline). Optional.")
-    parser.add_argument("--index-prefix", default="textbook_index")
-    parser.add_argument("--embed-model", default="sentence-transformers/all-MiniLM-L6-v2")
-    parser.add_argument("--llm-model", default="google/gemini-3-flash-preview")
+    parser.add_argument(
+        "--annotated-chunks",
+        default="annotated_chunks.json",
+        help="JSON produced by annotate_chunks.py",
+    )
+    parser.add_argument("--llm-model", default="google/gemini-2.5-flash-preview")
     parser.add_argument("--top-n", type=int, default=10)
-    parser.add_argument("--top-k", type=int, default=10, help="k for recall@k")
     parser.add_argument("--api-key", default=None)
     parser.add_argument("--output", default=None)
     parser.add_argument("-v", "--verbose", action="store_true")
@@ -59,166 +73,147 @@ def main() -> None:
     load_dotenv()
     api_key = args.api_key or os.environ.get("OPENROUTER_API_KEY")
 
-    from src.knowledge_graph.io import (
-        load_graph_and_chunks, load_canonicalization_data, resolve_run_dir
-    )
-    from src.knowledge_graph.query import CanonicalLookup, KGNodeRetriever
-    from src.knowledge_graph.normalizer import Normalizer
-    from src.knowledge_graph.models import Chunk
-    from src.knowledge_graph.scripts.eval_utils import (
-        load_labeled_benchmarks, recall_at_k, scores_to_ranked_ids, print_table
-    )
-
     root = Path(__file__).parent.parent.parent.parent
-    run_path = Path(args.run_dir)
-    if not run_path.is_absolute():
-        run_path = root / run_path
+    ann_path = Path(args.annotated_chunks)
+    if not ann_path.is_absolute():
+        ann_path = root / ann_path
 
-    print(f"Loading KG from {run_path}...")
-    graph, kg_chunks = load_graph_and_chunks(str(run_path))
-    resolved = resolve_run_dir(str(run_path))
-    syn_table, can_kw, can_emb = load_canonicalization_data(resolved)
-    canonical_lookup = CanonicalLookup(syn_table, can_kw, can_emb) if syn_table else None
+    with open(ann_path) as f:
+        ann_data = json.load(f)
+
+    records = [r for r in ann_data["records"] if r.get("keywords") is not None]
+    print(f"Loaded {len(records)} annotated chunks from {ann_path}.")
+
+    from src.knowledge_graph.models import Chunk
+    from src.knowledge_graph.normalizer import Normalizer
 
     normalizer = Normalizer()
-    benchmarks = load_labeled_benchmarks(args.benchmarks)
-    print(f"Evaluating on {len(benchmarks)} labeled benchmarks...")
 
-    # Optionally load FAISS artifacts for dense baseline
-    faiss_retriever = None
-    dense_chunks_list: list[str] = []
-    if args.artifacts_dir:
-        try:
-            from src.retriever import FAISSRetriever, load_artifacts
-            artifacts_path = Path(args.artifacts_dir)
-            if not artifacts_path.is_absolute():
-                artifacts_path = root / artifacts_path
-            faiss_idx, _, raw_chunks, _, metadata = load_artifacts(str(artifacts_path), args.index_prefix)
-            chunk_id_map = [m["chunk_id"] for m in metadata]
-            faiss_retriever = FAISSRetriever(faiss_idx, args.embed_model, chunk_id_map=chunk_id_map)
-            dense_chunks_list = raw_chunks
-            print(f"Dense baseline (FAISS) enabled with {len(dense_chunks_list)} chunks.")
-        except Exception as e:
-            print(f"FAISS not available: {e} — skipping dense baseline.")
-
-    # Build LLM extractor if api key provided
+    # Build extractors
     llm_extractor = None
     if api_key:
         from src.knowledge_graph.extractors.openrouter_extractor import OpenRouterExtractor
         llm_extractor = OpenRouterExtractor(
             api_key=api_key, model=args.llm_model, top_n=args.top_n, adaptive_top_n=False
         )
+    else:
+        print("No API key — LLM extractor disabled.")
 
-    # KeyBERT extractor
+    kb_extractor = None
     try:
         from src.knowledge_graph.extractors.keybert_extractor import KeyBERTExtractor
         kb_extractor = KeyBERTExtractor(top_n=args.top_n)
     except Exception as e:
         print(f"KeyBERT not available: {e}")
-        kb_extractor = None
 
-    # YAKE extractor
+    yake_extractor = None
     try:
         from src.knowledge_graph.extractors.yake_extractor import YakeExtractor
         yake_extractor = YakeExtractor(top_n=args.top_n)
     except Exception as e:
         print(f"YAKE not available: {e}")
-        yake_extractor = None
 
-    rows = []
-    for bm in benchmarks:
-        query = bm["question"]
-        gold_kws_raw: list[str] = bm.get("keywords", [])
-        gold_kws = set(normalizer.normalize(gold_kws_raw))
-        gold_chunks: list[int] = bm["ideal_retrieved_chunks"]
+    extractor_names = [
+        ("llm", llm_extractor),
+        ("keybert", kb_extractor),
+        ("yake", yake_extractor),
+    ]
 
-        chunk_texts = {cid: kg_chunks[cid] for cid in gold_chunks if cid in kg_chunks}
-        chunks_objs = [
-            Chunk(id=cid, text=text, metadata={})
-            for cid, text in chunk_texts.items()
-        ]
-        if not chunks_objs:
-            continue
+    per_chunk: list[dict] = []
 
-        extractor_results: dict[str, dict] = {}
+    for rec in records:
+        chunk_id = rec["chunk_id"]
+        text = rec["text"]
+        gold_raw: list[str] = rec["keywords"]
+        gold_norm = {_normalize(k) for k in gold_raw}
 
-        for name, extractor in [
-            ("llm", llm_extractor),
-            ("keybert", kb_extractor),
-            ("yake", yake_extractor),
-        ]:
+        chunk_obj = Chunk(id=chunk_id, text=text, metadata={})
+        row: dict = {"chunk_id": chunk_id, "section": rec.get("section", "")}
+
+        for name, extractor in extractor_names:
             if extractor is None:
                 continue
             try:
-                results = extractor.extract(chunks_objs)
+                results = extractor.extract([chunk_obj])
                 all_kws: list[str] = []
                 for r in results:
                     all_kws.extend(r.keywords)
-                pred_norm = set(normalizer.normalize(all_kws))
+                pred_norm = {_normalize(k) for k in normalizer.normalize(all_kws)}
             except Exception as e:
-                print(f"  [{bm['id']}] {name} extraction failed: {e}")
+                print(f"  chunk_id={chunk_id} [{name}] failed: {e}")
                 pred_norm = set()
+                all_kws = []
 
-            p, r, f1 = _prf(pred_norm, gold_kws)
+            p, r, f1 = _prf(pred_norm, gold_norm)
+            hall = _hallucination_rate(all_kws, text)
 
-            # Downstream recall@k via KG retrieval seeded with extracted keywords
-            kg_recall = None
-            if pred_norm:
-                # Build a temporary graph query using matched nodes
-                matched_nodes = [n for n in pred_norm if graph.has_node(n)]
-                if matched_nodes:
-                    kg_retriever = KGNodeRetriever(
-                        graph, kg_chunks, canonical_lookup=canonical_lookup
-                    )
-                    scores = kg_retriever.get_scores(query, len(kg_chunks), list(kg_chunks.values()))
-                    ranked = scores_to_ranked_ids(scores, args.top_k)
-                    kg_recall = recall_at_k(ranked, gold_chunks, args.top_k)
-
-            extractor_results[name] = {
-                "P": round(p, 3), "R": round(r, 3), "F1": round(f1, 3),
-                "kg_recall": round(kg_recall, 3) if kg_recall is not None else None,
+            row[name] = {
+                "P": round(p, 4),
+                "R": round(r, 4),
+                "F1": round(f1, 4),
+                "hallucination_rate": round(hall, 4),
+                "extracted_count": len(all_kws),
             }
 
-        # Dense baseline
-        dense_recall = None
-        if faiss_retriever and dense_chunks_list:
-            try:
-                scores = faiss_retriever.get_scores(query, args.top_k, dense_chunks_list)
-                ranked = scores_to_ranked_ids(scores, args.top_k)
-                dense_recall = recall_at_k(ranked, gold_chunks, args.top_k)
-            except Exception as e:
-                print(f"  [{bm['id']}] dense retrieval failed: {e}")
+            if args.verbose:
+                print(
+                    f"  chunk_id={chunk_id} [{name:8s}]: "
+                    f"P={p:.3f} R={r:.3f} F1={f1:.3f} hall={hall:.1%}"
+                )
 
-        if args.verbose:
-            print(f"\n[{bm['id']}] {query}")
-            for name, res in extractor_results.items():
-                print(f"  {name:8s}: P={res['P']:.2f} R={res['R']:.2f} F1={res['F1']:.2f}  "
-                      f"KG-recall@{args.top_k}={res.get('kg_recall', 'N/A')}")
-            if dense_recall is not None:
-                print(f"  dense:    recall@{args.top_k}={dense_recall:.3f}")
+        per_chunk.append(row)
 
-        row = {"id": bm["id"], "dense_recall": round(dense_recall, 3) if dense_recall is not None else None}
-        for name, res in extractor_results.items():
-            row[f"{name}_F1"] = res["F1"]
-            row[f"{name}_recall"] = res.get("kg_recall")
-        rows.append(row)
+    # Aggregate
+    def _agg(metric: str, extractor: str) -> dict:
+        vals = [r[extractor][metric] for r in per_chunk if extractor in r]
+        if not vals:
+            return {}
+        return {
+            "mean": round(statistics.mean(vals), 4),
+            "std": round(statistics.stdev(vals) if len(vals) > 1 else 0.0, 4),
+        }
 
-    # Summary
-    print(f"\n{'=' * 70}")
-    print("A1 Results — Extractor quality (keyword F1 vs gold) and KG recall@k")
-    print(f"{'=' * 70}")
-    cols = ["id"]
-    for name in ["llm", "keybert", "yake"]:
-        cols += [f"{name}_F1", f"{name}_recall"]
-    if faiss_retriever:
-        cols.append("dense_recall")
-    print_table(rows, [c for c in cols if any(c in r for r in rows)])
+    summary: dict = {}
+    W = 70
+    print(f"\n{'=' * W}")
+    print(f"A1 Results  (n={len(per_chunk)}, top_n={args.top_n})")
+    print(f"{'=' * W}")
+    header = f"{'Extractor':<12} {'Mean P':>8} {'Mean R':>8} {'Mean F1':>8} {'Hall %':>8}"
+    print(header)
+    print("-" * W)
+
+    for name, extractor in extractor_names:
+        if extractor is None or not any(name in r for r in per_chunk):
+            continue
+        agg_p = _agg("P", name)
+        agg_r = _agg("R", name)
+        agg_f1 = _agg("F1", name)
+        agg_h = _agg("hallucination_rate", name)
+        print(
+            f"{name:<12} "
+            f"{agg_p['mean']:>8.4f} "
+            f"{agg_r['mean']:>8.4f} "
+            f"{agg_f1['mean']:>8.4f} "
+            f"{agg_h['mean']:>7.1%}"
+        )
+        summary[name] = {
+            "precision": agg_p,
+            "recall": agg_r,
+            "f1": agg_f1,
+            "hallucination_rate": agg_h,
+        }
+
+    print("=" * W)
 
     result = {
-        "n_benchmarks": len(rows),
-        "top_k": args.top_k,
-        "top_n_extractors": args.top_n,
-        "per_query": rows,
+        "config": {
+            "annotated_chunks": str(ann_path),
+            "llm_model": args.llm_model,
+            "top_n": args.top_n,
+            "n_chunks": len(per_chunk),
+        },
+        "summary": summary,
+        "per_chunk": per_chunk,
     }
 
     if args.output:

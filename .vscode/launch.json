@@ -238,17 +238,153 @@
             "justMyCode": false
         },
 
+        // ── Experiments: Canonicalization Ablation (D) ───────────────────────
+        {
+            "name": "Build | KG pipeline (raw, no-canon)",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "src.knowledge_graph.scripts.run_kg_pipeline",
+            "args": [
+                "--no-canon",
+                "--skip-summary",
+                "--no-update-latest",
+                "--extractions", "data/knowledge_graph/runs/latest/input/extractions.json"
+            ],
+            "python": "/home/user/miniconda3/envs/tokensmith/bin/python",
+            "cwd": "${workspaceFolder}",
+            "env": { "PYTHONPATH": "${workspaceFolder}" },
+            "justMyCode": false
+        },
+        {
+            "name": "Exp D1 | Canonicalization ablation (topology + B2 recall)",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "src.knowledge_graph.scripts.experiment_d1_canonicalization_ablation",
+            "args": [
+                "--canonical-run-dir", "data/knowledge_graph/runs/latest",
+                "--raw-run-dir", "data/knowledge_graph/runs/<raw-timestamp>",
+                "--output", "results_d1.json"
+            ],
+            "python": "/home/user/miniconda3/envs/tokensmith/bin/python",
+            "cwd": "${workspaceFolder}",
+            "env": { "PYTHONPATH": "${workspaceFolder}" },
+            "justMyCode": false
+        },
+        {
+            "name": "Exp D2 | IP features on raw graph",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "src.knowledge_graph.scripts.experiment_c_interconcept_distance",
+            "args": [
+                "--run-dir", "data/knowledge_graph/runs/<raw-timestamp>",
+                "--no-llm",
+                "--output", "results_c_ip_raw.json",
+                "-v"
+            ],
+            "python": "/home/user/miniconda3/envs/tokensmith/bin/python",
+            "cwd": "${workspaceFolder}",
+            "env": { "PYTHONPATH": "${workspaceFolder}" },
+            "justMyCode": false
+        },
+        {
+            "name": "Exp D2 | Series C robustness comparison",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "src.knowledge_graph.scripts.experiment_d2_series_c_robustness",
+            "args": [
+                "--canonical-ip", "results_c_interconcept_distance.json",
+                "--raw-ip", "results_c_ip_raw.json",
+                "--output", "results_d2.json"
+            ],
+            "python": "/home/user/miniconda3/envs/tokensmith/bin/python",
+            "cwd": "${workspaceFolder}",
+            "env": { "PYTHONPATH": "${workspaceFolder}" },
+            "justMyCode": false
+        },
+
+        {
+            "name": "Exp C | Series C — canonical vs raw canonicalization comparison",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "src.knowledge_graph.scripts.experiment_c_series",
+            "args": [
+                "--run-dir",            "data/knowledge_graph/runs/latest",
+                "--raw-run-dir",        "data/knowledge_graph/runs/2026-06-17_11-58-04",
+                "--benchmarks",         "tests/benchmarks.yaml",
+                "--benchmarks-unans",   "tests/benchmarks_unanswerable.yaml",
+                "--b2",                 "results_b2.json",
+                "--output",             "results_c_series_canonical.json",
+                "--raw-output",         "results_c_series_raw.json",
+                "--comparison-output",  "results_c_series_comparison.json"
+            ],
+            "python": "/home/user/miniconda3/envs/tokensmith/bin/python",
+            "cwd": "${workspaceFolder}",
+            "env": { "PYTHONPATH": "${workspaceFolder}" },
+            "justMyCode": false
+        },
+        {
+            "name": "Exp C | Series C unified analysis (5.8.2–5.8.4)",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "src.knowledge_graph.scripts.experiment_c_series",
+            "args": [
+                "--topology",       "results_c.json",
+                "--topology-unans", "results_c_unanswerable.json",
+                "--gc",             "results_c_global_centrality.json",
+                "--gc-unans",       "results_c_global_centrality_unanswerable.json",
+                "--ip",             "results_c_interconcept_distance.json",
+                "--ip-unans",       "results_c_interconcept_distance_unanswerable.json",
+                "--benchmarks",     "tests/benchmarks.yaml",
+                "--b2",             "results_b2.json",
+                "--output",         "results_c_series.json",
+                "--scatter",        "results_c_series_scatter.png"
+            ],
+            "python": "/home/user/miniconda3/envs/tokensmith/bin/python",
+            "cwd": "${workspaceFolder}",
+            "env": { "PYTHONPATH": "${workspaceFolder}" },
+            "justMyCode": false
+        },
+
         // ── Experiments: KG Construction (A) ─────────────────────────────────
+        {
+            "name": "KG | Repair canonical keywords",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "src.knowledge_graph.scripts.repair_canonical_keywords",
+            "args": [
+                "--run-dir", "data/knowledge_graph/runs/latest",
+                "--embed-model", "sentence-transformers/all-MiniLM-L6-v2"
+            ],
+            "python": "/home/user/miniconda3/envs/tokensmith/bin/python",
+            "cwd": "${workspaceFolder}",
+            "env": { "PYTHONPATH": "${workspaceFolder}" },
+            "justMyCode": false
+        },
+        {
+            "name": "Exp A | Annotate chunks (gold keywords)",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "src.knowledge_graph.scripts.annotate_chunks",
+            "args": [
+                "--sample", "50",
+                "--model", "anthropic/claude-opus-4-8",
+                "--output", "annotated_chunks.json",
+                "-v"
+            ],
+            "python": "/home/user/miniconda3/envs/tokensmith/bin/python",
+            "cwd": "${workspaceFolder}",
+            "env": { "PYTHONPATH": "${workspaceFolder}" },
+            "envFile": "${workspaceFolder}/.env",
+            "justMyCode": false
+        },
         {
             "name": "Exp A1 | Extractor keyword quality",
             "type": "debugpy",
             "request": "launch",
             "module": "src.knowledge_graph.scripts.experiment_a1_extractor_quality",
             "args": [
-                "--run-dir", "data/knowledge_graph/runs/latest",
-                "--artifacts-dir", "index/sections",
-                "--embed-model", "models/embedders/Qwen3-Embedding-4B-Q5_K_M.gguf",
-                "--llm-model", "google/gemini-3.1-pro-preview",
+                "--annotated-chunks", "annotated_chunks.json",
+                "--llm-model", "google/gemini-2.5-flash",
                 "--output", "results_a1.json",
                 "-v"
             ],
@@ -264,9 +400,7 @@
             "request": "launch",
             "module": "src.knowledge_graph.scripts.experiment_a2_keyword_count",
             "args": [
-                "--chunks-pkl", "index/sections/textbook_index_chunks.pkl",
-                "--sample", "100",
-                "--model", "google/gemini-3-flash-preview",
+                "--annotated-chunks", "annotated_chunks.json",
                 "--output", "results_a2.json",
                 "-v"
             ],
@@ -277,14 +411,13 @@
             "justMyCode": false
         },
         {
-            "name": "Exp A2b | Adaptive vs fixed vs free-form top-n (inspec)",
+            "name": "Exp A2b | Adaptive vs fixed vs free-form top-n",
             "type": "debugpy",
             "request": "launch",
             "module": "src.knowledge_graph.scripts.experiment_a2b_adaptive_topn",
             "args": [
-                "--sample", "100",
-                "--seed", "42",
-                "--model", "google/gemini-2.0-flash-lite-001",
+                "--annotated-chunks", "annotated_chunks.json",
+                "--model", "google/gemini-2.5-flash",
                 "--output", "results_a2b.json",
                 "-v"
             ],
@@ -295,13 +428,35 @@
             "justMyCode": false
         },
         {
-            "name": "Exp A3 | Embedding vs keyword seed nodes",
+            "name": "Exp A3 | Query node seeding strategies",
             "type": "debugpy",
             "request": "launch",
             "module": "src.knowledge_graph.scripts.experiment_a3_seed_keywords",
             "args": [
                 "--run-dir", "data/knowledge_graph/runs/latest",
+                "--ngram-threshold", "0.85",
+                "--sim-threshold", "0.40",
+                "--top-k", "10",
                 "--output", "results_a3.json",
+                "-v"
+            ],
+            "python": "/home/user/miniconda3/envs/tokensmith/bin/python",
+            "cwd": "${workspaceFolder}",
+            "env": { "PYTHONPATH": "${workspaceFolder}" },
+            "justMyCode": false
+        },
+
+        {
+            "name": "Exp A4 | Embedding fallback threshold sweep",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "src.knowledge_graph.scripts.experiment_a4_threshold_sweep",
+            "args": [
+                "--run-dir", "data/knowledge_graph/runs/latest",
+                "--threshold-min", "0.70",
+                "--threshold-max", "0.98",
+                "--threshold-step", "0.02",
+                "--output", "results_a4.json",
                 "-v"
             ],
             "python": "/home/user/miniconda3/envs/tokensmith/bin/python",
@@ -528,6 +683,8 @@
             "args": [
                 "--run-dir", "data/knowledge_graph/runs/latest",
                 "--output", "results_c_global_centrality.json",
+                "--unanswerable-benchmarks", "tests/benchmarks_unanswerable.yaml",
+                "--unanswerable-output", "results_c_global_centrality_unanswerable.json",
                 "-v"
             ],
             "python": "/home/user/miniconda3/envs/tokensmith/bin/python",
@@ -544,6 +701,8 @@
             "args": [
                 "--run-dir", "data/knowledge_graph/runs/latest",
                 "--output", "results_c_interconcept_distance.json",
+                "--unanswerable-benchmarks", "tests/benchmarks_unanswerable.yaml",
+                "--unanswerable-output", "results_c_interconcept_distance_unanswerable.json",
                 "-v"
             ],
             "python": "/home/user/miniconda3/envs/tokensmith/bin/python",
@@ -575,11 +734,16 @@
             "request": "launch",
             "module": "src.knowledge_graph.scripts.experiment_c_comparison",
             "args": [
-                "--answerable",   "results_c.json",
-                "--unanswerable", "results_c_unanswerable.json",
-                "--benchmarks",   "tests/benchmarks.yaml",
-                "--output",       "results_c_comparison.json",
-                "--html",         "results_c_comparison.html"
+                "--answerable",       "results_c.json",
+                "--unanswerable",     "results_c_unanswerable.json",
+                "--benchmarks",       "tests/benchmarks.yaml",
+                "--gc",               "results_c_global_centrality.json",
+                "--gc-unanswerable",  "results_c_global_centrality_unanswerable.json",
+                "--ip",               "results_c_interconcept_distance.json",
+                "--ip-unanswerable",  "results_c_interconcept_distance_unanswerable.json",
+                "--qg",               "results_c_query_gold_distance.json",
+                "--output",           "results_c_comparison.json",
+                "--html",             "results_c_comparison.html"
             ],
             "python": "/home/user/miniconda3/envs/tokensmith/bin/python",
             "cwd": "${workspaceFolder}",

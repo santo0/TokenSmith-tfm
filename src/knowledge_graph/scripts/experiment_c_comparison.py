@@ -2,8 +2,20 @@
 
 Compare KG topology features across three query classes: easy, hard, unanswerable.
 
-Analyses performed
-------------------
+Feature groups analysed
+-----------------------
+  topology  — subgraph features from experiment_c_difficulty (C1–C7):
+                diameter, density, coverage_delta, community_dispersion,
+                community_span, mean_betweenness
+  gc        — global centrality from experiment_c_global_centrality (GC1–GC3):
+                mean_pagerank, mean_betweenness, mean_degree          [all 3 groups]
+  ip        — inter-concept distance from experiment_c_interconcept_distance (IP1–IP3):
+                mean_distance, max_distance                           [all 3 groups]
+  qg        — query-gold distance from experiment_c_query_gold_distance (QG1–QG3):
+                mean_qg_distance, max_qg_distance                    [easy+hard only]
+
+Analyses performed per group
+-----------------------------
   1. Descriptive statistics per feature per group (mean ± SD, median, IQR).
   2. Kruskal-Wallis H test per feature — overall non-parametric one-way test.
   3. Pairwise Mann-Whitney U with Holm correction — three pairs:
@@ -18,18 +30,24 @@ Analyses performed
 Usage
 -----
     python -m src.knowledge_graph.scripts.experiment_c_comparison \\
-        --answerable   results_c_chp.json \\
-        --unanswerable results_c_chp_unanswerable.json \\
-        --benchmarks   tests/benchmarks.yaml \\
-        --output       results_c_comparison.json
-
-    # also write an HTML report:
-    python -m src.knowledge_graph.scripts.experiment_c_comparison \\
-        --answerable   results_c_chp.json \\
-        --unanswerable results_c_chp_unanswerable.json \\
+        --answerable   results_c.json \\
+        --unanswerable results_c_unanswerable.json \\
         --benchmarks   tests/benchmarks.yaml \\
         --output       results_c_comparison.json \\
         --html         results_c_comparison.html
+
+    # with GC / IP / QG feature groups:
+    python -m src.knowledge_graph.scripts.experiment_c_comparison \\
+        --answerable        results_c.json \\
+        --unanswerable      results_c_unanswerable.json \\
+        --benchmarks        tests/benchmarks.yaml \\
+        --gc                results_c_global_centrality.json \\
+        --gc-unanswerable   results_c_global_centrality_unanswerable.json \\
+        --ip                results_c_interconcept_distance.json \\
+        --ip-unanswerable   results_c_interconcept_distance_unanswerable.json \\
+        --qg                results_c_query_gold_distance.json \\
+        --output            results_c_comparison.json \\
+        --html              results_c_comparison.html
 """
 
 from __future__ import annotations
@@ -101,7 +119,15 @@ def _cohens_d(a: list[float], b: list[float]) -> float:
 
 
 def _loocv_auc_binary(X: list[list[float]], y: list[int]) -> float:
-    """Binary LOOCV AUC (answerable=1, unanswerable=0)."""
+    """Binary LOOCV AUC.
+
+    The positive class is always 1 (as encoded by the caller).
+    ``class_weight='balanced'`` is required to prevent the per-fold intercept
+    from shifting when a minority-class sample is held out: without it, the
+    training class ratio changes between fold types and the intercept
+    systematically assigns higher P(class=1) to minority-class test samples,
+    inverting the AUC for near-noise features.
+    """
     try:
         import numpy as np
         from sklearn.linear_model import LogisticRegression
@@ -127,19 +153,32 @@ def _loocv_auc_binary(X: list[list[float]], y: list[int]) -> float:
             Xs_te = scaler.transform(X_te)
             with warnings.catch_warnings():
                 warnings.simplefilter("ignore")
-                clf = LogisticRegression(max_iter=2000)
+                clf = LogisticRegression(class_weight="balanced", max_iter=2000)
                 clf.fit(Xs_tr, y_tr)
             prob = clf.predict_proba(Xs_te)[0]
             pos_idx = list(clf.classes_).index(1) if 1 in clf.classes_ else 0
             probs.append(prob[pos_idx])
 
-        return float(roc_auc_score(yarr, probs))
+        auc = float(roc_auc_score(yarr, probs))
+        if auc < 0.5:
+            import warnings as _w
+            _w.warn(
+                f"_loocv_auc_binary: AUC={auc:.4f} < 0.5 after class_weight='balanced'. "
+                "Check feature values and label encoding.",
+                RuntimeWarning, stacklevel=2,
+            )
+        return auc
     except Exception:
         return float("nan")
 
 
 def _loocv_auc_multiclass(X: list[list[float]], y: list[int]) -> float:
-    """Multinomial LOOCV AUC — macro OvR (easy=2, hard=1, unanswerable=0)."""
+    """Multinomial LOOCV AUC — macro OvR (easy=2, hard=1, unanswerable=0).
+
+    Works with 2 or 3 populated classes.  The ``multi_class`` kwarg was
+    removed in sklearn 1.7 (multinomial is the default for lbfgs); omitting
+    it keeps the code forward-compatible.
+    """
     try:
         import numpy as np
         from sklearn.linear_model import LogisticRegression
@@ -167,8 +206,10 @@ def _loocv_auc_multiclass(X: list[list[float]], y: list[int]) -> float:
             Xs_te = scaler.transform(X_te)
             with warnings.catch_warnings():
                 warnings.simplefilter("ignore")
-                clf = LogisticRegression(multi_class="multinomial",
-                                         solver="lbfgs", max_iter=2000)
+                clf = LogisticRegression(
+                    class_weight="balanced",
+                    solver="lbfgs", max_iter=2000,
+                )
                 clf.fit(Xs_tr, y_tr)
             raw_prob = clf.predict_proba(Xs_te)[0]
             aligned = []
@@ -241,7 +282,7 @@ def _ascii_bar(r: float, width: int = 20) -> str:
 
 
 # ---------------------------------------------------------------------------
-# Data loading and splitting
+# Feature constants
 # ---------------------------------------------------------------------------
 
 TOPOLOGY_FEATURES = [
@@ -253,12 +294,42 @@ TOPOLOGY_FEATURES = [
     "mean_betweenness",
 ]
 
+GC_FEATURES = ["mean_pagerank", "gc_mean_betweenness", "mean_degree"]
+IP_FEATURES = ["mean_distance", "max_distance"]
+QG_FEATURES = ["mean_qg_distance", "max_qg_distance"]
+
+# Source-field mapping for GC: the JSON stores the key as "mean_betweenness"
+# but that name collides with the topology feature of the same name (different
+# measure: local subgraph vs global KG). The dest key "gc_mean_betweenness"
+# is used inside the row dicts to keep them distinct.
+_GC_FIELD_MAP = {"gc_mean_betweenness": "mean_betweenness"}
+
 PAIRS = [
     ("easy", "hard"),
     ("easy", "unanswerable"),
     ("hard", "unanswerable"),
 ]
 
+# Features shown in boxplot for each group (top 3 most interpretable)
+_BOXPLOT_FEATURES: dict[str, list[str]] = {
+    "topology": ["density", "coverage_delta", "community_span"],
+    "gc":       ["mean_pagerank", "gc_mean_betweenness", "mean_degree"],
+    "ip":       ["mean_distance", "max_distance"],
+    "qg":       ["mean_qg_distance", "max_qg_distance"],
+}
+
+# Human-readable section headings
+_GROUP_TITLES: dict[str, str] = {
+    "topology": "Topology features (C1–C7)",
+    "gc":       "Global Centrality features (GC1–GC3)",
+    "ip":       "Inter-concept Distance features (IP1–IP3)",
+    "qg":       "Query-Gold Distance features (QG1–QG3) — easy / hard only",
+}
+
+
+# ---------------------------------------------------------------------------
+# Data loading and merging
+# ---------------------------------------------------------------------------
 
 def _load(path: str) -> list[dict]:
     p = Path(path)
@@ -268,6 +339,35 @@ def _load(path: str) -> list[dict]:
     with open(p) as f:
         data = json.load(f)
     return data["per_query"]
+
+
+def _load_extra(path: str) -> dict[str, dict]:
+    """Load a GC/IP/QG result file; return {query_id: row_dict}."""
+    p = Path(path)
+    if not p.is_absolute():
+        root = Path(__file__).parent.parent.parent.parent
+        p = root / path
+    with open(p) as f:
+        data = json.load(f)
+    return {r["id"]: r for r in data["per_query"]}
+
+
+def _merge_features(rows: list[dict],
+                    extra_by_id: dict[str, dict],
+                    features: list[str],
+                    field_map: dict[str, str] | None = None) -> None:
+    """In-place: copy feature values from extra_by_id into each row by id.
+
+    field_map: optional {dest_key: src_key} for features whose destination
+    key differs from the key in the source JSON (e.g. to avoid collisions).
+    """
+    field_map = field_map or {}
+    for row in rows:
+        qid = row.get("id") or row.get("query_id") or row.get("query")
+        src = extra_by_id.get(qid, {})
+        for dest_feat in features:
+            src_feat = field_map.get(dest_feat, dest_feat)
+            row[dest_feat] = src.get(src_feat)  # None if query not found
 
 
 def _load_difficulties(benchmarks_path: str) -> dict[str, str]:
@@ -383,9 +483,12 @@ def _print_pairwise(pw_results: list[dict]) -> None:
 
 def _print_loocv(loocv_results: dict[str, float]) -> None:
     _print_section("4. Logistic regression — LOOCV AUC")
-    print("  Binary:      answerable (easy+hard=1) vs unanswerable (0).")
+    task = loocv_results.get("_binary_task", "answerable vs unanswerable")
+    print(f"  Binary:      {task}.")
     print("  Multinomial: easy / hard / unanswerable — macro OvR AUC.\n")
     for name, auc in loocv_results.items():
+        if not isinstance(auc, (int, float)):
+            continue
         bar = _ascii_bar(max(0.0, auc - 0.5) * 2 if not math.isnan(auc) else float("nan"))
         print(f"  {name:<36} AUC = {_fmt(auc)}  {bar}")
 
@@ -406,8 +509,128 @@ def _print_judge(groups: dict[str, list[float]]) -> None:
     for ga, gb in pairs_vals:
         U, p, r = _mannwhitney(groups[ga], groups[gb])
         print(f"  {ga} vs {gb:<16} "
-              f"U={_fmt(U,1)}  p={_fmt(p,4)} {_sig_stars(p)}  "
+              f"U={_fmt(U, 1)}  p={_fmt(p, 4)} {_sig_stars(p)}  "
               f"r={_fmt(r)}  effect={_effect_label(r)}")
+
+
+# ---------------------------------------------------------------------------
+# Core analysis pipeline for a single feature group
+# ---------------------------------------------------------------------------
+
+def _run_group_analysis(
+    groups: dict[str, list[dict]],
+    features: list[str],
+    easy_rows: list[dict],
+    hard_rows: list[dict],
+    unans_rows: list[dict],
+) -> tuple[list[dict], list[dict], dict[str, float]]:
+    """Run Kruskal-Wallis, pairwise MW-U, and LOOCV for one feature group.
+
+    Returns (kw_results, pw_results, loocv_results).
+    """
+    # Kruskal-Wallis
+    kw_results: list[dict] = []
+    for feat in features:
+        vals = {k: _extract(v, feat) for k, v in groups.items()}
+        H, p = _kruskal_wallis(*vals.values())
+        kw_results.append({
+            "feature": feat,
+            "H_stat":  H,
+            "p_value": p,
+            "significant_p05": (not math.isnan(p)) and (p < 0.05),
+        })
+
+    # Pairwise MW-U + Holm
+    pw_results: list[dict] = []
+    for feat in features:
+        feat_vals = {k: _extract(v, feat) for k, v in groups.items()}
+        raw_ps: list[float] = []
+        pair_stats: list[dict] = []
+        for ga, gb in PAIRS:
+            U, p_raw, r = _mannwhitney(feat_vals[ga], feat_vals[gb])
+            d = _cohens_d(feat_vals[ga], feat_vals[gb])
+            raw_ps.append(p_raw if not math.isnan(p_raw) else 1.0)
+            pair_stats.append({
+                "feature":         feat,
+                "group_a":         ga,
+                "group_b":         gb,
+                "n_a":             len(feat_vals[ga]),
+                "n_b":             len(feat_vals[gb]),
+                "U_stat":          U,
+                "p_raw":           p_raw,
+                "rank_biserial_r": r,
+                "cohens_d":        d,
+                "effect_label":    _effect_label(r),
+            })
+        corrected = _holm_correct(raw_ps)
+        for stat, p_holm in zip(pair_stats, corrected):
+            stat["p_holm"] = p_holm
+            stat["significant_holm_p05"] = p_holm < 0.05
+            pw_results.append(stat)
+
+    # LOOCV — filter to rows with all features non-None
+    def _complete(row: dict) -> bool:
+        return all(row.get(f) is not None for f in features)
+
+    easy_ok   = [r for r in easy_rows  if _complete(r)]
+    hard_ok   = [r for r in hard_rows  if _complete(r)]
+    unans_ok  = [r for r in unans_rows if _complete(r)]
+
+    # Binary task: answerable (1) vs unanswerable (0).
+    # When unanswerable has no complete rows (e.g. QG features, which require
+    # gold chunks and are undefined for unanswerable queries), fall back to
+    # easy (1) vs hard (0) so that at least two classes are present.
+    if unans_ok:
+        all_ans_ok = easy_ok + hard_ok
+        all_bin_ok = all_ans_ok + unans_ok
+        bin_labels = [1] * len(all_ans_ok) + [0] * len(unans_ok)
+        bin_task_desc = "answerable vs unanswerable"
+    else:
+        all_bin_ok = easy_ok + hard_ok
+        bin_labels = [1] * len(easy_ok) + [0] * len(hard_ok)
+        bin_task_desc = "easy vs hard (no unanswerable rows for this feature group)"
+
+    mc_rows   = easy_ok + hard_ok + unans_ok
+    mc_labels = [2] * len(easy_ok) + [1] * len(hard_ok) + [0] * len(unans_ok)
+
+    loocv_results: dict[str, float] = {}
+    loocv_results["_binary_task"] = bin_task_desc  # type: ignore[assignment]
+
+    for feat in features:
+        # Binary
+        vals_bin = [r.get(feat) for r in all_bin_ok]
+        if any(v is None for v in vals_bin) or not vals_bin:
+            loocv_results[f"binary_{feat}"] = float("nan")
+        else:
+            loocv_results[f"binary_{feat}"] = _loocv_auc_binary(
+                [[v] for v in vals_bin], bin_labels
+            )
+        # Multinomial
+        vals_mc = [r.get(feat) for r in mc_rows]
+        if any(v is None for v in vals_mc) or not vals_mc:
+            loocv_results[f"multi_{feat}"] = float("nan")
+        else:
+            loocv_results[f"multi_{feat}"] = _loocv_auc_multiclass(
+                [[v] for v in vals_mc], mc_labels
+            )
+
+    # Full feature-set LOOCV
+    full_X_bin = [[r.get(f, 0.0) or 0.0 for f in features] for r in all_bin_ok]
+    full_X_mc  = [[r.get(f, 0.0) or 0.0 for f in features] for r in mc_rows]
+    loocv_results["binary_full"] = _loocv_auc_binary(full_X_bin, bin_labels)
+    loocv_results["multi_full"]  = _loocv_auc_multiclass(full_X_mc, mc_labels)
+
+    # Top-3 features by max |rank-biserial r| across pairs
+    feat_max_r = {}
+    for feat in features:
+        rs = [abs(r["rank_biserial_r"]) for r in pw_results
+              if r["feature"] == feat and not math.isnan(r["rank_biserial_r"])]
+        feat_max_r[feat] = max(rs) if rs else 0.0
+    top3 = sorted(features, key=lambda f: feat_max_r[f], reverse=True)[:3]
+    top3_X_mc = [[r.get(f, 0.0) or 0.0 for f in top3] for r in mc_rows]
+    loocv_results["multi_top3_by_effect"] = _loocv_auc_multiclass(top3_X_mc, mc_labels)
+
+    return kw_results, pw_results, loocv_results
 
 
 # ---------------------------------------------------------------------------
@@ -419,7 +642,6 @@ _COLOURS = {
     "hard":         "#e67e22",
     "unanswerable": "#c0392b",
 }
-_PLOT_FEATURES = ["density", "coverage_delta", "community_span"]
 
 try:
     import matplotlib
@@ -442,26 +664,32 @@ except ImportError:
 
 
 def _plot_boxplot_grid(groups: dict[str, list[dict]],
-                       pw_results: list[dict], out_path: str) -> None:
-    """Box plots for 3 top features, all three groups side-by-side."""
+                       pw_results: list[dict],
+                       plot_features: list[str],
+                       out_path: str,
+                       title: str = "Feature distributions") -> None:
+    """Box plots for selected features, all three groups side-by-side."""
     if not _HAS_PLOT:
         return
 
-    # p_holm per (feature, pair) for annotation
-    p_by = {(r["feature"], r["group_a"], r["group_b"]): r["p_holm"]
-            for r in pw_results}
-
-    fig, axes = plt.subplots(1, 3, figsize=(14, 5))
-    fig.suptitle("Feature distributions: easy / hard / unanswerable",
+    n_feats = len(plot_features)
+    fig, axes = plt.subplots(1, n_feats, figsize=(5 * n_feats, 5))
+    if n_feats == 1:
+        axes = [axes]
+    fig.suptitle(f"{title}: easy / hard / unanswerable",
                  fontsize=13, fontweight="bold", y=1.02)
 
     group_order = ["easy", "hard", "unanswerable"]
-    for ax, feat in zip(axes, _PLOT_FEATURES):
+    for ax, feat in zip(axes, plot_features):
         records = []
         for label in group_order:
             for v in _extract(groups[label], feat):
                 records.append({"value": v, "group": label.capitalize()})
         df = pd.DataFrame(records)
+        if df.empty:
+            ax.set_title(feat, fontsize=11, fontweight="bold")
+            ax.set_xlabel("")
+            continue
         palette = {k.capitalize(): v for k, v in _COLOURS.items()}
         sns.boxplot(
             data=df, x="group", y="value", hue="group",
@@ -472,7 +700,6 @@ def _plot_boxplot_grid(groups: dict[str, list[dict]],
         ax.set_xlabel("")
         ax.set_ylabel(feat, fontsize=9)
 
-        # annotate smallest Holm-corrected p involving this feature
         relevant = [r for r in pw_results if r["feature"] == feat]
         if relevant:
             best = min(relevant, key=lambda r: r["p_holm"])
@@ -494,7 +721,10 @@ def _plot_boxplot_grid(groups: dict[str, list[dict]],
     plt.close(fig)
 
 
-def _plot_pairwise_effects(pw_results: list[dict], out_path: str) -> None:
+def _plot_pairwise_effects(pw_results: list[dict],
+                           features: list[str],
+                           out_path: str,
+                           title: str = "Pairwise effect sizes") -> None:
     """Grouped horizontal bar chart of rank-biserial r for all pairs × features."""
     if not _HAS_PLOT:
         return
@@ -502,49 +732,46 @@ def _plot_pairwise_effects(pw_results: list[dict], out_path: str) -> None:
     pair_labels = [f"{a} vs {b}" for a, b in PAIRS]
     pair_colours = ["#4a90d9", "#8e44ad", "#c0392b"]
 
-    features = TOPOLOGY_FEATURES
-    y_labels = []
-    y_vals = []
-    y_colours = []
-
-    # interleave: for each feature, one bar per pair (with gaps between features)
     spacing = 0.35
     tick_positions = []
     tick_labels_list = []
+    y_vals = []
+    y_colours = []
+
     y = 0.0
     for feat in features:
         for pi, (ga, gb) in enumerate(PAIRS):
             row = next((r for r in pw_results
                         if r["feature"] == feat
                         and r["group_a"] == ga and r["group_b"] == gb), None)
-            rv = row["rank_biserial_r"] if row and not math.isnan(row["rank_biserial_r"]) else 0.0
+            rv = (row["rank_biserial_r"]
+                  if row and not math.isnan(row["rank_biserial_r"]) else 0.0)
             col = pair_colours[pi]
             if row and (not math.isnan(row["p_holm"])) and row["p_holm"] >= 0.10:
                 col = "#aaaaaa"
-            y_labels.append(f"{feat}  [{ga[:4]} vs {gb[:4]}]")
             y_vals.append(rv)
             y_colours.append(col)
             tick_positions.append(y)
             tick_labels_list.append(f"{feat}  [{ga[:4]} vs {gb[:4]}]")
             y += spacing
-        y += spacing * 0.5  # gap between features
+        y += spacing * 0.5
 
     fig, ax = plt.subplots(figsize=(10, max(6, len(y_vals) * 0.38)))
     ax.barh(tick_positions, y_vals, color=y_colours, height=spacing * 0.75, zorder=3)
 
-    for pos, rv, row_colour in zip(tick_positions, y_vals, y_colours):
+    for pos, rv in zip(tick_positions, y_vals):
         label = f"  {rv:+.3f}" if rv >= 0 else f"{rv:+.3f}  "
         ha = "left" if rv >= 0 else "right"
         ax.text(rv, pos, label, ha=ha, va="center", fontsize=7.5)
 
     ax.set_yticks(tick_positions)
     ax.set_yticklabels(tick_labels_list, fontsize=8)
-    ax.axvline(0,    color="black", lw=1.0, zorder=4)
+    ax.axvline(0, color="black", lw=1.0, zorder=4)
     for x in (0.3, -0.3, 0.5, -0.5):
         ax.axvline(x, color="#aaa", lw=0.7, linestyle="--", alpha=0.7, zorder=2)
     ax.set_xlim(-1.15, 1.15)
     ax.set_xlabel("Rank-biserial r (effect size)", fontsize=10)
-    ax.set_title("Pairwise effect sizes — Holm-corrected (grey = ns)",
+    ax.set_title(f"{title} — Holm-corrected (grey = ns)",
                  fontsize=11, fontweight="bold")
 
     legend_patches = [mpatches.Patch(color=c, label=l)
@@ -557,7 +784,8 @@ def _plot_pairwise_effects(pw_results: list[dict], out_path: str) -> None:
     plt.close(fig)
 
 
-def _plot_loocv_auc(loocv_results: dict, out_path: str) -> None:
+def _plot_loocv_auc(loocv_results: dict, out_path: str,
+                    title: str = "LOOCV AUC") -> None:
     """Horizontal bar chart of LOOCV AUC per feature / feature set."""
     if not _HAS_PLOT:
         return
@@ -594,7 +822,7 @@ def _plot_loocv_auc(loocv_results: dict, out_path: str) -> None:
 
     ax.set_xlim(0.0, 1.12)
     ax.set_xlabel("LOOCV AUC", fontsize=10)
-    ax.set_title("LOOCV AUC — binary & multinomial classification",
+    ax.set_title(f"{title} — binary & multinomial classification",
                  fontsize=11, fontweight="bold")
     ax.legend(fontsize=8.5)
     fig.tight_layout()
@@ -626,6 +854,21 @@ def _plot_scatter(groups: dict[str, list[dict]], out_path: str) -> None:
     plt.close(fig)
 
 
+def _plot_combined_loocv(all_group_loocv: dict[str, dict[str, float]],
+                          out_path: str) -> None:
+    """Bar chart of binary_full and multi_full AUC across all feature groups."""
+    if not _HAS_PLOT:
+        return
+
+    combined: dict[str, float] = {}
+    for grp_name, loocv in all_group_loocv.items():
+        label = _GROUP_TITLES.get(grp_name, grp_name)
+        combined[f"{label} — binary"] = loocv.get("binary_full", float("nan"))
+        combined[f"{label} — 3-class"] = loocv.get("multi_full", float("nan"))
+
+    _plot_loocv_auc(combined, out_path, title="Combined LOOCV AUC (all feature groups)")
+
+
 # ---------------------------------------------------------------------------
 # HTML report
 # ---------------------------------------------------------------------------
@@ -636,57 +879,28 @@ def _html_table(caption: str, headers: list[str], rows: list[list[str]]) -> str:
         "<tr>" + "".join(f"<td>{cell}</td>" for cell in row) + "</tr>\n"
         for row in rows
     )
-    return f"<h3>{caption}</h3><table><thead><tr>{th}</tr></thead><tbody>{body}</tbody></table>\n"
+    return (f"<h3>{caption}</h3>"
+            f"<table><thead><tr>{th}</tr></thead><tbody>{body}</tbody></table>\n")
 
 
-def _build_html(groups: dict[str, list[dict]],
-                kw_results: list[dict],
-                pw_results: list[dict],
-                loocv_results: dict[str, float],
-                judge_groups: dict[str, list[float]],
-                fig_paths: dict | None = None) -> str:
-    css = """
-<style>
-  body { font-family: Arial, sans-serif; max-width: 1200px; margin: 2em auto; color: #222; }
-  h2 { border-bottom: 2px solid #4a90d9; padding-bottom: .3em; }
-  h3 { color: #4a90d9; margin-top: 1.5em; }
-  table { border-collapse: collapse; width: 100%; margin-bottom: 1em; font-size: .9em; }
-  th { background: #4a90d9; color: #fff; padding: 6px 10px; text-align: left; }
-  td { padding: 5px 10px; border-bottom: 1px solid #ddd; }
-  tr:nth-child(even) { background: #f5f8ff; }
-  .sig { color: #c0392b; font-weight: bold; }
-  .large { color: #27ae60; font-weight: bold; }
-  .medium { color: #e67e22; }
-  .small { color: #7f8c8d; }
-  .bar { display: inline-block; background: #4a90d9; height: 12px; vertical-align: middle; }
-  .note { font-size: .85em; color: #555; font-style: italic; margin: .5em 0 1em; }
-  .chart-img { max-width: 100%; margin: 0.5em 0 2em; display: block;
-               border: 1px solid #e0e0e0; border-radius: 4px; }
-  .chart-caption { font-size: .82em; color: #555; font-style: italic;
-                   margin: -.5em 0 1.5em; }
-</style>"""
+def _html_group_section(
+    group_key: str,
+    features: list[str],
+    groups: dict[str, list[dict]],
+    kw_results: list[dict],
+    pw_results: list[dict],
+    loocv_results: dict[str, float],
+    fig_effects: str | None = None,
+) -> str:
+    """Return HTML for one feature-group block (descriptive + KW + pairwise + LOOCV)."""
+    title = _GROUP_TITLES.get(group_key, group_key)
+    html = f"<h2>{title}</h2>\n"
 
-    ns = {k: len(v) for k, v in groups.items()}
-    body = f"""<!DOCTYPE html>
-<html lang="en">
-<head><meta charset="utf-8">
-<title>Easy / Hard / Unanswerable — Experiment C Comparison</title>
-{css}
-</head>
-<body>
-<h2>Query Difficulty Comparison: Easy / Hard / Unanswerable</h2>
-<p class="note">
-  Easy n={ns.get('easy','?')} &nbsp;|&nbsp;
-  Hard n={ns.get('hard','?')} &nbsp;|&nbsp;
-  Unanswerable n={ns.get('unanswerable','?')} &nbsp;|&nbsp;
-  Features: KG topology (diameter, density, coverage, community, betweenness)
-</p>
-"""
-
-    # Section 1 — descriptive
-    desc_headers = ["Feature", "Group", "n", "Mean", "±SD", "Median", "Q1–Q3", "Min", "Max"]
+    # Descriptive
+    desc_headers = ["Feature", "Group", "n", "Mean", "±SD",
+                    "Median", "Q1–Q3", "Min", "Max"]
     desc_rows = []
-    for feat in TOPOLOGY_FEATURES:
+    for feat in features:
         for label, rows in groups.items():
             d = _descriptive(_extract(rows, feat))
             if not d:
@@ -697,9 +911,9 @@ def _build_html(groups: dict[str, list[dict]],
                 f"{_fmt(d['q1'])} – {_fmt(d['q3'])}",
                 _fmt(d["min"]), _fmt(d["max"]),
             ])
-    body += _html_table("1. Descriptive Statistics", desc_headers, desc_rows)
+    html += _html_table("Descriptive Statistics", desc_headers, desc_rows)
 
-    # Section 2 — Kruskal-Wallis
+    # Kruskal-Wallis
     kw_headers = ["Feature", "H", "p-value", "Sig"]
     kw_table = []
     for row in kw_results:
@@ -711,9 +925,9 @@ def _build_html(groups: dict[str, list[dict]],
             f'<span class="{sig_cls}">{_fmt(row["p_value"], 4)}</span>',
             f'<span class="{sig_cls}">{sig}</span>',
         ])
-    body += _html_table("2. Kruskal-Wallis H Test (overall)", kw_headers, kw_table)
+    html += _html_table("Kruskal-Wallis H Test (overall)", kw_headers, kw_table)
 
-    # Section 3 — pairwise
+    # Pairwise
     pw_headers = ["Feature", "Pair", "U", "p (raw)", "p (Holm)", "Sig",
                   "Rank-biserial r", "Effect"]
     pw_table = []
@@ -735,37 +949,112 @@ def _build_html(groups: dict[str, list[dict]],
             f'{_fmt(r)} {bar_html}',
             f'<span class="{eff_cls}">{effect}</span>',
         ])
-    body += '<p class="note">Holm correction applied per feature across 3 pairs.</p>'
-    body += _html_table("3. Pairwise Mann-Whitney U + Holm Correction",
+    html += '<p class="note">Holm correction applied per feature across 3 pairs.</p>'
+    html += _html_table("Pairwise Mann-Whitney U + Holm Correction",
                         pw_headers, pw_table)
 
-    if fig_paths and fig_paths.get("fig1"):
-        body += f'<img src="{fig_paths["fig1"]}" class="chart-img">\n'
-        body += '<p class="chart-caption">Figure 1 — Box plots for three features across all groups.</p>\n'
-    if fig_paths and fig_paths.get("fig2"):
-        body += f'<img src="{fig_paths["fig2"]}" class="chart-img">\n'
-        body += '<p class="chart-caption">Figure 2 — Pairwise rank-biserial r. Grey bars are not significant (p_holm ≥ 0.10).</p>\n'
+    if fig_effects:
+        html += f'<img src="{fig_effects}" class="chart-img">\n'
+        html += (f'<p class="chart-caption">Pairwise rank-biserial r — {title}. '
+                 f'Grey bars are not significant (p_holm ≥ 0.10).</p>\n')
 
-    # Section 4 — LOOCV
+    # LOOCV
     loocv_headers = ["Feature set", "LOOCV AUC", "Power"]
     loocv_table = []
     for name, auc in loocv_results.items():
+        if not isinstance(auc, (int, float)):   # skip metadata strings (e.g. _binary_task)
+            continue
+        if auc is None or (isinstance(auc, float) and math.isnan(auc)):
+            continue
         power = "good" if auc >= 0.7 else ("moderate" if auc >= 0.6 else "weak")
         bar_w = round(max(0.0, auc - 0.5) * 240)
         bar_html = f'<span class="bar" style="width:{bar_w}px"></span>'
         loocv_table.append([name, f"{_fmt(auc)} {bar_html}", power])
-    body += '<p class="note">AUC=0.5 → chance level.</p>'
-    body += _html_table("4. Logistic Regression — LOOCV AUC", loocv_headers, loocv_table)
+    if loocv_table:
+        html += '<p class="note">AUC=0.5 → chance level.</p>'
+        html += _html_table("Logistic Regression — LOOCV AUC",
+                            loocv_headers, loocv_table)
 
-    if fig_paths and fig_paths.get("fig3"):
-        body += f'<img src="{fig_paths["fig3"]}" class="chart-img">\n'
-        body += '<p class="chart-caption">Figure 3 — LOOCV AUC: binary (ans vs unans) and multinomial (3-class macro).</p>\n'
-    if fig_paths and fig_paths.get("fig4"):
-        body += f'<img src="{fig_paths["fig4"]}" class="chart-img">\n'
-        body += '<p class="chart-caption">Figure 4 — Scatter density vs coverage_delta; circles=easy, squares=hard, diamonds=unanswerable.</p>\n'
+    return html
 
-    # Section 5 — judge
+
+def _build_html(
+    groups: dict[str, list[dict]],
+    all_group_data: dict[str, dict],
+    judge_groups: dict[str, list[float]],
+    fig_paths: dict | None = None,
+) -> str:
+    css = """
+<style>
+  body { font-family: Arial, sans-serif; max-width: 1300px; margin: 2em auto; color: #222; }
+  h2 { border-bottom: 2px solid #4a90d9; padding-bottom: .3em; margin-top: 2em; }
+  h3 { color: #4a90d9; margin-top: 1.5em; }
+  table { border-collapse: collapse; width: 100%; margin-bottom: 1em; font-size: .9em; }
+  th { background: #4a90d9; color: #fff; padding: 6px 10px; text-align: left; }
+  td { padding: 5px 10px; border-bottom: 1px solid #ddd; }
+  tr:nth-child(even) { background: #f5f8ff; }
+  .sig { color: #c0392b; font-weight: bold; }
+  .large { color: #27ae60; font-weight: bold; }
+  .medium { color: #e67e22; }
+  .small { color: #7f8c8d; }
+  .bar { display: inline-block; background: #4a90d9; height: 12px; vertical-align: middle; }
+  .note { font-size: .85em; color: #555; font-style: italic; margin: .5em 0 1em; }
+  .chart-img { max-width: 100%; margin: 0.5em 0 2em; display: block;
+               border: 1px solid #e0e0e0; border-radius: 4px; }
+  .chart-caption { font-size: .82em; color: #555; font-style: italic;
+                   margin: -.5em 0 1.5em; }
+</style>"""
+
+    ns = {k: len(v) for k, v in groups.items()}
+    fig_paths = fig_paths or {}
+
+    body = f"""<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="utf-8">
+<title>Easy / Hard / Unanswerable — Experiment C Comparison</title>
+{css}
+</head>
+<body>
+<h1>Query Difficulty Comparison: Easy / Hard / Unanswerable</h1>
+<p class="note">
+  Easy n={ns.get('easy', '?')} &nbsp;|&nbsp;
+  Hard n={ns.get('hard', '?')} &nbsp;|&nbsp;
+  Unanswerable n={ns.get('unanswerable', '?')} &nbsp;|&nbsp;
+  Feature groups: {', '.join(all_group_data.keys())}
+</p>
+"""
+
+    # One section per feature group
+    for grp_key, grp_data in all_group_data.items():
+        body += _html_group_section(
+            group_key=grp_key,
+            features=grp_data["features"],
+            groups=groups,
+            kw_results=grp_data["kruskal_wallis"],
+            pw_results=grp_data["pairwise_mw"],
+            loocv_results=grp_data["loocv_auc"],
+            fig_effects=fig_paths.get(f"{grp_key}_effects"),
+        )
+
+        # Topology-only scatter (fig4)
+        if grp_key == "topology" and fig_paths.get("topology_scatter"):
+            body += (f'<img src="{fig_paths["topology_scatter"]}" class="chart-img">\n')
+            body += ('<p class="chart-caption">Topology scatter: density vs '
+                     'coverage_delta; circles=easy, squares=hard, '
+                     'diamonds=unanswerable.</p>\n')
+
+    # Combined LOOCV AUC figure
+    if fig_paths.get("combined_loocv"):
+        body += '<h2>Combined LOOCV AUC — all feature groups</h2>\n'
+        body += f'<img src="{fig_paths["combined_loocv"]}" class="chart-img">\n'
+        body += ('<p class="chart-caption">binary_full and multi_full LOOCV AUC '
+                 'for each feature group.</p>\n')
+
+    # LLM judge scores
     if any(judge_groups.values()):
+        body += '<h2>LLM Judge Score Comparison</h2>\n'
+        body += ('<p class="note">Answerable groups: high score = relevant content '
+                 'retrieved. Unanswerable: high score = plausible hallucination.</p>\n')
         judge_headers = ["Group", "n", "Mean", "Median", "SD"]
         judge_table = []
         for label, vals in judge_groups.items():
@@ -773,7 +1062,7 @@ def _build_html(groups: dict[str, list[dict]],
             if d:
                 judge_table.append([label, str(d["n"]), _fmt(d["mean"]),
                                      _fmt(d["median"]), _fmt(d["sd"])])
-        body += _html_table("5. LLM Judge Score Comparison", judge_headers, judge_table)
+        body += _html_table("LLM Judge Scores", judge_headers, judge_table)
 
     body += "</body>\n</html>"
     return body
@@ -785,15 +1074,29 @@ def _build_html(groups: dict[str, list[dict]],
 
 def main() -> None:
     parser = argparse.ArgumentParser(
-        description="Compare topology features: easy / hard / unanswerable.",
+        description="Compare topology + GC/IP/QG features: easy / hard / unanswerable.",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
     parser.add_argument("--answerable",   default="results_c_chp.json")
     parser.add_argument("--unanswerable", default="results_c_chp_unanswerable.json")
     parser.add_argument("--benchmarks",   default="tests/benchmarks.yaml",
-                        help="benchmarks.yaml with difficulty field to split answerable rows")
-    parser.add_argument("--output",       default=None)
-    parser.add_argument("--html",         default=None)
+                        help="benchmarks.yaml with difficulty field to split rows")
+    # GC / IP / QG optional inputs
+    parser.add_argument("--gc", default=None,
+                        help="GC answerable results (results_c_global_centrality.json)")
+    parser.add_argument("--gc-unanswerable", default=None,
+                        help="GC unanswerable results")
+    parser.add_argument("--ip", default=None,
+                        help="IP answerable results "
+                             "(results_c_interconcept_distance.json)")
+    parser.add_argument("--ip-unanswerable", default=None,
+                        help="IP unanswerable results")
+    parser.add_argument("--qg", default=None,
+                        help="QG answerable results "
+                             "(results_c_query_gold_distance.json); "
+                             "unanswerable rows get None for all QG features")
+    parser.add_argument("--output", default=None)
+    parser.add_argument("--html",   default=None)
     args = parser.parse_args()
 
     ans_rows   = _load(args.answerable)
@@ -802,11 +1105,6 @@ def main() -> None:
     difficulties = _load_difficulties(args.benchmarks)
     easy_rows, hard_rows = _split_by_difficulty(ans_rows, difficulties)
 
-    groups: dict[str, list[dict]] = {
-        "easy":         easy_rows,
-        "hard":         hard_rows,
-        "unanswerable": unans_rows,
-    }
     print(f"\nLoaded {len(easy_rows)} easy, {len(hard_rows)} hard, "
           f"{len(unans_rows)} unanswerable queries.")
     if len(easy_rows) + len(hard_rows) < len(ans_rows):
@@ -814,141 +1112,103 @@ def main() -> None:
         print(f"  Warning: {n_unlabelled} answerable rows had no difficulty label "
               f"and were excluded.")
 
-    # ── 1. Descriptive ─────────────────────────────────────────────────────
-    _print_descriptive(groups, TOPOLOGY_FEATURES)
+    # ── Merge optional GC / IP / QG features ──────────────────────────────
+    if args.gc:
+        gc_ans = _load_extra(args.gc)
+        _merge_features(easy_rows + hard_rows, gc_ans, GC_FEATURES, _GC_FIELD_MAP)
+        print(f"Merged GC features from {args.gc}")
+    if args.gc_unanswerable:
+        gc_unans = _load_extra(args.gc_unanswerable)
+        _merge_features(unans_rows, gc_unans, GC_FEATURES, _GC_FIELD_MAP)
+        print(f"Merged GC unanswerable features from {args.gc_unanswerable}")
 
-    # ── 2. Kruskal-Wallis ──────────────────────────────────────────────────
-    kw_results: list[dict] = []
-    for feat in TOPOLOGY_FEATURES:
-        vals = {k: _extract(v, feat) for k, v in groups.items()}
-        H, p = _kruskal_wallis(*vals.values())
-        kw_results.append({
-            "feature": feat,
-            "H_stat":  H,
-            "p_value": p,
-            "significant_p05": (not math.isnan(p)) and (p < 0.05),
-        })
-    _print_kruskal(kw_results)
+    if args.ip:
+        ip_ans = _load_extra(args.ip)
+        _merge_features(easy_rows + hard_rows, ip_ans, IP_FEATURES)
+        print(f"Merged IP features from {args.ip}")
+    if args.ip_unanswerable:
+        ip_unans = _load_extra(args.ip_unanswerable)
+        _merge_features(unans_rows, ip_unans, IP_FEATURES)
+        print(f"Merged IP unanswerable features from {args.ip_unanswerable}")
 
-    # ── 3. Pairwise MW-U + Holm ───────────────────────────────────────────
-    pw_results: list[dict] = []
-    for feat in TOPOLOGY_FEATURES:
-        feat_vals = {k: _extract(v, feat) for k, v in groups.items()}
-        raw_ps: list[float] = []
-        pair_stats: list[dict] = []
-        for ga, gb in PAIRS:
-            U, p_raw, r = _mannwhitney(feat_vals[ga], feat_vals[gb])
-            d = _cohens_d(feat_vals[ga], feat_vals[gb])
-            raw_ps.append(p_raw if not math.isnan(p_raw) else 1.0)
-            pair_stats.append({
-                "feature":         feat,
-                "group_a":         ga,
-                "group_b":         gb,
-                "n_a":             len(feat_vals[ga]),
-                "n_b":             len(feat_vals[gb]),
-                "U_stat":          U,
-                "p_raw":           p_raw,
-                "rank_biserial_r": r,
-                "cohens_d":        d,
-                "effect_label":    _effect_label(r),
-            })
-        corrected = _holm_correct(raw_ps)
-        for stat, p_holm in zip(pair_stats, corrected):
-            stat["p_holm"] = p_holm
-            stat["significant_holm_p05"] = p_holm < 0.05
-            pw_results.append(stat)
-    _print_pairwise(pw_results)
+    if args.qg:
+        qg_ans = _load_extra(args.qg)
+        _merge_features(easy_rows + hard_rows, qg_ans, QG_FEATURES)
+        print(f"Merged QG features from {args.qg}")
+        # Unanswerable rows stay with None for all QG features
 
-    # ── 4. LOOCV ───────────────────────────────────────────────────────────
-    loocv_results: dict[str, float] = {}
-    all_ans_rows   = easy_rows + hard_rows
-    all_rows_bin   = all_ans_rows + unans_rows
-    all_labels_bin = [1] * len(all_ans_rows) + [0] * len(unans_rows)
+    # ── Build active feature groups ────────────────────────────────────────
+    active_groups: dict[str, list[str]] = {"topology": TOPOLOGY_FEATURES}
+    if args.gc:
+        active_groups["gc"] = GC_FEATURES
+    if args.ip:
+        active_groups["ip"] = IP_FEATURES
+    if args.qg:
+        active_groups["qg"] = QG_FEATURES
 
-    # Binary: individual features
-    for feat in TOPOLOGY_FEATURES:
-        vals = [r.get(feat) for r in all_rows_bin]
-        if any(v is None for v in vals):
-            loocv_results[f"binary_{feat}"] = float("nan")
-            continue
-        loocv_results[f"binary_{feat}"] = _loocv_auc_binary(
-            [[v] for v in vals], all_labels_bin
+    groups: dict[str, list[dict]] = {
+        "easy":         easy_rows,
+        "hard":         hard_rows,
+        "unanswerable": unans_rows,
+    }
+
+    # ── Run analysis per feature group ─────────────────────────────────────
+    all_group_data: dict[str, dict] = {}
+
+    for grp_key, features in active_groups.items():
+        title = _GROUP_TITLES.get(grp_key, grp_key)
+        _print_section(f"Feature group: {title}")
+
+        kw_results, pw_results, loocv_results = _run_group_analysis(
+            groups, features, easy_rows, hard_rows, unans_rows
         )
 
-    # Binary: full topology
-    full_X_bin = [[r.get(f, 0.0) or 0.0 for f in TOPOLOGY_FEATURES]
-                  for r in all_rows_bin]
-    loocv_results["binary_full_topology"] = _loocv_auc_binary(
-        full_X_bin, all_labels_bin
-    )
+        _print_descriptive(groups, features)
+        _print_kruskal(kw_results)
+        _print_pairwise(pw_results)
+        _print_loocv(loocv_results)
 
-    # Multinomial: easy=2, hard=1, unanswerable=0
-    all_rows_mc  = easy_rows + hard_rows + unans_rows
-    all_labels_mc = [2] * len(easy_rows) + [1] * len(hard_rows) + [0] * len(unans_rows)
+        # Summary for this group
+        kw_sig = [r for r in kw_results if r["significant_p05"]]
+        pw_sig = [r for r in pw_results if r["significant_holm_p05"]]
+        print(f"\n  KW significant: {len(kw_sig)}/{len(kw_results)}")
+        print(f"  Pairwise significant (Holm): {len(pw_sig)}/{len(pw_results)}")
+        bin_auc  = loocv_results.get("binary_full", float("nan"))
+        multi_auc = loocv_results.get("multi_full", float("nan"))
+        print(f"  Binary LOOCV AUC:      {_fmt(bin_auc)}")
+        print(f"  Multinomial LOOCV AUC: {_fmt(multi_auc)}")
 
-    for feat in TOPOLOGY_FEATURES:
-        vals = [r.get(feat) for r in all_rows_mc]
-        if any(v is None for v in vals):
-            loocv_results[f"multi_{feat}"] = float("nan")
-            continue
-        loocv_results[f"multi_{feat}"] = _loocv_auc_multiclass(
-            [[v] for v in vals], all_labels_mc
-        )
+        all_group_data[grp_key] = {
+            "features":       features,
+            "kruskal_wallis": kw_results,
+            "pairwise_mw":    pw_results,
+            "loocv_auc":      {k: (None if isinstance(v, float) and math.isnan(v) else v)
+                               for k, v in loocv_results.items()},
+            "descriptive": {
+                grp: {f: _descriptive(_extract(rows, f)) for f in features}
+                for grp, rows in groups.items()
+            },
+        }
 
-    full_X_mc = [[r.get(f, 0.0) or 0.0 for f in TOPOLOGY_FEATURES]
-                 for r in all_rows_mc]
-    loocv_results["multi_full_topology"] = _loocv_auc_multiclass(
-        full_X_mc, all_labels_mc
-    )
-
-    # Top-3 by max |r| across pairs (per feature)
-    feat_max_r = {}
-    for feat in TOPOLOGY_FEATURES:
-        rs = [abs(r["rank_biserial_r"]) for r in pw_results
-              if r["feature"] == feat and not math.isnan(r["rank_biserial_r"])]
-        feat_max_r[feat] = max(rs) if rs else 0.0
-    top3 = sorted(TOPOLOGY_FEATURES, key=lambda f: feat_max_r[f], reverse=True)[:3]
-    loocv_results["multi_top3_by_effect"] = _loocv_auc_multiclass(
-        [[r.get(f, 0.0) or 0.0 for f in top3] for r in all_rows_mc],
-        all_labels_mc,
-    )
-
-    _print_loocv(loocv_results)
-
-    # ── 5. Judge score ─────────────────────────────────────────────────────
+    # ── Judge score ────────────────────────────────────────────────────────
     judge_groups = {k: _extract(v, "judge_score") for k, v in groups.items()}
     _print_judge(judge_groups)
 
-    # ── Summary ────────────────────────────────────────────────────────────
-    _print_section("Summary")
-    kw_sig = [r for r in kw_results if r["significant_p05"]]
-    pw_sig = [r for r in pw_results if r["significant_holm_p05"]]
-    print(f"  Kruskal-Wallis significant at p<0.05:  {len(kw_sig)}/{len(kw_results)}")
-    for r in kw_sig:
-        print(f"    • {r['feature']:<26} H={_fmt(r['H_stat'],2)}  p={_fmt(r['p_value'],4)}")
-    print(f"\n  Pairwise significant (Holm p<0.05):  {len(pw_sig)}/{len(pw_results)}")
-    for r in sorted(pw_sig, key=lambda x: abs(x["rank_biserial_r"]), reverse=True):
-        print(f"    • {r['feature']:<26} {r['group_a']} vs {r['group_b']:<14} "
-              f"r={_fmt(r['rank_biserial_r'])}  ({r['effect_label']})")
-    multi_auc = loocv_results.get("multi_full_topology", float("nan"))
-    bin_auc   = loocv_results.get("binary_full_topology", float("nan"))
-    print(f"\n  Binary LOOCV AUC (ans vs unans):    {_fmt(bin_auc)}")
-    print(f"  Multinomial LOOCV AUC (3-class):    {_fmt(multi_auc)}")
-
     # ── Output ─────────────────────────────────────────────────────────────
+    # Topology group is always present; expose its keys at the top level for
+    # backward compatibility with scripts that consumed the old output format.
+    topo = all_group_data["topology"]
     result = {
         "n_easy":         len(easy_rows),
         "n_hard":         len(hard_rows),
         "n_unanswerable": len(unans_rows),
+        "feature_groups": all_group_data,
+        # backward-compat aliases
         "features":       TOPOLOGY_FEATURES,
-        "descriptive": {
-            k: {f: _descriptive(_extract(v, f)) for f in TOPOLOGY_FEATURES}
-            for k, v in groups.items()
-        },
-        "kruskal_wallis": kw_results,
-        "pairwise_mw":    pw_results,
-        "loocv_auc":      {k: (None if math.isnan(v) else v)
-                           for k, v in loocv_results.items()},
+        "descriptive":    topo["descriptive"],
+        "kruskal_wallis": topo["kruskal_wallis"],
+        "pairwise_mw":    topo["pairwise_mw"],
+        "loocv_auc":      topo["loocv_auc"],
         "judge_score":    {k: _descriptive(v) for k, v in judge_groups.items()},
     }
 
@@ -963,29 +1223,56 @@ def main() -> None:
     if args.html:
         html_path = Path(args.html)
         stem = html_path.parent / html_path.stem
-        fig_paths: dict = {}
+        fig_paths: dict[str, str] = {}
 
         if _HAS_PLOT:
-            fig1 = str(stem) + "_fig1_boxplots.png"
-            fig2 = str(stem) + "_fig2_pairwise_effects.png"
-            fig3 = str(stem) + "_fig3_loocv.png"
-            fig4 = str(stem) + "_fig4_scatter.png"
-            _plot_boxplot_grid(groups, pw_results, fig1)
-            _plot_pairwise_effects(pw_results, fig2)
-            _plot_loocv_auc(loocv_results, fig3)
-            _plot_scatter(groups, fig4)
-            fig_paths = {
-                "fig1": html_path.stem + "_fig1_boxplots.png",
-                "fig2": html_path.stem + "_fig2_pairwise_effects.png",
-                "fig3": html_path.stem + "_fig3_loocv.png",
-                "fig4": html_path.stem + "_fig4_scatter.png",
-            }
+            # Per-group effect plots
+            for grp_key, features in active_groups.items():
+                pw = all_group_data[grp_key]["pairwise_mw"]
+                eff_file = str(stem) + f"_fig_{grp_key}_effects.png"
+                _plot_pairwise_effects(
+                    pw, features, eff_file,
+                    title=_GROUP_TITLES.get(grp_key, grp_key)
+                )
+                fig_paths[f"{grp_key}_effects"] = (html_path.stem
+                                                    + f"_fig_{grp_key}_effects.png")
+
+            # Topology boxplot and scatter (kept for backward compat)
+            topo_pw = all_group_data["topology"]["pairwise_mw"]
+            _plot_boxplot_grid(
+                groups, topo_pw,
+                _BOXPLOT_FEATURES["topology"],
+                str(stem) + "_fig1_boxplots.png",
+                title="Topology",
+            )
+            fig_paths["fig1"] = html_path.stem + "_fig1_boxplots.png"
+
+            _plot_scatter(groups, str(stem) + "_fig4_scatter.png")
+            fig_paths["topology_scatter"] = html_path.stem + "_fig4_scatter.png"
+
+            # Topology LOOCV (legacy fig3)
+            _plot_loocv_auc(
+                {k: v for k, v in (topo["loocv_auc"] or {}).items()
+                 if v is not None},
+                str(stem) + "_fig3_loocv.png",
+                title="Topology",
+            )
+            fig_paths["fig3"] = html_path.stem + "_fig3_loocv.png"
+
+            # Combined LOOCV across all groups (fig7)
+            combined_loocv_path = str(stem) + "_fig7_combined_loocv.png"
+            _plot_combined_loocv(
+                {k: v["loocv_auc"] for k, v in all_group_data.items()
+                 if v.get("loocv_auc")},
+                combined_loocv_path,
+            )
+            fig_paths["combined_loocv"] = html_path.stem + "_fig7_combined_loocv.png"
+
             print(f"Figures written to {stem}_fig*.png")
         else:
             print("Warning: matplotlib/seaborn not installed — skipping plots.")
 
-        html = _build_html(groups, kw_results, pw_results,
-                           loocv_results, judge_groups, fig_paths)
+        html = _build_html(groups, all_group_data, judge_groups, fig_paths)
         with open(html_path, "w") as f:
             f.write(html)
         print(f"HTML report written to {html_path}")

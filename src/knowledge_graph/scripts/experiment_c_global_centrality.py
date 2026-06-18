@@ -113,6 +113,11 @@ def main() -> None:
     parser.add_argument("--api-key", default=None)
     parser.add_argument("--no-llm", action="store_true")
     parser.add_argument("--output", default=None)
+    parser.add_argument("--unanswerable-benchmarks", default=None,
+                        help="Path to benchmarks_unanswerable.yaml; produces "
+                             "centrality features with no retrieval eval.")
+    parser.add_argument("--unanswerable-output", default=None,
+                        help="Output path for unanswerable-query centrality results.")
     parser.add_argument("-v", "--verbose", action="store_true")
     args = parser.parse_args()
 
@@ -125,8 +130,8 @@ def main() -> None:
     )
     from src.knowledge_graph.query import CanonicalLookup, KGNodeRetriever, extract_query_nodes
     from src.knowledge_graph.scripts.eval_utils import (
-        load_labeled_benchmarks, recall_at_k, scores_to_ranked_ids,
-        retrieved_tuples, llm_judge, print_table,
+        load_benchmarks, load_labeled_benchmarks, recall_at_k,
+        scores_to_ranked_ids, llm_judge, print_table,
     )
     import networkx as nx
 
@@ -324,8 +329,65 @@ def main() -> None:
     if args.output:
         out = Path(args.output)
         with open(out, "w") as f:
-            json.dump(result, f, indent=2, default=lambda o: None if math.isnan(float(o)) else float(o))
+            json.dump(result, f, indent=2,
+                      default=lambda o: None if math.isnan(float(o)) else float(o))
         print(f"Results written to {out}")
+
+    # ------------------------------------------------------------------
+    # Optional: compute centrality for unanswerable benchmarks
+    # ------------------------------------------------------------------
+    if args.unanswerable_benchmarks and args.unanswerable_output:
+        unans_bms = load_benchmarks(args.unanswerable_benchmarks)
+        print(f"\nComputing centrality for {len(unans_bms)} unanswerable benchmarks...")
+
+        unans_rows: list[dict] = []
+        for bm in unans_bms:
+            query = bm["question"]
+            query_nodes = extract_query_nodes(query, graph, canonical_lookup)
+
+            if query_nodes:
+                pr_vals  = [pagerank.get(n, 0.0)    for n in query_nodes]
+                bc_vals  = [betweenness.get(n, 0.0) for n in query_nodes]
+                deg_vals = [graph.degree(n)          for n in query_nodes]
+                mean_pr  = sum(pr_vals)  / len(pr_vals)
+                min_pr   = min(pr_vals)
+                mean_bc  = sum(bc_vals)  / len(bc_vals)
+                min_bc   = min(bc_vals)
+                mean_deg = sum(deg_vals) / len(deg_vals)
+                min_deg  = int(min(deg_vals))
+            else:
+                if args.verbose:
+                    print(f"  [{bm['id']}] No query nodes matched — centrality set to 0")
+                mean_pr = min_pr = mean_bc = min_bc = mean_deg = 0.0
+                min_deg = 0
+
+            row = {
+                "id": bm["id"],
+                "n_query_nodes": len(query_nodes),
+                "mean_pagerank":     round(mean_pr,  8),
+                "min_pagerank":      round(min_pr,   8),
+                "mean_betweenness":  round(mean_bc,  6),
+                "min_betweenness":   round(min_bc,   6),
+                "mean_degree":       round(mean_deg, 3),
+                "min_degree":        min_deg,
+            }
+            if args.verbose:
+                print(f"  [{bm['id']}] nodes={len(query_nodes)}"
+                      f"  PR={row['mean_pagerank']:.2e}"
+                      f"  BC={row['mean_betweenness']:.4f}"
+                      f"  deg={row['mean_degree']:.1f}")
+            unans_rows.append(row)
+
+        unans_result = {
+            "n_benchmarks": len(unans_rows),
+            "graph_stats": result["graph_stats"],
+            "per_query": unans_rows,
+        }
+        unans_out = Path(args.unanswerable_output)
+        with open(unans_out, "w") as f:
+            json.dump(unans_result, f, indent=2,
+                      default=lambda o: None if math.isnan(float(o)) else float(o))
+        print(f"Unanswerable results written to {unans_out}")
 
 
 if __name__ == "__main__":
