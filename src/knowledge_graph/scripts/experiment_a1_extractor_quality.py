@@ -45,10 +45,10 @@ def _normalize(text: str) -> str:
 def _hallucination_rate(keywords: list[str], source_text: str) -> float:
     if not keywords:
         return 0.0
-    source_norm = source_text.lower()
+    source_norm = re.sub(r"[^\w\s]", " ", source_text.lower())
     hallucinated = sum(
         1 for kw in keywords
-        if re.sub(r"[^\w\s]", "", kw.lower()).strip() not in source_norm
+        if re.sub(r"[^\w\s]", " ", kw.lower()).strip() not in source_norm
     )
     return hallucinated / len(keywords)
 

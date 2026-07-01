@@ -267,7 +267,7 @@ def extract_query_nodes_embedding(
             continue
         keyword = canonical_keywords[idx]
         if graph.has_node(keyword):
-            print(f"Embedding match: '{query}' → '{keyword}' (sim={sim:.4f})")
+            logger.debug("Embedding match: '%s' → '%s' (sim=%.4f)", query, keyword, sim)
             matched.append(keyword)
     return matched
 

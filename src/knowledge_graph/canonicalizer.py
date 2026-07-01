@@ -249,19 +249,6 @@ class Canonicalizer:
                         partial[self._normalize_kw(member)] = canonical
         return partial
 
-    def _llm_call(self, groups: list[list[str]]) -> dict[str, str]:
-        try:
-            content = self._client.chat(
-                model=self.llm_model,
-                messages=self._build_llm_messages(groups),
-                response_format={"type": "json_object"},
-            )
-            self._llm_calls += 1
-            return self._parse_llm_response(content)
-        except Exception as e:
-            logger.warning("LLM call failed after all attempts (%s) — batch skipped", e)
-            return {}
-
     def _apply(
         self, extractions: list[ExtractionResult], synonym_table: dict[str, str]
     ) -> list[ExtractionResult]:

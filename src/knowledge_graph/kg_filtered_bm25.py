@@ -118,7 +118,7 @@ class KGFilteredBM25Retriever(Retriever):
 
         for u, v in combinations(query_nodes, 2):
             if self.graph.has_edge(u, v):
-                print("Pair (%s, %s): direct edge — no bridge needed.", u, v)
+                logger.debug("Pair (%s, %s): direct edge — no bridge needed.", u, v)
                 continue
 
             try:
@@ -129,12 +129,12 @@ class KGFilteredBM25Retriever(Retriever):
                     weight=lambda a, b, d: self._inv_idf_edge_weight(a, b, d, idf),
                 )
             except (nx.NetworkXNoPath, nx.NodeNotFound):
-                print("Pair (%s, %s): no path in graph — skipped.", u, v)
+                logger.debug("Pair (%s, %s): no path in graph — skipped.", u, v)
                 continue
 
             hops = len(path) - 1
             if hops > 3:
-                print(
+                logger.debug(
                     "Pair (%s, %s): path length %d > 3 hops — skipped.", u, v, hops
                 )
                 continue
@@ -147,7 +147,7 @@ class KGFilteredBM25Retriever(Retriever):
             best = max(intermediates, key=lambda n: idf.get(n, 0.0))
             if best not in query_set:
                 bridge_nodes.append(best)
-                print(
+                logger.debug(
                     "Pair (%s, %s): injecting bridge '%s' (IDF=%.4f, path=%s).",
                     u, v, best, idf.get(best, 0.0), path,
                 )
@@ -190,12 +190,12 @@ class KGFilteredBM25Retriever(Retriever):
             the range [0, 1].
         """
         core_tokens = extract_query_nodes(query, self.graph, self.canonical_lookup)
-        print("Query: %r", query)
-        print("Core tokens (%d): %s", len(core_tokens), core_tokens)
+        logger.debug("Query: %r", query)
+        logger.debug("Core tokens (%d): %s", len(core_tokens), core_tokens)
 
         # ── Fallback ─────────────────────────────────────────────────────────
         if len(core_tokens) < 2:
-            print(
+            logger.debug(
                 "Fewer than 2 core tokens — falling back to standard BM25 on raw query."
             )
             raw = self._normalize(
@@ -205,7 +205,7 @@ class KGFilteredBM25Retriever(Retriever):
 
         # ── Expansion via bridge nodes ────────────────────────────────────────
         expansion_tokens = self._find_bridge_nodes(core_tokens)
-        print("Expansion tokens (%d): %s", len(expansion_tokens), expansion_tokens)
+        logger.debug("Expansion tokens (%d): %s", len(expansion_tokens), expansion_tokens)
 
         # ── Dual BM25 scoring ─────────────────────────────────────────────────
         core_scores = self._normalize(self._bm25_scores(query))
@@ -213,7 +213,7 @@ class KGFilteredBM25Retriever(Retriever):
 
         final_scores = 0.7 * core_scores + 0.3 * expanded_scores
 
-        print(
+        logger.debug(
             "Score stats — core max: %.4f, expanded max: %.4f, final max: %.4f",
             core_scores.max(), expanded_scores.max(), final_scores.max(),
         )
@@ -231,7 +231,7 @@ class KGFilteredBM25Retriever(Retriever):
             score = float(scores[idx])
             if score > 0 and int(idx) in self.kg_chunks:
                 result[int(idx)] = score
-        print(
+        logger.debug(
             "Returning %d chunks (top-5): %s",
             len(result),
             dict(sorted(result.items(), key=lambda x: x[1], reverse=True)[:5]),
