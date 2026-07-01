@@ -1,0 +1,434 @@
+{
+  "book_title": "Database System Concepts",
+  "edition": "Seventh Edition",
+  "parts": [
+    {
+      "part_name": "INTRODUCTION",
+      "chapters": [
+        {
+          "chapter_number": 1,
+          "chapter_title": "Introduction",
+          "subsections": [
+            "1.1 Database-System Applications",
+            "1.2 Purpose of Database Systems",
+            "1.3 View of Data",
+            "1.4 Database Languages",
+            "1.5 Database Design",
+            "1.6 Database Engine",
+            "1.7 Database and Application Architecture",
+            "1.8 Database Users and Administrators",
+            "1.9 History of Database Systems",
+            "1.10 Summary"
+          ]
+        }
+      ]
+    },
+    {
+      "part_name": "PART ONE RELATIONAL LANGUAGES",
+      "chapters": [
+        {
+          "chapter_number": 2,
+          "chapter_title": "Introduction to the Relational Model",
+          "subsections": [
+            "2.1 Structure of Relational Databases",
+            "2.2 Database Schema",
+            "2.3 Keys",
+            "2.4 Schema Diagrams",
+            "2.5 Relational Query Languages",
+            "2.6 The Relational Algebra",
+            "2.7 Summary"
+          ]
+        },
+        {
+          "chapter_number": 3,
+          "chapter_title": "Introduction to SQL",
+          "subsections": [
+            "3.1 Overview of the SQL Query Language",
+            "3.2 SQL Data Definition",
+            "3.3 Basic Structure of SQL Queries",
+            "3.4 Additional Basic Operations",
+            "3.5 Set Operations",
+            "3.6 Null Values",
+            "3.7 Aggregate Functions",
+            "3.8 Nested Subqueries",
+            "3.9 Modification of the Database",
+            "3.10 Summary"
+          ]
+        },
+        {
+          "chapter_number": 4,
+          "chapter_title": "Intermediate SQL",
+          "subsections": [
+            "4.1 Join Expressions",
+            "4.2 Views",
+            "4.3 Transactions",
+            "4.4 Integrity Constraints",
+            "4.5 SQL Data Types and Schemas",
+            "4.6 Index Definition in SQL",
+            "4.7 Authorization",
+            "4.8 Summary"
+          ]
+        },
+        {
+          "chapter_number": 5,
+          "chapter_title": "Advanced SQL",
+          "subsections": [
+            "5.1 Accessing SQL from a Programming Language",
+            "5.2 Functions and Procedures",
+            "5.3 Triggers",
+            "5.4 Recursive Queries",
+            "5.5 Advanced Aggregation Features",
+            "5.6 Summary"
+          ]
+        }
+      ]
+    },
+    {
+      "part_name": "PART TWO DATABASE DESIGN",
+      "chapters": [
+        {
+          "chapter_number": 6,
+          "chapter_title": "Database Design Using the E-R Model",
+          "subsections": [
+            "6.1 Overview of the Design Process",
+            "6.2 The Entity-Relationship Model",
+            "6.3 Complex Attributes",
+            "6.4 Mapping Cardinalities",
+            "6.5 Primary Key",
+            "6.6 Removing Redundant Attributes in Entity Sets",
+            "6.7 Reducing E-R Diagrams to Relational Schemas",
+            "6.8 Extended E-R Features",
+            "6.9 Entity-Relationship Design Issues",
+            "6.10 Alternative Notations for Modeling Data",
+            "6.11 Other Aspects of Database Design",
+            "6.12 Summary"
+          ]
+        },
+        {
+          "chapter_number": 7,
+          "chapter_title": "Relational Database Design",
+          "subsections": [
+            "7.1 Features of Good Relational Designs",
+            "7.2 Decomposition Using Functional Dependencies",
+            "7.3 Normal Forms",
+            "7.4 Functional-Dependency Theory",
+            "7.5 Algorithms for Decomposition Using Functional Dependencies",
+            "7.6 Decomposition Using Multivalued Dependencies",
+            "7.7 More Normal Forms",
+            "7.8 Atomic Domains and First Normal Form",
+            "7.9 Database-Design Process",
+            "7.10 Modeling Temporal Data",
+            "7.11 Summary"
+          ]
+        }
+      ]
+    },
+    {
+      "part_name": "PART THREE APPLICATION DESIGN AND DEVELOPMENT",
+      "chapters": [
+        {
+          "chapter_number": 8,
+          "chapter_title": "Complex Data Types",
+          "subsections": [
+            "8.1 Semi-structured Data",
+            "8.2 Object Orientation",
+            "8.3 Textual Data",
+            "8.4 Spatial Data",
+            "8.5 Summary"
+          ]
+        },
+        {
+          "chapter_number": 9,
+          "chapter_title": "Application Development",
+          "subsections": [
+            "9.1 Application Programs and User Interfaces",
+            "9.2 Web Fundamentals",
+            "9.3 Servlets",
+            "9.4 Alternative Server-Side Frameworks",
+            "9.5 Client-Side Code and Web Services",
+            "9.6 Application Architectures",
+            "9.7 Application Performance",
+            "9.8 Application Security",
+            "9.9 Encryption and Its Applications",
+            "9.10 Summary"
+          ]
+        }
+      ]
+    },
+    {
+      "part_name": "PART FOUR BIG DATA ANALYTICS",
+      "chapters": [
+        {
+          "chapter_number": 10,
+          "chapter_title": "Big Data",
+          "subsections": [
+            "10.1 Motivation",
+            "10.2 Big Data Storage Systems",
+            "10.3 The MapReduce Paradigm",
+            "10.4 Beyond MapReduce: Algebraic Operations",
+            "10.5 Streaming Data",
+            "10.6 Graph Databases",
+            "10.7 Summary"
+          ]
+        },
+        {
+          "chapter_number": 11,
+          "chapter_title": "Data Analytics",
+          "subsections": [
+            "11.1 Overview of Analytics",
+            "11.2 Data Warehousing",
+            "11.3 Online Analytical Processing",
+            "11.4 Data Mining",
+            "11.5 Summary"
+          ]
+        }
+      ]
+    },
+    {
+      "part_name": "PART FIVE STORAGE MANAGEMENT AND INDEXING",
+      "chapters": [
+        {
+          "chapter_number": 12,
+          "chapter_title": "Physical Storage Systems",
+          "subsections": [
+            "12.1 Overview of Physical Storage Media",
+            "12.2 Storage Interfaces",
+            "12.3 Magnetic Disks",
+            "12.4 Flash Memory",
+            "12.5 RAID",
+            "12.6 Disk-Block Access",
+            "12.7 Summary"
+          ]
+        },
+        {
+          "chapter_number": 13,
+          "chapter_title": "Data Storage Structures",
+          "subsections": [
+            "13.1 Database Storage Architecture",
+            "13.2 File Organization",
+            "13.3 Organization of Records in Files",
+            "13.4 Data-Dictionary Storage",
+            "13.5 Database Buffer",
+            "13.6 Column-Oriented Storage",
+            "13.7 Storage Organization in Main-Memory Databases",
+            "13.8 Summary"
+          ]
+        },
+        {
+          "chapter_number": 14,
+          "chapter_title": "Indexing",
+          "subsections": [
+            "14.1 Basic Concepts",
+            "14.2 Ordered Indices",
+            "14.3 B+-Tree Index Files",
+            "14.4 B+-Tree Extensions",
+            "14.5 Hash Indices",
+            "14.6 Multiple-Key Access",
+            "14.7 Creation of Indices",
+            "14.8 Write-Optimized Index Structures",
+            "14.9 Bitmap Indices",
+            "14.10 Indexing of Spatial and Temporal Data",
+            "14.11 Summary"
+          ]
+        }
+      ]
+    },
+    {
+      "part_name": "PART SIX QUERY PROCESSING AND OPTIMIZATION",
+      "chapters": [
+        {
+          "chapter_number": 15,
+          "chapter_title": "Query Processing",
+          "subsections": [
+            "15.1 Overview",
+            "15.2 Measures of Query Cost",
+            "15.3 Selection Operation",
+            "15.4 Sorting",
+            "15.5 Join Operation",
+            "15.6 Other Operations",
+            "15.7 Evaluation of Expressions",
+            "15.8 Query Processing in Memory",
+            "15.9 Summary"
+          ]
+        },
+        {
+          "chapter_number": 16,
+          "chapter_title": "Query Optimization",
+          "subsections": [
+            "16.1 Overview",
+            "16.2 Transformation of Relational Expressions",
+            "16.3 Estimating Statistics of Expression Results",
+            "16.4 Choice of Evaluation Plans",
+            "16.5 Materialized Views",
+            "16.6 Advanced Topics in Query Optimization",
+            "16.7 Summary"
+          ]
+        }
+      ]
+    },
+    {
+      "part_name": "PART SEVEN TRANSACTION MANAGEMENT",
+      "chapters": [
+        {
+          "chapter_number": 17,
+          "chapter_title": "Transactions",
+          "subsections": [
+            "17.1 Transaction Concept",
+            "17.2 A Simple Transaction Model",
+            "17.3 Storage Structure",
+            "17.4 Transaction Atomicity and Durability",
+            "17.5 Transaction Isolation",
+            "17.6 Serializability",
+            "17.7 Transaction Isolation and Atomicity",
+            "17.8 Transaction Isolation Levels",
+            "17.9 Implementation of Isolation Levels",
+            "17.10 Transactions as SQL Statements",
+            "17.11 Summary"
+          ]
+        },
+        {
+          "chapter_number": 18,
+          "chapter_title": "Concurrency Control",
+          "subsections": [
+            "18.1 Lock-Based Protocols",
+            "18.2 Deadlock Handling",
+            "18.3 Multiple Granularity",
+            "18.4 Insert Operations, Delete Operations, and Predicate Reads",
+            "18.5 Timestamp-Based Protocols",
+            "18.6 Validation-Based Protocols",
+            "18.7 Multiversion Schemes",
+            "18.8 Snapshot Isolation",
+            "18.9 Weak Levels of Consistency in Practice",
+            "18.10 Advanced Topics in Concurrency Control",
+            "18.11 Summary"
+          ]
+        },
+        {
+          "chapter_number": 19,
+          "chapter_title": "Recovery System",
+          "subsections": [
+            "19.1 Failure Classification",
+            "19.2 Storage",
+            "19.3 Recovery and Atomicity",
+            "19.4 Recovery Algorithm",
+            "19.5 Buffer Management",
+            "19.6 Failure with Loss of Non-Volatile Storage",
+            "19.7 High Availability Using Remote Backup Systems",
+            "19.8 Early Lock Release and Logical Undo Operations",
+            "19.9 ARIES",
+            "19.10 Recovery in Main-Memory Databases",
+            "19.11 Summary"
+          ]
+        }
+      ]
+    },
+    {
+      "part_name": "PART EIGHT PARALLEL AND DISTRIBUTED DATABASES",
+      "chapters": [
+        {
+          "chapter_number": 20,
+          "chapter_title": "Database-System Architectures",
+          "subsections": [
+            "20.1 Overview",
+            "20.2 Centralized Database Systems",
+            "20.3 Server System Architectures",
+            "20.4 Parallel Systems",
+            "20.5 Distributed Systems",
+            "20.6 Transaction Processing in Parallel and Distributed Systems",
+            "20.7 Cloud-Based Services",
+            "20.8 Summary"
+          ]
+        },
+        {
+          "chapter_number": 21,
+          "chapter_title": "Parallel and Distributed Storage",
+          "subsections": [
+            "21.1 Overview",
+            "21.2 Data Partitioning",
+            "21.3 Dealing with Skew in Partitioning",
+            "21.4 Replication",
+            "21.5 Parallel Indexing",
+            "21.6 Distributed File Systems",
+            "21.7 Parallel Key-Value Stores",
+            "21.8 Summary"
+          ]
+        },
+        {
+          "chapter_number": 22,
+          "chapter_title": "Parallel and Distributed Query Processing",
+          "subsections": [
+            "22.1 Overview",
+            "22.2 Parallel Sort",
+            "22.3 Parallel Join",
+            "22.4 Other Operations",
+            "22.5 Parallel Evaluation of Query Plans",
+            "22.6 Query Processing on Shared-Memory Architectures",
+            "22.7 Query Optimization for Parallel Execution",
+            "22.8 Parallel Processing of Streaming Data",
+            "22.9 Distributed Query Processing",
+            "22.10 Summary"
+          ]
+        },
+        {
+          "chapter_number": 23,
+          "chapter_title": "Parallel and Distributed Transaction Processing",
+          "subsections": [
+            "23.1 Distributed Transactions",
+            "23.2 Commit Protocols",
+            "23.3 Concurrency Control in Distributed Databases",
+            "23.4 Replication",
+            "23.5 Extended Concurrency Control Protocols",
+            "23.6 Replication with Weak Degrees of Consistency",
+            "23.7 Coordinator Selection",
+            "23.8 Consensus in Distributed Systems",
+            "23.9 Summary"
+          ]
+        }
+      ]
+    },
+    {
+      "part_name": "PART NINE ADVANCED TOPICS",
+      "chapters": [
+        {
+          "chapter_number": 24,
+          "chapter_title": "Advanced Indexing Techniques",
+          "subsections": [
+            "24.1 Bloom Filter",
+            "24.2 Log-Structured Merge Tree and Variants",
+            "24.3 Bitmap Indices",
+            "24.4 Indexing of Spatial Data",
+            "24.5 Hash Indices",
+            "24.6 Summary"
+          ]
+        },
+        {
+          "chapter_number": 25,
+          "chapter_title": "Advanced Application Development",
+          "subsections": [
+            "25.1 Performance Tuning",
+            "25.2 Performance Benchmarks",
+            "25.3 Other Issues in Application Development",
+            "25.4 Standardization",
+            "25.5 Distributed Directory Systems",
+            "25.6 Summary"
+          ]
+        },
+        {
+          "chapter_number": 26,
+          "chapter_title": "Blockchain Databases",
+          "subsections": [
+            "26.1 Overview",
+            "26.2 Blockchain Properties",
+            "26.3 Achieving Blockchain Properties via Cryptographic Hash Functions",
+            "26.4 Consensus",
+            "26.5 Data Management in a Blockchain",
+            "26.6 Smart Contracts",
+            "26.7 Performance Enhancement",
+            "26.8 Emerging Applications",
+            "26.9 Summary"
+          ]
+        }
+      ]
+    }
+  ]
+}

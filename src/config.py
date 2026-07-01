@@ -25,7 +25,14 @@ class RAGConfig:
     ensemble_method: str = "rrf"
     rrf_k: int = 60
     ranker_weights: Dict[str, float] = field(
-        default_factory=lambda: {"faiss": 1.0, "bm25": 0.0, "index_keywords": 0.0}
+        default_factory=lambda: {
+            "faiss": 1.0,
+            "bm25": 0.0,
+            "index_keywords": 0.0,
+            "kg_node": 0.0,
+            "section_tree": 0.0,
+            "section_summary": 0.0,
+        }
     )
     rerank_mode: str = ""
     rerank_top_k: int = 5
@@ -55,6 +62,12 @@ class RAGConfig:
     enable_history: bool = True
     max_history_turns: int = 3
 
+    # knowledge graph retrieval
+    kg_graph_dir: str = ""
+    kg_heading_alpha: float = 0.5  # heading sim vs KG keyword blend: 1 = heading-only, 0 = KG-only
+    kg_inheritance_decay: float = 0.5  # parent→child score decay in top-down propagation
+
+    
     # index parameters
     use_indexed_chunks: bool = False
     extracted_index_path: os.PathLike = "data/extracted_index.json"
@@ -68,6 +81,7 @@ class RAGConfig:
     def from_yaml(cls, path: os.PathLike) -> RAGConfig:
         with open(path, 'r') as f:
             data = yaml.safe_load(f)
+        data.pop("kg_pipeline", None)
         return cls(**data)
 
     def __post_init__(self):

@@ -89,9 +89,13 @@ class Retriever(ABC):
 class FAISSRetriever(Retriever):
     name = "faiss"
 
-    def __init__(self, index, embed_model: str):
+    def __init__(self, index, embed_model: str, chunk_id_map: Optional[List[int]] = None):
         self.index = index
         self.embedder = _get_embedder(embed_model)
+        # Maps list position → global chunk_id (from metadata). When provided,
+        # get_scores remaps its output keys so they align with the KG/benchmark
+        # chunk ID space (which uses metadata chunk_ids, not list positions).
+        self.chunk_id_map = chunk_id_map
 
     def get_scores(self,
                 query: str,
@@ -102,11 +106,11 @@ class FAISSRetriever(Retriever):
         """
         # FAISS expects a 2D array
         q_vec = self.embedder.encode([query]).astype("float32")
-        
+
         # Safety check on vector dimensions
         if q_vec.shape[1] !=  self.index.d:
             raise ValueError(
-                f"Embedding dim mismatch: index={ self.index.d} vs query={q_vec.shape[1]}"
+                f"Embedding dim mismatch: index={self.index.d} vs query={q_vec.shape[1]}"
             )
 
         # Perform the search
@@ -119,10 +123,12 @@ class FAISSRetriever(Retriever):
         dists = {idx: float(dist) for idx, dist in zip(cand_idxs, distances[0][:len(cand_idxs)])}
 
         # Invert distance to score: 1 / (1 + distance). Adding 1 avoids division by zero.
-        return {
-            idx: 1.0 / (1.0 + dist)
-            for idx, dist in dists.items()
-        }
+        scores = {idx: 1.0 / (1.0 + dist) for idx, dist in dists.items()}
+
+        if self.chunk_id_map is not None:
+            scores = {self.chunk_id_map[idx]: score for idx, score in scores.items()}
+
+        return scores
 
 
 class BM25Retriever(Retriever):

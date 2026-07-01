@@ -1,0 +1,194 @@
+benchmarks:
+- id: uchp_sirchesi_2028_outcomes
+  question: What are the specific quantitative health outcomes, such as HIV transmission
+    rates, of the SiRCHESI project for the year 2028?
+  expected_answer: The textbook cannot answer this question. It describes the SiRCHESI
+    project's participatory framework and its success in reducing HIV transmission among
+    high-risk groups in Cambodia up to its publication date, but provides no longitudinal
+    data for years following the book's current timeline. 2028 is beyond the source
+    material.
+  keywords:
+  - SiRCHESI
+  - HIV transmission
+  - Cambodia
+  - quantitative outcomes
+  - 2028
+  similarity_threshold: 0.3
+  ideal_retrieved_chunks: []
+  answerable: false
+  reason_unanswerable: Requires future longitudinal data (2028) beyond the textbook's
+    publication timeline.
+
+- id: uchp_samoan_healing_protocols
+  question: How do the specific traditional healing protocols and herbal recipes in
+    the Samoan islands of Upolu and Savai'i differ from one another?
+  expected_answer: The textbook cannot answer this question. It discusses Samoan community
+    leaders' beliefs regarding pain and illness within the context of Aotearoa New Zealand,
+    but does not provide a detailed comparison of regional traditional healing practices
+    or herbal recipes between Upolu and Savai'i specifically.
+  keywords:
+  - Samoan healing
+  - traditional protocols
+  - herbal recipes
+  - Upolu
+  - Savai'i
+  similarity_threshold: 0.3
+  ideal_retrieved_chunks: []
+  answerable: false
+  reason_unanswerable: Requires intra-Samoa regional clinical detail not present in
+    the textbook.
+
+- id: uchp_17thc_melancholy_treatment
+  question: What were the exact pharmacological guidelines and bloodletting protocols
+    used by 17th-century European physicians to treat "melancholy"?
+  expected_answer: The textbook cannot answer this question. It provides a historical
+    overview of how Western understandings of health and treatment have evolved, but
+    does not detail specific clinical prescriptions or physical intervention protocols
+    from 17th-century European medicine.
+  keywords:
+  - melancholy
+  - bloodletting
+  - pharmacological guidelines
+  - 17th century
+  - European physicians
+  similarity_threshold: 0.3
+  ideal_retrieved_chunks: []
+  answerable: false
+  reason_unanswerable: Requires specific historical clinical prescriptions not covered
+    by the textbook.
+
+- id: uchp_ndis_2027_prosthetics
+  question: What specific funding clauses in the 2027 Australian National Disability
+    Insurance Scheme (NDIS) Act regulate the government's coverage of advanced robotic
+    prosthetic limbs?
+  expected_answer: The textbook cannot answer this question. It offers a critical evaluation
+    of the NDIS and its bureaucratic assessment processes, but does not contain specific
+    legislative text or future funding criteria for medical technology from a 2027
+    version of the Act.
+  keywords:
+  - NDIS
+  - National Disability Insurance Scheme
+  - robotic prosthetics
+  - funding clauses
+  - 2027
+  similarity_threshold: 0.3
+  ideal_retrieved_chunks: []
+  answerable: false
+  reason_unanswerable: Requires future legislative text (2027 Act) and medical technology
+    funding criteria not in the textbook.
+
+- id: uchp_flibanserin_dosage
+  question: What is the precise clinical dosage of Flibanserin ("Pink Viagra") recommended
+    by the manufacturer for a 45-year-old woman with no underlying comorbidities?
+  expected_answer: The textbook cannot answer this question. It critically analyses
+    the medicalisation of female desire and the controversy surrounding Flibanserin's
+    efficacy, but as a critical textbook rather than a clinical manual it does not
+    provide pharmacological prescribing information or manufacturer dosage guidelines.
+  keywords:
+  - Flibanserin
+  - Pink Viagra
+  - clinical dosage
+  - prescribing information
+  - female sexual dysfunction
+  similarity_threshold: 0.3
+  ideal_retrieved_chunks: []
+  answerable: false
+  reason_unanswerable: Requires manufacturer prescribing information not present in
+    a critical health psychology textbook.
+
+- id: uchp_nigeria_obesity_2026
+  question: What is the current adult obesity rate in Nigeria as of mid-2026, and
+    how does it compare to the regional average for West Africa?
+  expected_answer: The textbook cannot answer this question. It mentions obesity statistics
+    for Aotearoa New Zealand and the OECD to illustrate healthism, but does not include
+    specific demographic or health data for West African nations, nor data from mid-2026.
+  keywords:
+  - obesity rate
+  - Nigeria
+  - West Africa
+  - 2026
+  - regional average
+  similarity_threshold: 0.3
+  ideal_retrieved_chunks: []
+  answerable: false
+  reason_unanswerable: Requires out-of-corpus geographic data (West Africa) and post-publication
+    statistics (2026).
+
+- id: uchp_treaty_principles_bill_2025
+  question: How did the termination of the Treaty Principles Bill in 2025 specifically
+    impact the recruitment and retention rates of Māori clinical psychologists in
+    the five years following its removal?
+  expected_answer: The textbook cannot answer this question. It records that the Treaty
+    Principles Bill was terminated in April 2025 and discusses the ongoing underrepresentation
+    of Māori in the psychology workforce, but cannot provide retrospective longitudinal
+    workforce data for the years after 2025.
+  keywords:
+  - Treaty Principles Bill
+  - 2025
+  - Māori clinical psychologists
+  - recruitment
+  - retention
+  similarity_threshold: 0.3
+  ideal_retrieved_chunks: []
+  answerable: false
+  reason_unanswerable: Requires post-publication longitudinal workforce data (2026–2030)
+    not yet in existence at the time of writing.
+
+- id: uchp_moumoukai_nitrates
+  question: What are the specific parts per million (ppm) concentrations of nitrates
+    currently present in the Moumoukai awa (river) in the Hawke's Bay?
+  expected_answer: The textbook cannot answer this question. It identifies the Moumoukai
+    awa as an ancestral site and discusses the importance of te taiao (the environment)
+    for hauora, but does not provide environmental science data or chemical water analysis
+    for that river.
+  keywords:
+  - Moumoukai awa
+  - nitrates
+  - parts per million
+  - Hawke's Bay
+  - water quality
+  similarity_threshold: 0.3
+  ideal_retrieved_chunks: []
+  answerable: false
+  reason_unanswerable: Requires environmental chemistry data (water analysis) not
+    present in a health psychology textbook.
+
+- id: uchp_biographical_flow_parkinsons_japan
+  question: How do critical health psychologists in Japan specifically adapt the concept
+    of "biographical flow" when working with patients diagnosed with early-onset Parkinson's
+    disease?
+  expected_answer: The textbook cannot answer this question. It defines "biographical
+    flow" as an alternative to "biographical disruption" and examines Japanese cultural
+    views on menopause, but does not combine these specific concepts in a clinical
+    application for Parkinson's disease in Japan.
+  keywords:
+  - biographical flow
+  - Japan
+  - Parkinson's disease
+  - early-onset
+  - clinical application
+  similarity_threshold: 0.3
+  ideal_retrieved_chunks: []
+  answerable: false
+  reason_unanswerable: Requires a combination of concepts (biographical flow + Japan
+    + Parkinson's) not synthesised anywhere in the textbook.
+
+- id: uchp_south_africa_rainbow_psychologists
+  question: What is the exact percentage of the professional psychology workforce
+    in South Africa that self-identifies as part of the Rainbow community according
+    to the 2024 census?
+  expected_answer: The textbook cannot answer this question. It discusses sexual and
+    reproductive health experiences for sexual minorities in South Africa and disability
+    rates of the Rainbow community in Aotearoa New Zealand, but does not provide psychological
+    workforce demographic data for South Africa from any census.
+  keywords:
+  - Rainbow community
+  - South Africa
+  - psychology workforce
+  - 2024 census
+  - demographic data
+  similarity_threshold: 0.3
+  ideal_retrieved_chunks: []
+  answerable: false
+  reason_unanswerable: Requires South African workforce census data not present in
+    the textbook.

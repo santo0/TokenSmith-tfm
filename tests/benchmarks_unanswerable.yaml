@@ -1,0 +1,190 @@
+benchmarks:
+- id: udsc_ssd_price_2026
+  question: What is the current market price of a 20-terabyte Solid State Drive (SSD)
+    in 2026?
+  expected_answer: The textbook cannot answer this question. It provides storage cost
+    estimates only as of 2018, noting that a 1-terabyte SSD cost approximately $250
+    at that time, but contains no pricing data for later years or for the 20-terabyte
+    capacity tier.
+  keywords:
+  - SSD
+  - solid state drive
+  - market price
+  - 2026
+  - storage cost
+  similarity_threshold: 0.3
+  ideal_retrieved_chunks: []
+  answerable: false
+  reason_unanswerable: Requires post-publication hardware pricing data (2026) beyond
+    the textbook's 2018 cost estimates.
+
+- id: udsc_mobile_app_kotlin_swift
+  question: How do you write a complete mobile application in Kotlin or Swift to interface
+    with a database?
+  expected_answer: The textbook cannot answer this question. It acknowledges the importance
+    of mobile application interfaces and mentions development frameworks in passing,
+    but explicitly states that mobile application development is outside the book's
+    scope.
+  keywords:
+  - mobile application
+  - Kotlin
+  - Swift
+  - mobile development
+  - database interface
+  similarity_threshold: 0.3
+  ideal_retrieved_chunks: []
+  answerable: false
+  reason_unanswerable: Mobile application development is explicitly excluded from
+    the textbook's stated scope.
+
+- id: udsc_3nf_synthesis_proof
+  question: What is the formal mathematical proof for the correctness of the 3NF synthesis
+    algorithm?
+  expected_answer: The textbook cannot answer this question. Its preface states that
+    while important theoretical results are covered, formal proofs are omitted throughout
+    in favour of intuitive descriptions, figures, and examples.
+  keywords:
+  - 3NF
+  - third normal form
+  - synthesis algorithm
+  - formal proof
+  - mathematical proof
+  similarity_threshold: 0.3
+  ideal_retrieved_chunks: []
+  answerable: false
+  reason_unanswerable: Formal mathematical proofs are explicitly omitted from the
+    textbook by design.
+
+- id: udsc_postgresql_17_18_syntax
+  question: What specific SQL syntax additions were introduced in PostgreSQL 17 or
+    18?
+  expected_answer: The textbook cannot answer this question. It references popular
+    database manuals as of 2018, including MySQL 8.0 and Oracle 12c, but contains
+    no information on PostgreSQL releases or SQL extensions introduced after the book's
+    publication.
+  keywords:
+  - PostgreSQL
+  - SQL syntax
+  - version 17
+  - version 18
+  - database release
+  similarity_threshold: 0.3
+  ideal_retrieved_chunks: []
+  answerable: false
+  reason_unanswerable: Requires information on software releases (PostgreSQL 17/18)
+    that post-date the textbook's 2018 reference frame.
+
+- id: udsc_nosql_market_share_2025
+  question: Which specific NoSQL database currently holds the largest market share
+    in the financial services industry as of 2025?
+  expected_answer: The textbook cannot answer this question. It lists commercial and
+    open-source NoSQL and key-value systems such as MongoDB, Cassandra, and HBase,
+    but provides no market share statistics or industry-specific adoption data for
+    the mid-2020s.
+  keywords:
+  - NoSQL
+  - market share
+  - financial services
+  - 2025
+  - MongoDB
+  similarity_threshold: 0.3
+  ideal_retrieved_chunks: []
+  answerable: false
+  reason_unanswerable: Requires post-publication market share statistics (2025) and
+    industry-specific adoption data not present in the textbook.
+
+- id: udsc_linux_nvme_kernel_config
+  question: How do you configure the specific kernel parameters of a Linux-based operating
+    system to optimise the performance of an NVMe storage array?
+  expected_answer: The textbook cannot answer this question. It discusses the influence
+    of operating systems on database management and the physical properties of storage
+    media, but does not provide OS-level configuration steps or command-line instructions
+    for specific modern hardware such as NVMe.
+  keywords:
+  - Linux
+  - kernel parameters
+  - NVMe
+  - storage performance
+  - OS configuration
+  similarity_threshold: 0.3
+  ideal_retrieved_chunks: []
+  answerable: false
+  reason_unanswerable: Requires detailed OS-level configuration procedures for specific
+    modern hardware not covered in the textbook.
+
+- id: udsc_sql_server_optimizer_source
+  question: What is the exact internal source code for the query optimizer used in
+    the latest version of Microsoft SQL Server?
+  expected_answer: The textbook cannot answer this question. The authors state their
+    aim is to present fundamental concepts and algorithms in a general setting not
+    tied to any particular database system, and the book contains no proprietary source
+    code for commercial query optimizers.
+  keywords:
+  - SQL Server
+  - query optimizer
+  - source code
+  - Microsoft
+  - proprietary
+  similarity_threshold: 0.3
+  ideal_retrieved_chunks: []
+  answerable: false
+  reason_unanswerable: Requires proprietary commercial source code that the textbook
+    explicitly does not cover by design.
+
+- id: udsc_sudarshan_patents_2020_2026
+  question: How many additional patents did author S. Sudarshan obtain between 2020
+    and 2026?
+  expected_answer: The textbook cannot answer this question. The biographical information
+    reflects the author's status at the time of publication, recording that he had
+    obtained 15 patents as of that date, but provides no information on patent activity
+    in subsequent years.
+  keywords:
+  - Sudarshan
+  - patents
+  - author biography
+  - 2020
+  - 2026
+  similarity_threshold: 0.3
+  ideal_retrieved_chunks: []
+  answerable: false
+  reason_unanswerable: Requires post-publication biographical data on the author's
+    patent activity beyond what is recorded at the time of writing.
+
+- id: udsc_dna_storage_specifications
+  question: What are the detailed physical specifications and data density limits for
+    DNA-based data storage?
+  expected_answer: The textbook cannot answer this question. It covers physical storage
+    media including magnetic disks, flash memory, optical storage, and magnetic tapes,
+    but contains no information on experimental or emerging technologies such as DNA-based
+    storage developed in the 2020s.
+  keywords:
+  - DNA storage
+  - data density
+  - physical specifications
+  - emerging storage
+  - biological storage
+  similarity_threshold: 0.3
+  ideal_retrieved_chunks: []
+  answerable: false
+  reason_unanswerable: Requires data on experimental storage technologies (DNA storage)
+    not present in the textbook's coverage of physical media.
+
+- id: udsc_netflix_collaborative_filtering_2024
+  question: How does the specific collaborative filtering algorithm used by Netflix
+    in 2024 differ from the general principles described in the text?
+  expected_answer: The textbook cannot answer this question. It explains the general
+    intuition behind collaborative filtering and clustering for movie recommendations,
+    but contains no information on the specific, evolving proprietary algorithms used
+    by Netflix or other private companies in later years.
+  keywords:
+  - Netflix
+  - collaborative filtering
+  - 2024
+  - recommendation algorithm
+  - proprietary algorithm
+  similarity_threshold: 0.3
+  ideal_retrieved_chunks: []
+  answerable: false
+  reason_unanswerable: Requires knowledge of a specific proprietary algorithm (Netflix
+    2024) that post-dates and falls outside the textbook's general treatment of collaborative
+    filtering.

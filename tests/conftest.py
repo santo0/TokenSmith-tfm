@@ -119,6 +119,26 @@ def pytest_addoption(parser):
         help="Override similarity threshold for all tests"
     )
     
+    # === KG Retriever ===
+    group.addoption(
+        "--kg-run-dir",
+        default=None,
+        help="KG run directory to enable KG-based retrieval (e.g. runs/latest). "
+             "When set, KG retrievers replace FAISS/BM25 for chunk selection.",
+    )
+    group.addoption(
+        "--kg-num-hops",
+        type=int,
+        default=1,
+        help="Number of graph hops for KG neighbourhood expansion (default: 1)",
+    )
+    group.addoption(
+        "--kg-neighbor-weight",
+        type=float,
+        default=0.5,
+        help="Score weight for KG neighbour nodes (default: 0.5)",
+    )
+
     # === Utility Options ===
     group.addoption(
         "--list-metrics",
@@ -177,6 +197,11 @@ def config(pytestconfig):
         # Query Enhancement (HyDE)
         "use_hyde": cfg.get("use_hyde", False),
         "hyde_max_tokens": cfg.get("hyde_max_tokens", 300),
+
+        # KG retrieval
+        "kg_run_dir": pytestconfig.getoption("--kg-run-dir") or cfg.get("kg_run_dir", None),
+        "kg_num_hops": pytestconfig.getoption("--kg-num-hops"),
+        "kg_neighbor_weight": pytestconfig.getoption("--kg-neighbor-weight"),
     }
 
     # Handle enable/disable chunks
@@ -220,6 +245,38 @@ def benchmarks(pytestconfig, config):
     
     print(f"\n📋 Running all {len(all_benchmarks)} benchmarks")
     return all_benchmarks
+
+
+@pytest.fixture(scope="session")
+def kg_artifacts(config):
+    """Load KG graph, chunks, and retriever data if --kg-run-dir is configured."""
+    kg_run_dir = config.get("kg_run_dir")
+    if not kg_run_dir:
+        return None
+
+    from src.knowledge_graph.io import (
+        load_graph_chunks_and_tree,
+        load_canonicalization_data,
+        load_summary_data,
+        resolve_run_dir,
+    )
+    from src.knowledge_graph.query import CanonicalLookup
+
+    kg_graph, chunks, tree = load_graph_chunks_and_tree(kg_run_dir)
+    resolved = resolve_run_dir(kg_run_dir)
+    syn_table, can_kw, can_emb = load_canonicalization_data(resolved)
+    canonical_lookup = (
+        CanonicalLookup(syn_table, can_kw, can_emb) if syn_table is not None else None
+    )
+    index, entries = load_summary_data(resolved)
+    return {
+        "graph": kg_graph,
+        "chunks": chunks,
+        "tree": tree,
+        "canonical_lookup": canonical_lookup,
+        "summary_index": index,
+        "summary_entries": entries,
+    }
 
 
 @pytest.fixture(scope="session")

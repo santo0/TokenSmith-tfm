@@ -1,0 +1,550 @@
+import logging
+
+import faiss
+import networkx as nx
+import numpy as np
+from sklearn.metrics.pairwise import cosine_similarity as cos_sim
+
+from src.retriever import Retriever
+from src.knowledge_graph.io import RUNS_DIR, load_graph_and_chunks
+from src.knowledge_graph.section_tree import SectionTree
+from src.knowledge_graph.summary_tree import SummaryEntry
+from src.knowledge_graph.ngrams import KW_PATTERN, extract_ngrams_with_spans
+from src.knowledge_graph.normalizer import Normalizer
+
+logger = logging.getLogger(__name__)
+
+# Shared normalizer instance, spaCy model is expensive to load
+_normalizer = Normalizer()
+
+
+class CanonicalLookup:
+    """Resolves a normalized keyword to its canonical form at query time.
+
+    Uses a pre-built synonym table (dict lookup, O(1)) for known keywords.
+    For unknown keywords, falls back to embedding-based nearest-neighbor search
+    against canonical keyword embeddings, gated by a similarity threshold.
+
+    Args:
+        synonym_table: Mapping of normalized keyword → canonical form (synonyms only,
+            no identity entries).
+        canonical_keywords: Ordered list of canonical forms (aligned with embeddings).
+        canonical_embeddings: Embedding matrix for canonical keywords (shape N × D).
+        embedding_model: Sentence-transformer model name (must match the model used
+            during offline canonicalization).
+        fallback_threshold: Minimum cosine similarity for the embedding fallback to
+            accept a canonical match (default 0.85).
+    """
+
+    def __init__(
+        self,
+        synonym_table: dict[str, str],
+        canonical_keywords: list[str],
+        canonical_embeddings: np.ndarray,
+        embedding_model: str = "sentence-transformers/all-MiniLM-L6-v2",
+        fallback_threshold: float = 0.85,
+    ):
+        self.synonym_table = synonym_table
+        self.canonical_keywords = canonical_keywords
+        self.canonical_embeddings = canonical_embeddings
+        self.fallback_threshold = fallback_threshold
+        self._model_name = embedding_model
+        self._model = None  # lazy-load
+
+    def resolve_with_score(self, keyword: str) -> tuple[str, float]:
+        """Return ``(canonical_form, confidence)`` for *keyword*.
+
+        Confidence values:
+        - ``1.0`` for a synonym-table hit.
+        - Cosine similarity (≥ fallback_threshold) for an embedding hit.
+        - ``0.0`` if no mapping is found (original keyword returned).
+        """
+        if keyword in self.synonym_table:
+            return self.synonym_table[keyword], 1.0
+
+        if self._model is None:
+            from sentence_transformers import SentenceTransformer
+            self._model = SentenceTransformer(self._model_name)
+
+        emb = self._model.encode([keyword])
+        sims = cos_sim(emb, self.canonical_embeddings)[0]
+        best_idx = int(np.argmax(sims))
+        if sims[best_idx] >= self.fallback_threshold:
+            return self.canonical_keywords[best_idx], float(sims[best_idx])
+
+        return keyword, 0.0
+
+    def resolve(self, keyword: str) -> str:
+        """Return the canonical form for *keyword*.
+
+        1. Dictionary lookup in synonym_table.
+        2. Embedding nearest-neighbour fallback (if threshold met).
+        3. Return *keyword* unchanged if no mapping found.
+        """
+        return self.resolve_with_score(keyword)[0]
+
+
+
+TERM_BLACKLIST = {"a", "and"}
+
+
+def extract_query_nodes(
+    query: str,
+    graph: nx.Graph,
+    canonical_lookup: CanonicalLookup | None = None,
+) -> list[str]:
+    """Match query terms against graph node labels.
+
+    Generates position-tagged unigrams, bigrams, and trigrams from *query*,
+    normalises each, optionally resolves to a canonical form, and returns the
+    highest-confidence non-overlapping set that exists as nodes in *graph*.
+
+    Candidates are scored as follows:
+    - Direct graph hit (no resolution needed): 2.0
+    - Synonym-table resolution: 1.0
+    - Embedding-fallback resolution: actual cosine similarity (0.85–1.0)
+
+    Candidates are sorted by (confidence desc, n-gram length desc) and selected
+    greedily: once a token position is claimed by a winning candidate, any other
+    candidate that overlaps that position is skipped. This prevents overlapping
+    n-grams (e.g. "binary trees" and "trees for") from both being included when
+    they compete for the same query token.
+
+    Args:
+        query: Natural-language query string.
+        graph: The knowledge graph to match against.
+        canonical_lookup: Optional lookup object for mapping normalized keywords
+            to canonical forms. When provided, enables synonym-aware matching
+            and an embedding-based fallback for out-of-vocabulary terms.
+
+    Returns:
+        List of matched node label strings (may be empty).
+    """
+    candidates = extract_ngrams_with_spans(query, KW_PATTERN)
+    candidates = [(t, pos) for t, pos in candidates if t.lower() not in TERM_BLACKLIST]
+
+    scored: list[tuple[str, frozenset[int], float]] = []
+    for ngram, positions in candidates:
+        normalized = _normalizer.normalize([ngram])
+        if not normalized:
+            continue
+        norm = normalized[0]
+
+        if graph.has_node(norm):
+            scored.append((norm, positions, 2.0))
+        elif canonical_lookup is not None:
+            canonical, score = canonical_lookup.resolve_with_score(norm)
+            if score > 0 and graph.has_node(canonical):
+                scored.append((canonical, positions, score))
+
+    scored.sort(key=lambda x: (x[2], len(x[1])), reverse=True)
+
+    used: set[int] = set()
+    seen: set[str] = set()
+    result: list[str] = []
+    for term, positions, _ in scored:
+        if positions & used:
+            continue
+        used |= positions
+        if term not in seen:
+            seen.add(term)
+            result.append(term)
+
+    return result
+
+
+def extract_query_nodes_hybrid(
+    query: str,
+    graph: nx.Graph,
+    keyword_index: faiss.Index,
+    canonical_keywords: list[str],
+    canonical_lookup: CanonicalLookup | None = None,
+    embedding_model: str = "sentence-transformers/all-MiniLM-L6-v2",
+    embedding_top_k: int = 20,
+    embedding_threshold: float = 0.4,
+) -> list[str]:
+    """Extract query nodes via exact match, filling gaps with embedding results.
+
+    First runs :func:`extract_query_nodes` (n-gram + canonical lookup). If the
+    number of matched nodes is below ``ceil(sqrt(num_words_in_query))``, the
+    remaining slots are filled with the highest-similarity embedding matches
+    from *keyword_index* that are not already in the exact-match set and whose
+    cosine similarity meets *embedding_threshold*.
+
+    Args:
+        query: Natural-language query string.
+        graph: The knowledge graph to filter against.
+        keyword_index: Pre-built FAISS IndexFlatIP (L2-normalised embeddings).
+        canonical_keywords: Ordered list of canonical forms aligned with the index.
+        canonical_lookup: Optional lookup for the exact-match phase.
+        embedding_model: SentenceTransformer model; must match the one used to
+            build *keyword_index*.
+        embedding_top_k: FAISS neighbours to retrieve as candidates for the
+            embedding fill phase.
+        embedding_threshold: Minimum cosine similarity for an embedding candidate
+            to be accepted as a fill-in node.
+
+    Returns:
+        List of matched node labels (exact matches first, then embedding fill-ins).
+    """
+    import math
+
+    exact = extract_query_nodes(query, graph, canonical_lookup)
+
+    num_words = len(query.split())
+    target = round(math.sqrt(num_words))
+
+    needed = target - len(exact)
+    if needed <= 0:
+        return exact
+
+    exact_set = set(exact)
+    from sentence_transformers import SentenceTransformer
+
+    model = SentenceTransformer(embedding_model)
+    q_emb = model.encode([query]).astype("float32")
+    faiss.normalize_L2(q_emb)
+
+    k = min(embedding_top_k, keyword_index.ntotal)
+    similarities, indices = keyword_index.search(q_emb, k)
+
+    fill: list[str] = []
+    for sim, idx in zip(similarities[0], indices[0]):
+        if len(fill) >= needed:
+            break
+        if idx < 0 or sim < embedding_threshold:
+            continue
+        keyword = canonical_keywords[idx]
+        if graph.has_node(keyword) and keyword not in exact_set:
+            logger.debug("Hybrid fill: '%s' → '%s' (sim=%.4f)", query, keyword, sim)
+            fill.append(keyword)
+            exact_set.add(keyword)
+
+    return exact + fill
+
+
+def extract_query_nodes_embedding(
+    query: str,
+    graph: nx.Graph,
+    keyword_index: faiss.Index,
+    canonical_keywords: list[str],
+    embedding_model: str = "sentence-transformers/all-MiniLM-L6-v2",
+    top_k: int = 10,
+    similarity_threshold: float = 0.78,
+) -> list[str]:
+    """Match query against graph nodes via embedding similarity.
+
+    Embeds *query* with a SentenceTransformer and searches *keyword_index*
+    (a FAISS IndexFlatIP built from L2-normalised canonical keyword embeddings).
+    Returns candidates whose cosine similarity exceeds *similarity_threshold*
+    and that exist as nodes in *graph*.
+
+    Args:
+        query: Natural-language query string.
+        graph: The knowledge graph to filter against.
+        keyword_index: Pre-built FAISS IndexFlatIP (L2-normalised embeddings).
+        canonical_keywords: Ordered list of canonical forms aligned with the index.
+        embedding_model: SentenceTransformer model name; must match the model
+            used to build *keyword_index*.
+        top_k: Maximum number of FAISS neighbours to retrieve.
+        similarity_threshold: Minimum cosine similarity for a match to be accepted.
+
+    Returns:
+        List of matched canonical keyword strings present as graph nodes.
+    """
+    from sentence_transformers import SentenceTransformer
+
+    model = SentenceTransformer(embedding_model)
+    q_emb = model.encode([query]).astype("float32")
+    faiss.normalize_L2(q_emb)
+
+    k = min(top_k, keyword_index.ntotal)
+    similarities, indices = keyword_index.search(q_emb, k)
+
+    matched = []
+    for sim, idx in zip(similarities[0], indices[0]):
+        if idx < 0 or sim < similarity_threshold:
+            continue
+        keyword = canonical_keywords[idx]
+        if graph.has_node(keyword):
+            logger.debug("Embedding match: '%s' → '%s' (sim=%.4f)", query, keyword, sim)
+            matched.append(keyword)
+    return matched
+
+
+class KGNodeRetriever(Retriever):
+    """Knowledge-graph retriever that scores chunks via BFS node matching.
+
+    Scores are derived purely from graph topology: direct query-node matches
+    score +1.0, and neighbors at hop *k* contribute
+    ``neighbor_weight**k * (edge_weight / max_edge_weight)``.
+    All scores are normalized to [0, 1].
+
+    When *idf_weighted* is True, neighbor contributions at hop ≥ 1 are further
+    multiplied by the node's IDF score (``log(N / df)`` where N is the total
+    number of chunks and df is the number of chunks the node appears in).
+    IDF scores are normalised to [0, 1] so that the hop-decay semantics are
+    preserved. Hop-0 (direct matches) are always given full weight.
+
+    Plugs into ``EnsembleRanker`` via the standard ``Retriever`` interface.
+    Combine with ``SectionTreeRetriever`` (and others) in the ensemble to
+    blend complementary signals.
+    """
+
+    name = "kg_node"
+
+    def __init__(
+        self,
+        graph: nx.Graph,
+        kg_chunks: dict[int, str],
+        neighbor_weight: float = 0.5,
+        num_hops: int = 1,
+        canonical_lookup: CanonicalLookup | None = None,
+        idf_weighted: bool = False,
+    ):
+        self.graph = graph
+        self.kg_chunks = kg_chunks
+        self.neighbor_weight = neighbor_weight
+        self.num_hops = num_hops
+        self.canonical_lookup = canonical_lookup
+        self.idf_weighted = idf_weighted
+        self._idf: dict[str, float] | None = None  # lazy-computed
+
+    def _get_idf(self) -> dict[str, float]:
+        """Compute and cache normalised IDF scores for every node in the graph."""
+        if self._idf is not None:
+            return self._idf
+        import math
+        n_chunks = len(self.kg_chunks)
+        if n_chunks == 0:
+            self._idf = {}
+            return self._idf
+        raw: dict[str, float] = {}
+        for node, data in self.graph.nodes(data=True):
+            df = len(data.get("chunk_ids", []))
+            raw[node] = math.log(n_chunks / max(df, 1))
+        max_idf = max(raw.values(), default=1.0)
+        max_idf = max(max_idf, 1e-9)
+        self._idf = {n: v / max_idf for n, v in raw.items()}
+        return self._idf
+
+    def get_scores(self, query: str, pool_size: int, chunks: list) -> dict[int, float]:
+        """Return BFS-based relevance scores keyed by global chunk index.
+
+        Args:
+            query:     Natural-language query string.
+            pool_size: Maximum number of chunks to return scores for.
+            chunks:    The RAG pipeline's chunk list (used only for length).
+
+        Returns:
+            ``Dict[chunk_id, score]`` normalized to [0, 1].
+            Returns an empty dict if no query nodes match the graph.
+        """
+        query_nodes = extract_query_nodes(query, self.graph, self.canonical_lookup)
+        logger.debug("Query: %r", query)
+        logger.debug("Matched query nodes (%d): %s", len(query_nodes), query_nodes)
+        if not query_nodes:
+            logger.debug("No query nodes matched — returning empty.")
+            return {}
+
+        max_edge_weight = max(
+            (data["weight"] for _, _, data in self.graph.edges(data=True)),
+            default=1,
+        )
+        max_edge_weight = max(max_edge_weight, 1)
+        logger.debug("Max edge weight in graph: %s", max_edge_weight)
+
+        idf = self._get_idf() if self.idf_weighted else {}
+
+        scores: dict[int, float] = {}
+
+        # Hop 0: directly matched query nodes (always full weight, no IDF)
+        for node in query_nodes:
+            for chunk_id in self.graph.nodes[node].get("chunk_ids", []):
+                scores[chunk_id] = scores.get(chunk_id, 0.0) + 1.0
+
+        # BFS over hops 1..num_hops; each node is visited only at its closest hop
+        visited: set[str] = set(query_nodes)
+        frontier: set[str] = set(query_nodes)
+
+        for hop in range(1, self.num_hops + 1):
+            decay = self.neighbor_weight ** hop
+            next_frontier: set[str] = set()
+            for node in frontier:
+                for neighbor in self.graph.neighbors(node):
+                    if neighbor in visited:
+                        continue
+                    next_frontier.add(neighbor)
+                    edge_weight = self.graph[node][neighbor].get("weight", 1)
+                    contribution = decay * (edge_weight / max_edge_weight)
+                    if self.idf_weighted:
+                        contribution *= idf.get(neighbor, 1.0)
+                    for chunk_id in self.graph.nodes[neighbor].get("chunk_ids", []):
+                        scores[chunk_id] = scores.get(chunk_id, 0.0) + contribution
+            visited |= next_frontier
+            frontier = next_frontier
+            logger.debug("Hop %d: %d new node(s) explored.", hop, len(next_frontier))
+            if not frontier:
+                break
+
+        if not scores:
+            logger.debug("No chunks scored — returning empty.")
+            return {}
+
+        max_score = max(scores.values())
+        if max_score <= 0:
+            logger.debug("Max score is %s — returning empty.", max_score)
+            return {}
+
+        normalized = {cid: s / max_score for cid, s in scores.items()}
+        logger.debug(
+            "Normalized scores: %s",
+            dict(sorted(normalized.items(), key=lambda x: x[1], reverse=True)),
+        )
+        return normalized
+
+
+class SectionTreeRetriever(Retriever):
+    """Retriever that scores chunks based on section-heading relevance.
+
+    Uses ``SectionTree.get_chunk_scores`` which blends:
+    - Heading keyword overlap (structural signal).
+    - KG keyword overlap aggregated from the graph (lexical signal).
+    - Top-down score inheritance from parent sections to children.
+
+    Plugs into ``EnsembleRanker`` via the standard ``Retriever`` interface.
+    Combine with ``KGNodeRetriever`` (and others) in the ensemble to blend
+    complementary signals.
+    """
+
+    name = "section_tree"
+
+    def __init__(
+        self,
+        section_tree: SectionTree,
+        graph: nx.Graph,
+        canonical_lookup: CanonicalLookup | None = None,
+        heading_alpha: float = 0.5,
+        inheritance_decay: float = 0.5,
+    ):
+        self.section_tree = section_tree
+        self.graph = graph
+        self.canonical_lookup = canonical_lookup
+        self.heading_alpha = heading_alpha
+        self.inheritance_decay = inheritance_decay
+
+    def get_scores(self, query: str, pool_size: int, chunks: list) -> dict[int, float]:
+        """Return section-relevance scores keyed by global chunk index.
+
+        Args:
+            query:     Natural-language query string.
+            pool_size: Maximum number of chunks to return scores for.
+            chunks:    The RAG pipeline's chunk list (unused; present for interface compat).
+
+        Returns:
+            ``Dict[chunk_id, score]`` normalized to [0, 1].
+        """
+        query_keywords = set(extract_query_nodes(query, self.graph, self.canonical_lookup))
+        return self.section_tree.get_chunk_scores(
+            query_keywords,
+            query=query,
+            heading_alpha=self.heading_alpha,
+            inheritance_decay=self.inheritance_decay,
+        )
+
+
+class SectionSummaryRetriever(Retriever):
+    """Retriever that scores chunks via semantic similarity to LLM-generated section summaries.
+
+    At query time the query is embedded and compared against all stored summary
+    embeddings (chunk-group, section, and chapter level) using cosine similarity.
+    Each FAISS hit distributes its similarity score to every chunk it covers;
+    a chunk's final score is the maximum across all hits that include it.
+
+    Plugs into ``EnsembleRanker`` via the standard ``Retriever`` interface.
+    Combine with ``KGNodeRetriever`` and ``SectionTreeRetriever`` in the
+    ensemble for a richer retrieval signal.
+    """
+
+    name = "section_summary"
+
+    def __init__(
+        self,
+        index: faiss.Index,
+        entries: list[SummaryEntry],
+        embed_model: str = "all-MiniLM-L6-v2",
+        top_sections: int = 20,
+    ):
+        self.index = index
+        self.entries = entries
+        self.embed_model_name = embed_model
+        self.top_sections = top_sections
+        self._model = None  # lazy-load
+
+    def get_scores(self, query: str, pool_size: int, chunks: list) -> dict[int, float]:
+        """Return summary-similarity scores keyed by global chunk index.
+
+        Args:
+            query:       Natural-language query string.
+            pool_size:   Maximum number of chunks to return scores for (unused;
+                         present for interface compatibility).
+            chunks:      The RAG pipeline's chunk list (unused).
+
+        Returns:
+            ``Dict[chunk_id, score]`` where score is the maximum cosine
+            similarity across all summary entries that cover that chunk.
+        """
+        if self._model is None:
+            from sentence_transformers import SentenceTransformer
+            self._model = SentenceTransformer(self.embed_model_name)
+
+        q_emb = self._model.encode([query]).astype("float32")
+        faiss.normalize_L2(q_emb)
+
+        k = min(self.top_sections, self.index.ntotal)
+        similarities, indices = self.index.search(q_emb, k)
+
+        chunk_scores: dict[int, float] = {}
+        for sim, idx in zip(similarities[0], indices[0]):
+            if idx < 0 or sim <= 0:
+                continue
+            for chunk_id in self.entries[idx].chunk_ids:
+                chunk_scores[chunk_id] = max(chunk_scores.get(chunk_id, 0.0), float(sim))
+
+        return chunk_scores
+
+
+if __name__ == "__main__":
+    import argparse
+
+    parser = argparse.ArgumentParser(description="Test the KG node retriever.")
+    parser.add_argument(
+        "output_dir",
+        nargs="?",
+        default=RUNS_DIR,
+        help="Run directory or runs/ parent (default: latest run).",
+    )
+    parser.add_argument("--query", default="What is SQL?")
+    parser.add_argument("--top_k", type=int, default=10)
+    parser.add_argument("--neighbor_weight", type=float, default=0.5)
+    parser.add_argument("--num_hops", type=int, default=1)
+    args = parser.parse_args()
+
+    _graph, _chunks = load_graph_and_chunks(args.output_dir)
+    _retriever = KGNodeRetriever(
+        _graph, _chunks,
+        neighbor_weight=args.neighbor_weight,
+        num_hops=args.num_hops,
+    )
+    _scores = _retriever.get_scores(
+        args.query, args.top_k, list(_chunks.values()))
+    _results = sorted(
+        [(cid, _chunks[cid], score)
+         for cid, score in _scores.items() if cid in _chunks],
+        key=lambda x: x[2], reverse=True,
+    )[:args.top_k]
+
+    print(f"\nTop {len(_results)} results for query: {args.query!r}\n")
+    for i, (chunk_id, chunk_text, score) in enumerate(_results, 1):
+        print(f"{i}. Chunk ID: {chunk_id}, Score: {score:.4f}")
+        print(f"   Text: {chunk_text[:200]}...\n")

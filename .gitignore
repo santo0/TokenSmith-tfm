@@ -253,3 +253,16 @@ marimo/_lsp/
 __marimo__/
 
 tests/results
+
+
+communities.json
+communities.png
+difficulty_results.json
+kw_bench.json
+queries_debug.json
+query_viz.png
+results_b5.json
+results_partial.json
+results.json
+
+debug/

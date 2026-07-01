@@ -1,0 +1,1002 @@
+benchmarks:
+- id: chp_five_pou
+  question: What are the five pou of critical health psychology?
+  expected_answer: 'The five pou (guiding principles) of critical health psychology
+    are: (1) valuing theoretical and conceptual thinking; (2) challenging taken-for-granted
+    understandings; (3) paying attention to issues of power and equity; (4) moving
+    beyond the individualism that characterises much of Western psychology; and (5)
+    considering knowledge as produced in social context. The term pou is borrowed
+    from Māori culture, referring to carved poles that serve as structural supports
+    for a Marae. These five pou explicitly or implicitly shape every chapter of the
+    discipline.
+
+    '
+  keywords:
+  - five pou
+  - critical health psychology
+  - individualism
+  - power and equity
+  - taken-for-granted
+  - knowledge in context
+  similarity_threshold: 0.78
+  ideal_retrieved_chunks:
+  - 6
+  - 7
+  - 429
+  broad: false
+  sections:
+  - Introduction
+- id: chp_hauora_definition
+  question: What is hauora and how is it conceptualised in Māori culture?
+  expected_answer: 'Hauora describes the breath of life and spirit; it refers to a
+    physical sense of wellbeing for an individual that is interdependent with collective
+    qualities such as whanaungatanga. Māori notions of health and wellbeing are holistic,
+    relational, and grounded in Māori cultural worldviews. Related terms include mauri
+    ora (life-giving essence), waiora (total wellbeing and strength of spirit), and
+    whānau ora (family and collective wellbeing). The chapter is named Hauora to reflect
+    the connection between physical, psychological, relational, and spiritual dimensions
+    of health.
+
+    '
+  keywords:
+  - hauora
+  - wellbeing
+  - mauri ora
+  - waiora
+  - whānau ora
+  - holistic
+  similarity_threshold: 0.76
+  ideal_retrieved_chunks:
+  - 84
+  - 139
+  - 140
+  - 157
+  - 158
+  - 160
+  - 164
+  - 422
+  - 423
+  broad: false
+  sections:
+  - 1.1 Hauora
+- id: chp_te_whare_tapa_wha
+  question: What are the four domains of Te Whare Tapa Whā and what does the model
+    represent?
+  expected_answer: 'Te Whare Tapa Whā is a seminal Māori health model developed by
+    Sir Mason Durie that frames wellbeing as achieved through balance across four
+    domains: te taha tinana (physical wellbeing), te taha hinengaro (mental and emotional
+    wellbeing), te taha whānau (family and social wellbeing), and te taha wairua (spiritual
+    wellbeing). The whare also sits on whenua, representing the importance of Māori
+    connection to ancestral lands and the natural environment. Wellbeing flourishes
+    when all four domains are cared for and in balance; illness or dysfunction develops
+    when one or more domains are compromised.
+
+    '
+  keywords:
+  - Te Whare Tapa Whā
+  - tinana
+  - hinengaro
+  - whānau
+  - wairua
+  - Mason Durie
+  similarity_threshold: 0.8
+  ideal_retrieved_chunks:
+  - 131
+  broad: false
+  sections:
+  - 1.1 Hauora
+- id: chp_maori_creation_phases
+  question: What are the three phases of Māori creation narratives and what does each
+    represent?
+  expected_answer: 'Māori cosmogonies commonly describe the creation of the universe
+    in three phases. Te kore is the most distant phase — the source of all life meaning
+    "the void" or "nothing", yet understood as energetic and the space of infinite
+    potential. Te pō means "darkness" and refers to periods of perceptual and mental
+    darkness; it is the realm of becoming where earth and life develop, and where
+    the primordial atua Papatūānuku and Ranginui come into existence. Te ao mārama
+    is the third phase — the world of light where human life develops after Tāne separates
+    Ranginui and Papatūānuku; it is the realm in which growth and enlightenment are
+    possible.
+
+    '
+  keywords:
+  - te kore
+  - te pō
+  - te ao mārama
+  - Māori creation
+  - cosmogony
+  similarity_threshold: 0.75
+  ideal_retrieved_chunks:
+  - 87
+  - 88
+  - 93
+  broad: false
+  sections:
+  - 1.1 Hauora
+- id: chp_biopsychosocial_problems
+  question: What are the main problems with the biopsychosocial approach according
+    to critical health psychologists?
+  expected_answer: 'Critical health psychologists identify several problems with the
+    biopsychosocial approach. First, poor theorising — Engel did not explain how the
+    bio, psycho, and social elements causally affect each other, leaving the model
+    with little explanatory power ("a slogan too vague to be of any use"). Second,
+    one element getting priority — without clear theorising, one dimension dominates,
+    producing "bio bio bio", "psycho psycho psycho", or partial social analyses. Third,
+    an individualist approach — aligning with biomedicine through social-cognition
+    models leads to reification (treating concepts as real), oversimplification, epistemic
+    injustice, and under- theorising of power.
+
+    '
+  keywords:
+  - biopsychosocial
+  - poor theorising
+  - epistemic injustice
+  - individualism
+  - reification
+  - Engel
+  similarity_threshold: 0.77
+  ideal_retrieved_chunks:
+  - 177
+  - 179
+  - 180
+  - 182
+  - 183
+  - 190
+  - 196
+  - 198
+  - 716
+  - 717
+  - 718
+  broad: false
+  sections:
+  - 1.2 What do we mean by "people"?
+- id: chp_phenomenological_psychology
+  question: What is phenomenological psychology and how does it conceptualise the
+    person?
+  expected_answer: 'Phenomenological psychology is an idiographic approach that prioritises
+    a deep dive into individual lived experiences as people understand and experience
+    them. Drawing on philosophers such as Husserl, Heidegger, and Merleau-Ponty, it
+    conceptualises the person as a situated meaning-maker whose interpretation of
+    the lifeworld is shaped by embodiment, temporality, spatiality, affect, intersubjectivity,
+    and personal history. Unlike mainstream psychology''s nomothetic approach, phenomenology
+    collapses the subject-object distinction and rejects the idea that researchers
+    can observe the world objectively from outside it. Although richly theorised,
+    it remains largely individualist and offers limited tools for analysing power.
+
+    '
+  keywords:
+  - phenomenological psychology
+  - lifeworld
+  - idiographic
+  - embodiment
+  - temporality
+  - intersubjectivity
+  similarity_threshold: 0.76
+  ideal_retrieved_chunks:
+  - 199
+  - 201
+  - 203
+  - 268
+  - 269
+  broad: false
+  sections:
+  - 1.2 What do we mean by "people"?
+- id: chp_social_constructionism
+  question: What is the social constructionist model of the person and how does it
+    differ from individualist psychology?
+  expected_answer: 'Social constructionism shifts analytic focus away from the individual
+    and onto the shared social constructs that circulate between people. It holds
+    that what we consider facts about the world are culturally shared agreements about
+    reality. In this model the person is constituted through language, since language
+    provides the building blocks for thought and thus shapes what people can say,
+    think, feel, or do. People are therefore multiple, contradictory, fluid, and partial
+    rather than unified, coherent, and bounded as individualist psychology assumes.
+    This de-centres the subject and moves psychology''s focus from the individual
+    to the socio-historic context in which meaning is produced.
+
+    '
+  keywords:
+  - social constructionism
+  - language
+  - constituted
+  - multiple
+  - de-centre the subject
+  - taken-for-granted
+  similarity_threshold: 0.77
+  ideal_retrieved_chunks:
+  - 216
+  - 222
+  - 230
+  - 231
+  - 234
+  - 236
+  broad: false
+  sections:
+  - 1.2 What do we mean by "people"?
+- id: chp_five_knowledge_approaches
+  question: What are the five approaches to knowledge in health psychology and how
+    do they differ?
+  expected_answer: 'The five approaches are: (1) Objectivist science of mainstream
+    psychology — understands psychological factors as located in the individual, discoverable
+    through systematic observation producing objective, generalisable knowledge. (2)
+    Phenomenological psychology — foregrounds the subjective, contextualised interpretation
+    of health experience by the individual. (3) Social constructionism and poststructuralism
+    — conceptualise health as constructed through discourse and study multiple discourses
+    and their implications for subjectivity. (4) More-than-human theory — further
+    decentres the subject, conceptualising health as produced through entangled human
+    and non-human elements in an unfolding discursive and material assemblage. (5)
+    Kaupapa Māori research — understands knowledge as holistic, relational, and produced
+    through connections across the spiritual, physical, psychological, social, and
+    land, enacted in the service of Māori wellbeing.
+
+    '
+  keywords:
+  - objectivist science
+  - phenomenology
+  - social constructionism
+  - more-than-human theory
+  - Kaupapa Māori
+  - five approaches
+  similarity_threshold: 0.8
+  ideal_retrieved_chunks:
+  - 71
+  - 252
+  - 254
+  - 255
+  broad: true
+  sections:
+  - 1.3 What do we know?
+- id: chp_healthism
+  question: What is healthism and how does it shape people's experiences of health?
+  expected_answer: 'Healthism is a discourse that constructs health as a measure of
+    a person''s value, morality, and citizenship. It produces individualistic orientations
+    to health in which people are held personally responsible for their health outcomes,
+    and illness is framed as a kind of individual failure that may elicit shame. Healthism
+    aligns with neoliberal ideologies that shift responsibility for health onto individuals
+    while downplaying state responsibilities for creating conditions that make good
+    health more likely. It shapes people''s sense of self, limiting possibilities
+    for equitable health care, and can be challenged or destabilised through critical
+    reflection and collective approaches.
+
+    '
+  keywords:
+  - healthism
+  - individual responsibility
+  - morality
+  - neoliberal
+  - shame
+  - discourse
+  similarity_threshold: 0.77
+  ideal_retrieved_chunks:
+  - 73
+  - 374
+  - 377
+  - 379
+  - 557
+  - 685
+  - 686
+  - 687
+  - 688
+  - 689
+  - 690
+  - 691
+  - 692
+  broad: false
+  sections:
+  - 1.4 Equity and power
+- id: chp_foucault_power
+  question: How does Foucault conceptualise power and how does this relate to health?
+  expected_answer: 'Foucault describes power as productive, diffuse, and embedded
+    in everyday practices and discourses rather than being simply repressive or held
+    by one group over another. Power operates through discourses — relatively coherent
+    ways of making sense of an issue — which produce understandings, norms, expectations,
+    and subject positions. Disciplinary power operates through surveillance and the
+    internalisation of norms (illustrated by Bentham''s panopticon). Governmentality
+    describes how modern states govern citizens through self-regulation. In health
+    contexts, power shapes which bodies, behaviours, and knowledge claims are valued,
+    producing healthism, epistemic injustice, and health inequities.
+
+    '
+  keywords:
+  - Foucault
+  - productive power
+  - disciplinary power
+  - governmentality
+  - panopticon
+  - discourse
+  similarity_threshold: 0.76
+  ideal_retrieved_chunks:
+  - 348
+  - 350
+  - 351
+  - 352
+  - 365
+  - 366
+  - 426
+  - 427
+  - 457
+  broad: false
+  sections:
+  - 1.4 Equity and power
+- id: chp_biographical_disruption
+  question: What is biographical disruption and what aspects of a person's life does
+    illness disrupt?
+  expected_answer: 'Biographical disruption, coined by Bury (1982) in a study of people
+    diagnosed with rheumatoid arthritis, describes how illness disrupts the expected
+    life story of a person. It recognises that multiple elements of self-experience
+    are disrupted simultaneously. The body is disrupted as illness forces it into
+    unwanted awareness ("presence-absence" becomes intrusive presence). Life trajectory
+    is disrupted as illness reduces the ability to live in previously valued ways
+    and creates an uncertain future. Relations with others are disrupted through increased
+    dependency, reduced social interaction, and new relationships with medical staff.
+    Biographical disruption often forces fundamental re-evaluation of identity, requiring
+    people to craft new narratives about who they are.
+
+    '
+  keywords:
+  - biographical disruption
+  - Bury
+  - life trajectory
+  - identity
+  - illness narrative
+  - rheumatoid arthritis
+  similarity_threshold: 0.78
+  ideal_retrieved_chunks:
+  - 472
+  - 473
+  - 475
+  - 477
+  broad: false
+  sections:
+  - 1.5 Experiencing illness
+- id: chp_frank_narratives
+  question: What are Arthur Frank's three types of illness narratives and what does
+    each involve?
+  expected_answer: 'Arthur Frank identified three narrative templates people use in
+    response to illness. Restitution narratives construct illness as a temporary issue
+    focused on restoring the person to their original life before illness; illness
+    is a temporary problem that does not substantially change the sense of self. Quest
+    narratives construct illness as a loss but also as conferring some benefit — an
+    insight or new ways of thinking — involving a heroic arc of call, descent, suffering,
+    return, and reward for suffering. Chaos narratives are anti-narratives where events
+    do not flow from one to another with resolution; chaos reigns, the future is unpredictable,
+    and there is no happy ending. Frank also described five dramas played out in illness
+    narratives — genesis, emotions, faith and desire, fear and loss, and the self.
+
+    '
+  keywords:
+  - Arthur Frank
+  - restitution narrative
+  - quest narrative
+  - chaos narrative
+  - illness narratives
+  - five dramas
+  similarity_threshold: 0.8
+  ideal_retrieved_chunks:
+  - 478
+  - 479
+  - 517
+  broad: false
+  sections:
+  - 1.5 Experiencing illness
+- id: chp_assemblage_treatment
+  question: What is the assemblage framework and how is it applied to understanding
+    treatment experiences?
+  expected_answer: 'The assemblage concept, drawn from more-than-human theory and
+    associated with Deleuze and Guattari, conceptualises treatment experiences as
+    produced through an open system of multiple intersecting discursive and material
+    elements — human and non-human — that momentarily actualise. Rather than focusing
+    on individual patients or specific technologies in isolation, an assemblage framework
+    examines the flows between elements in the system, such as disease, device, patient,
+    cardiologist, and cultural norms simultaneously shaping a treatment experience.
+    Applied to health, this draws attention to the co-constitutive and dynamic nature
+    of treatment, including how technologies, spaces, bodies, knowledge, and power
+    relations interact in an unfolding process.
+
+    '
+  keywords:
+  - assemblage
+  - more-than-human theory
+  - treatment experience
+  - Deleuze
+  - material
+  - non-human
+  similarity_threshold: 0.75
+  ideal_retrieved_chunks:
+  - 522
+  - 525
+  - 529
+  - 534
+  - 613
+  - 614
+  - 618
+  - 619
+  - 621
+  - 622
+  - 623
+  - 625
+  broad: false
+  sections:
+  - 1.6 Experiencing treatment
+- id: chp_symptom_interpretation_social
+  question: Why do critical health psychologists prefer the concept of symptom interpretation
+    over symptom perception?
+  expected_answer: 'Critical health psychologists argue that making sense of bodily
+    changes is more complex than simply perceiving them. Symptom perception, dominant
+    in mainstream psychology, focuses on solitary thought processes and individual
+    cognitive appraisal of bodily signs. Symptom interpretation, by contrast, recognises
+    that people assign meaning to bodily sensations within their specific cultural
+    and social contexts, shaped by intersecting social identities (race, gender, class),
+    cultural norms about which bodily disturbances warrant attention, and social negotiation
+    with others. Pain provides a key example — its interpretation varies dramatically
+    across cultures and genders, as shown by studies of Somali-Canadian women and
+    cross-cultural menopause research. Symptom interpretation is thus both embodied
+    and socially embedded.
+
+    '
+  keywords:
+  - symptom interpretation
+  - symptom perception
+  - socially embedded
+  - cultural norms
+  - social negotiation
+  - credibility work
+  similarity_threshold: 0.76
+  ideal_retrieved_chunks:
+  - 744
+  - 753
+  - 758
+  - 759
+  - 789
+  - 790
+  - 809
+  - 811
+  - 812
+  broad: false
+  sections:
+  - 2.2 Making sense of bodily experiences
+- id: chp_cultural_safety
+  question: What is cultural safety in health psychology practice and how does it
+    differ from cultural competence?
+  expected_answer: 'Cultural safety, developed in Aotearoa New Zealand by Irihapeti
+    Ramsden, focuses on producing a workforce of self-aware practitioners who are
+    culturally safe to practice as defined by the people they serve. It requires critical
+    reflection on one''s own positionality and how it shapes engagement with and interpretation
+    of the world. Cultural safety goes beyond cultural competence, which can reduce
+    culture to a checklist of learned facts, by emphasising reflexivity, power-awareness,
+    and accountability to those receiving care. In Aotearoa New Zealand, cultural
+    safety is inseparable from Te Tiriti o Waitangi and recognition of Māori rangatiratanga.
+    Cultural humility — openness, self-awareness, and a willingness to learn from
+    cultures different from one''s own — is described as an essential ingredient.
+
+    '
+  keywords:
+  - cultural safety
+  - cultural competence
+  - Ramsden
+  - reflexivity
+  - Te Tiriti
+  - positionality
+  similarity_threshold: 0.76
+  ideal_retrieved_chunks:
+  - 129
+  broad: false
+  sections:
+  - 3.1 Frameworks for critical health psychology practice in Aotearoa
+- id: ec_chp_equity_equality
+  question: What is the difference between equity and equality in health, and why
+    does the distinction matter?
+  expected_answer: 'Equality means giving everyone the same thing — the same resources,
+    the same treatment, the same opportunity. Equity means giving people what they
+    need to reach the same outcome, recognising that people start from different positions
+    due to structural and historical disadvantage. In health contexts, providing equal
+    healthcare can reproduce inequities when some groups face greater barriers. Equity
+    requires addressing social determinants of health and structural factors — such
+    as racism, poverty, and colonisation — that produce differential health outcomes.
+    Critical health psychology aligns with equity as a social justice orientation
+    that acknowledges systemic and historical contexts.
+
+    '
+  keywords:
+  - equity
+  - equality
+  - health inequity
+  - social determinants
+  - structural factors
+  - social justice
+  similarity_threshold: 0.77
+  ideal_retrieved_chunks:
+  - 72
+  - 340
+  - 342
+  - 343
+  - 344
+  - 1355
+  broad: false
+  sections:
+  - 1.4 Equity and power
+  notes: Equity and equality are routinely confused; this query targets the conceptual
+    distinction introduced in chapter 1.4.
+- id: ec_chp_illness_disease_disability
+  question: How do illness, disease, and disability differ from one another?
+  expected_answer: 'Illness refers to the subjective experience of feeling unwell
+    — the lived experience of a condition, encompassing personal and social aspects
+    of feeling ill and typically involving reduced functionality. Disease is a pathological
+    condition characterised by symptomatology and diagnosed by medical experts; it
+    is the medical diagnosis of an illness. Disability refers to a physical or mental
+    condition that significantly limits movements, senses, or activities; the social
+    model of disability emphasises that societal barriers (such as buildings accessible
+    only by stairs) create disability rather than the individual condition itself.
+    These distinctions are useful but overlapping — for instance Long COVID is a chronic
+    condition resulting from a communicable virus, and improving medical treatments
+    can shift conditions between acute and chronic categories.
+
+    '
+  keywords:
+  - illness
+  - disease
+  - disability
+  - social model of disability
+  - subjective experience
+  - distinction
+  similarity_threshold: 0.77
+  ideal_retrieved_chunks: []
+  broad: false
+  sections:
+  - 1.5 Experiencing illness
+  notes: These three terms are frequently conflated; the chapter provides explicit
+    definitions distinguishing all three.
+- id: ec_chp_ontology_epistemology
+  question: What is the difference between ontology and epistemology, and how are
+    they understood in Māori frameworks?
+  expected_answer: 'Ontology refers to understandings about the nature of reality
+    and human nature. Epistemology refers to understandings about the nature of knowledge
+    — what we can know and how we can know it. From a Māori perspective, ontologies
+    emphasise connectedness, relationships, and a spiritual element, underpinned by
+    whakapapa and whanaungatanga. Māori epistemologies recognise whakapapa as a means
+    by which Māori record, remember, and impart knowledges about the world, alongside
+    pūrākau (narratives and metaphor). Cosmologies refer to beliefs about the nature
+    of the universe and cosmogonies to its origins, described in Māori traditions
+    through te kore, te pō, and te ao mārama.
+
+    '
+  keywords:
+  - ontology
+  - epistemology
+  - cosmology
+  - whakapapa
+  - Māori
+  - pūrākau
+  similarity_threshold: 0.76
+  ideal_retrieved_chunks:
+  - 82
+  - 86
+  - 92
+  - 93
+  - 94
+  - 314
+  - 315
+  broad: false
+  sections:
+  - 1.1 Hauora
+  notes: Ontology, epistemology, and cosmology are adjacent terms students often conflate;
+    both Western and Māori definitions are provided in chapter 1.1.
+- id: ec_chp_restitution_quest_chaos
+  question: How do restitution, quest, and chaos illness narratives differ, and what
+    happens when someone cannot tell a restitution or quest narrative?
+  expected_answer: 'In restitution narratives, illness is temporary and the person
+    is restored to their original life; the sense of self is not substantially changed.
+    In quest narratives, illness involves loss but also some benefit — an insight
+    or new way of being; there is a heroic arc culminating in a reward. Chaos narratives
+    are anti-narratives with no resolution, no purposeful suffering, and an unpredictable
+    future. Quest and restitution narratives are culturally valued, while chaos stories
+    are often resisted as too transgressive and frightening for listeners to hear.
+    When people cannot tell a restitution or quest story, they may be silenced by
+    others who enforce positive feeling rules, preventing chaos narratives from being
+    heard and causing additional distress and social isolation.
+
+    '
+  keywords:
+  - restitution narrative
+  - quest narrative
+  - chaos narrative
+  - Arthur Frank
+  - feeling rules
+  - social silencing
+  similarity_threshold: 0.78
+  ideal_retrieved_chunks: []
+  broad: false
+  sections:
+  - 1.5 Experiencing illness
+  notes: Students confuse the three narrative types; this query also probes the social
+    consequences of not being able to tell preferred narratives.
+- id: ec_chp_sign_symptom_credibility
+  question: What is the difference between a bodily sign and a symptom, and what is
+    credibility work?
+  expected_answer: 'A sign is a change in the body that can be seen or measured —
+    such as a rise in temperature or the appearance of aberrant growths — and is considered
+    objective evidence of disease. A symptom is the subjective experience of something
+    out of the ordinary that an individual needs to make sense of. Symptoms are not
+    simply perceptions but interpretations embedded in social and cultural contexts.
+    Credibility work describes the efforts people make to convince others that their
+    symptoms are legitimate and warrant medical attention; this includes what they
+    say, do, and even their appearance. Without successful credibility work, people
+    may fail to gain social sanctioning for their illness and be denied the sick role,
+    as commonly experienced by people with contested illnesses such as fibromyalgia.
+
+    '
+  keywords:
+  - sign
+  - symptom
+  - credibility work
+  - social sanctioning
+  - sick role
+  - contested illness
+  similarity_threshold: 0.76
+  ideal_retrieved_chunks:
+  - 809
+  broad: false
+  sections:
+  - 2.2 Making sense of bodily experiences
+  notes: Sign and symptom are near-synonyms in lay usage but technically distinct
+    in health psychology; credibility work is a related key concept.
+- id: cs_chp_individualism_critique
+  question: How is individualism critiqued across different chapters in the book?
+  expected_answer: 'The critique of individualism runs throughout the book. In the
+    Introduction the fifth pou explicitly calls for moving beyond individualism that
+    characterises Western psychology. Chapter 1.2 shows how the biopsychosocial approach
+    and socio-cognitive models like the Theory of Planned Behaviour reduce psychology
+    to atomised, measurable individual variables, ignoring the social determinants
+    of health. Social constructionism in chapter 1.2 and more-than-human theory both
+    challenge the idea of the separate bounded self. Chapter 1.4 connects individualism
+    to healthism and neoliberalism, which shift responsibility for health onto individuals.
+    Chapters 2.2 and 2.3 show how individualised symptom perception and diagnostic
+    models overlook the relational and socially embedded nature of illness interpretation.
+    Chapter 3.2 critiques how mainstream clinical training can perpetuate individualised
+    and pathologising approaches.
+
+    '
+  keywords:
+  - individualism
+  - biopsychosocial
+  - healthism
+  - social determinants
+  - social constructionism
+  - mainstream psychology
+  similarity_threshold: 0.75
+  ideal_retrieved_chunks:
+  - 15
+  - 16
+  - 17
+  - 216
+  - 218
+  - 231
+  - 277
+  - 278
+  - 398
+  broad: true
+  sections:
+  - Introduction
+  - 1.2 What do we mean by "people"?
+  - 1.4 Equity and power
+  - 2.2 Making sense of bodily experiences
+  notes: Cross-section query requiring evidence from the Introduction through Parts
+    2 and 3.
+- id: cs_chp_maori_health_across_book
+  question: How do Māori health frameworks inform critical health psychology across
+    multiple chapters?
+  expected_answer: 'Māori health frameworks are woven throughout the book. Chapter
+    1.1 presents Te Whare Tapa Whā, Te Wheke, the Meihana Model, and Te Pae Māhutonga,
+    grounding the discipline in holistic, relational conceptions of hauora. Chapter
+    1.3 includes Kaupapa Māori research as one of five knowledge approaches, emphasising
+    Māori sovereignty over knowledge production. Chapter 1.5 discusses how Māori understandings
+    of time (including intergenerational connections) shape illness experience, and
+    how whānau support forms a central part of illness management. Chapter 1.4 connects
+    colonisation to health inequities via the social determinants of health. Chapter
+    3.1 discusses Te Tiriti o Waitangi as foundational to ethical practice in Aotearoa
+    New Zealand. The awa whiria (braided river) analogy represents the weaving together
+    of Māori and Western knowledge systems.
+
+    '
+  keywords:
+  - Te Whare Tapa Whā
+  - Kaupapa Māori
+  - awa whiria
+  - Te Tiriti
+  - hauora
+  - colonisation
+  similarity_threshold: 0.76
+  ideal_retrieved_chunks:
+  - 6
+  - 7
+  - 69
+  - 162
+  - 163
+  - 164
+  - 166
+  - 252
+  - 254
+  - 1014
+  broad: true
+  sections:
+  - 1.1 Hauora
+  - 1.3 What do we know?
+  - 1.4 Equity and power
+  - 1.5 Experiencing illness
+  - 3.1 Frameworks for critical health psychology practice in Aotearoa
+  notes: Tests whether the system can retrieve Māori health content spanning multiple
+    chapters.
+- id: cs_chp_power_knowledge_health
+  question: How does the relationship between power and knowledge shape health and
+    healthcare across the book?
+  expected_answer: 'Power and knowledge are inseparable throughout critical health
+    psychology. Chapter 1.2 shows how mainstream psychology''s socio-cognitive models
+    under- theorise power, reproducing individualist and Eurocentric norms as universal.
+    Chapter 1.3 addresses the crisis of representation — the recognition that scientific
+    knowledge is shaped by the social positionality of researchers. Chapter 1.4 uses
+    Foucault''s theories of productive, diffuse power and governmentality to analyse
+    how health discourses such as healthism produce subject positions and inequities.
+    Chapter 2.2 demonstrates how social meanings of illness create stigma and differential
+    access to care. Chapter 2.3 examines diagnosis as a social and political practice
+    embedded in power relations. Kaupapa Māori research (chapter 1.3) challenges colonial
+    knowledge systems that have historically pathologised Māori.
+
+    '
+  keywords:
+  - power
+  - knowledge
+  - Foucault
+  - social positionality
+  - diagnosis
+  - Kaupapa Māori
+  similarity_threshold: 0.76
+  ideal_retrieved_chunks:
+  - 256
+  - 340
+  - 350
+  - 351
+  - 429
+  - 630
+  - 699
+  - 700
+  - 701
+  - 840
+  - 848
+  broad: true
+  sections:
+  - 1.2 What do we mean by "people"?
+  - 1.3 What do we know?
+  - 1.4 Equity and power
+  - 2.2 Making sense of bodily experiences
+  - 2.3 Diagnosis as a social and political practice
+  notes: Multi-chapter query that requires the system to synthesise content on power
+    and knowledge from foundational and approaches chapters.
+- id: cs_chp_social_context_illness
+  question: How does social context shape illness experience, from onset through to
+    treatment?
+  expected_answer: 'Social context shapes illness at every stage. At onset, personal
+    histories, spirituality, temporality, place, technologies, and social support
+    all shape how illness is experienced — described in chapter 1.5. Wider discursive
+    contexts (healthism, positivity imperatives) produce shame and social silencing.
+    Chapter 1.6 shows how treatment experience is shaped by intersecting material,
+    technological, and social elements conceptualised as an assemblage. Chapter 2.2
+    demonstrates how symptom interpretation is socially negotiated — people must perform
+    credibility work to gain social sanctioning for their illness. Chapter 2.3 discusses
+    how diagnosis is embedded in social and political practices that can produce epistemic
+    injustice. Chapter 3.3 describes how defining health problems is itself a political
+    act, shaping what interventions are considered possible and desirable.
+
+    '
+  keywords:
+  - social context
+  - illness experience
+  - social support
+  - discursive context
+  - assemblage
+  - epistemic injustice
+  similarity_threshold: 0.75
+  ideal_retrieved_chunks:
+  - 73
+  - 74
+  - 432
+  - 433
+  - 439
+  - 464
+  - 465
+  - 466
+  - 635
+  - 636
+  - 637
+  - 794
+  broad: true
+  sections:
+  - 1.5 Experiencing illness
+  - 1.6 Experiencing treatment
+  - 2.2 Making sense of bodily experiences
+  - 2.3 Diagnosis as a social and political practice
+  - 3.3 Defining health problems and shaping interventions
+- id: pl_chp_pou
+  question: What is a "pou" in Māori culture and how is the term used in critical
+    health psychology?
+  expected_answer: 'In Māori culture, pou refers to carved wooden poles or posts that
+    serve as boundary markers and support structures integral to the building of marae
+    — a traditional house and centre for Māori activities. The poles support the marae,
+    and the term is sometimes adopted by institutions to refer to the central values
+    supporting their work. In critical health psychology, the term is borrowed to
+    describe the five guiding principles (valuing theory, challenging taken-for-granted
+    knowledge, paying attention to power and equity, moving beyond individualism,
+    and considering knowledge in context) that underpin the discipline. These pou
+    explicitly or implicitly shape every chapter of the textbook.
+
+    '
+  keywords:
+  - pou
+  - Māori culture
+  - carved poles
+  - marae
+  - guiding principles
+  similarity_threshold: 0.74
+  ideal_retrieved_chunks:
+  - 6
+  - 7
+  - 164
+  broad: false
+  sections:
+  - Introduction
+  - 1.1 Hauora
+  notes: 'Pou has a specific structural and cultural meaning in Māori architecture;
+    it is then re-used metaphorically in the Introduction. A naive retriever may confuse
+    architectural pou with the figurative use.
+
+    '
+- id: pl_chp_discourse
+  question: What does "discourse" mean in critical health psychology and how does
+    it shape health?
+  expected_answer: 'In critical health psychology, discourse refers to relatively
+    coherent ways of making sense of an issue — language and practices that produce
+    understandings, norms, expectations, and subject positions. Drawing on Foucault,
+    discourse is not merely descriptive; it actively constructs what is possible to
+    say, think, feel, or do. Healthism is an example of a dominant health discourse
+    that constructs health as an individual moral responsibility, producing shame
+    around illness. Discourses are not simply ideas but are embedded in practices
+    and institutions, and they shape material outcomes such as healthcare access and
+    funding. Multiple, potentially contradictory discourses circulate simultaneously,
+    giving people different subject positions from which to make sense of their health.
+
+    '
+  keywords:
+  - discourse
+  - Foucault
+  - subject positions
+  - healthism
+  - language
+  - power
+  similarity_threshold: 0.77
+  ideal_retrieved_chunks:
+  - 13
+  - 288
+  - 289
+  - 349
+  - 399
+  - 406
+  - 457
+  - 464
+  broad: false
+  sections:
+  - 1.4 Equity and power
+  - 1.5 Experiencing illness
+  notes: 'Discourse is used loosely in everyday language (conversation, argument)
+    but has a technical Foucauldian meaning in critical health psychology; this query
+    tests the technical sense.
+
+    '
+- id: pl_chp_whakapapa
+  question: What does "whakapapa" mean and how is it applied across Māori ontology,
+    epistemology, and health?
+  expected_answer: 'Whakapapa means genealogy; more specifically it refers to layers
+    of genealogy. In Māori ontology, whakapapa describes how human life descends from
+    atua, and is thus related to the natural environment — it is the structure by
+    which all things are connected. In Māori epistemology, whakapapa is the means
+    by which Māori record, remember, and impart knowledges about the world, reinforcing
+    connectedness across time and space. In health contexts, whakapapa shapes cultural
+    identity, grounds people in their tūrangawaewae (standing place and belonging),
+    and is central to Māori models of health such as the Meihana Model. Cultural access
+    to whakapapa and ancestral connections is understood as foundational to hauora.
+
+    '
+  keywords:
+  - whakapapa
+  - genealogy
+  - ontology
+  - epistemology
+  - tūrangawaewae
+  - connectedness
+  similarity_threshold: 0.75
+  ideal_retrieved_chunks:
+  - 90
+  - 92
+  - 157
+  - 158
+  broad: false
+  sections:
+  - 1.1 Hauora
+  notes: 'Whakapapa is literally translated as genealogy but carries far broader ontological
+    and epistemological meanings in Māori worldviews; this query probes the richer
+    sense.
+
+    '
+- id: pl_chp_practices_vs_behaviour
+  question: Why do critical health psychologists prefer the term "practices" over
+    "behaviour" when describing what people do?
+  expected_answer: 'Critical health psychologists tend to use "practices" rather than
+    "behaviour" because the latter locates action as an outcome of individual decisions,
+    implying a rational autonomous self. The word "practices" recognises that what
+    people do is shaped by a range of social and relational elements — social norms,
+    expectations, power relations, and the contexts in which people live and interact.
+    This terminological choice reflects the broader critical concern with moving beyond
+    individualism and attending to the social structures and discursive contexts that
+    shape human activity. Using "practices" thus shifts analytic focus from individual
+    cognition and decision-making to the socially embedded, relational, and contextual
+    production of action.
+
+    '
+  keywords:
+  - practices
+  - behaviour
+  - individualism
+  - social norms
+  - power relations
+  - context
+  similarity_threshold: 0.74
+  ideal_retrieved_chunks:
+  - 59
+  broad: false
+  sections:
+  - Introduction
+  notes: 'Behaviour and practices appear near-synonymous in everyday usage; the Introduction
+    explicitly explains why the discipline prefers practices.
+
+    '
+- id: pl_chp_liminality
+  question: What is liminality and how is it applied to the experience of becoming
+    a critical health psychology practitioner?
+  expected_answer: 'Liminality refers to an in-between state where someone is transitioning
+    from one way of being into another. Greco and Stenner describe liminal occasions
+    as important moments in time and space where potentially valuable transformation
+    occurs, contrasted with liminal hotspots where a person risks getting stuck between
+    two mutually exclusive alternatives. In chapter 3.2, liminality is applied to
+    the experience of students moving from theory to practice in a practicum — simultaneously
+    students and emerging practitioners. This liminal space is characterised by vulnerability,
+    anxiety, and a lack of confidence. Rather than treating liminality as a problem
+    to be managed through narrow skill acquisition, the chapter argues that reflexively
+    engaging with discomfort and uncertainty fosters deeper growth as a critical health
+    psychology practitioner.
+
+    '
+  keywords:
+  - liminality
+  - practicum
+  - liminal occasion
+  - becoming a practitioner
+  - reflexivity
+  - Greco and Stenner
+  similarity_threshold: 0.74
+  ideal_retrieved_chunks:
+  - 1083
+  - 1101
+  - 1102
+  - 1106
+  - 1108
+  - 1111
+  - 1115
+  - 1117
+  - 1137
+  - 1140
+  broad: false
+  sections:
+  - 3.2 Becoming a critical health psychology practitioner
+  notes: 'Liminality has an anthropological meaning (Turner) and a specific application
+    to practicum transitions; this query checks whether the system retrieves the health
+    psychology application rather than generic anthropological content.
+
+    '
